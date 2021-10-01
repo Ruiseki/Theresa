@@ -47,10 +47,6 @@ client.once('ready', () => {
 
     Theresa.boot(client,servers)
 
-    //gestionnaire des téléchargement auto
-
-    if(Date.now() >= Number.parseInt(FS.readFileSync('./elite/lastcheck.tsave','utf8'))+86400000) EliteDangerous.downloadData(); // 86400000ms = 24h
-
     console.log(`### Online`);
 })
 
@@ -113,8 +109,6 @@ client.on('presenceUpdate',(oldStatus,newStatus) => {
 });
 
 client.on('message', message => {
-
-    if(Date.now() >= Number.parseInt(FS.readFileSync('./elite/lastcheck.tsave','utf8'))+86400000) EliteDangerous.downloadData();
     
     if(message.guild !== null)
     {
@@ -220,8 +214,6 @@ client.on('message', message => {
 
 client.on('voiceStateUpdate',(oldState,newState) => {
 
-    if(Date.now() >= Number.parseInt(FS.readFileSync('./elite/lastcheck.tsave','utf8'))+86400000) EliteDangerous.downloadData();
-
     //---------------------------------------------//
     // Theresa will join the voice channel of his creator and leave with him if she doing nothing
     if(oldState.channel == null && newState.channel != null && newState.id == Ruiseki.user.id && newState.guild.me.voice.channel == null) newState.member.voice.channel.join();
@@ -282,7 +274,6 @@ client.on('voiceStateUpdate',(oldState,newState) => {
 });
 
 client.on('guildMemberSpeaking',(member,speaking) => {
-    if(Date.now() >= Number.parseInt(FS.readFileSync('./elite/lastcheck.tsave','utf8'))+86400000) EliteDangerous.downloadData();
     if(speaking.bitfield == 1) {}
     else if(speaking.bitfield == 0) {}
     else {}
@@ -299,6 +290,14 @@ setInterval(function() {
     selectedActivity++;
     if(selectedActivity == clientActivity.length) selectedActivity = 0;
 }, 20000);
+
+setInterval(function() {
+
+    //gestionnaire des téléchargement auto
+
+    if(Date.now() >= Number.parseInt(FS.readFileSync('./elite/lastcheck.tsave','utf8'))+86400000) EliteDangerous.downloadData(); // 86400000ms = 24h
+    
+},60000);
 
 try
 {
