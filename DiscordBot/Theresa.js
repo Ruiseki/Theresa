@@ -8,7 +8,7 @@ module.exports = class About
 
 
 
-    static cmd(servers,command,client,message,args,VodkaGirlz,Audio)
+    static cmd(servers,command,client,message,args,Audio)
     {
         if(command === 'join') this.join(message);
         else if(command === 'leave') this.leave(servers,message,Audio);
@@ -16,8 +16,6 @@ module.exports = class About
         else if(command === 'moveuser' || command === 'm') this.moveAllUser(args,message); // --> help
         else if(command === 'me') this.me(message);
         else if(command === 'devreport') this.DevReport(message);
-        else if(command === 'bully') this.bully(message,VodkaGirlz);
-        else if(command === 'bullyresponseone') this.bullyResponseOne(message);  
 
         else if(command === 'rec' || command == 'recall') this.recallPing(servers,message,args);
         else if(command === 'recv' || command == 'recallvoice') this.recallVoicePing(servers,message,args); // --> help
@@ -556,8 +554,6 @@ module.exports = class About
                 leave:false,
                 arret:false,
                 restart:false,
-                // enableVodkaGirlz:false,
-                // VodkaGirlzIsPlaying:false 
             },
             elite:{
                 downloading:false,
@@ -645,17 +641,6 @@ module.exports = class About
         server.audio.leave=true,server.audio.restart=false;
         if(server.audio.Engine != undefined) server.audio.Engine.end();
         message.guild.me.voice.channel.leave();
-    }
-
-    static bully(message,VodkaGirlz)
-    {
-        message.delete();
-        message.channel.send(`<@!${VodkaGirlz.user.id}> Rozaliya and Liliya are sooooo useless...`);
-    }
-
-    static bullyResponseOne(message)
-    {
-        message.delete();
     }
 
     static leaveServer(message)
