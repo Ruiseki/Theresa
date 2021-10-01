@@ -17,7 +17,7 @@ const Test = require('./lucieTest.js');
     Help = require('./help.js'),
     YouTubeMgr = require('./YouTubeMgr.js'),
     EliteDangerous = require('./eliteDangerous.js'),
-    Test = require('./lucieTest');
+    TestL = require('./lucieTest');
 
 
 const client = new Discord.Client();
@@ -45,8 +45,9 @@ client.once('ready', () => {
     getUser(Krauhos,'407160503912103937');
     getUser(Ruiseki,'606684737611759628');
 
-    // démarrage et restauration des sauvegardes
-
+    // moving data from ROM to RAM
+    // Restart some services
+    // Check folder
     Theresa.boot(client,servers)
 
     console.log(`### Online`);
@@ -209,7 +210,7 @@ client.on('message', message => { // Will be executed when a message is emit
 
     if(type == 'enter' || type == 'e')
     {
-        Test.randomnum(command, message);
+        TestL.randomnum(command, message);
         return;
     }
 

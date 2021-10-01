@@ -981,7 +981,7 @@ module.exports = class Audio
 
     static log(message,command,args)
     {
-        console.log(`-> ${command} <- executed by ${message.author.username}. Argument : ${args}`);
+        console.log(`In "Audio" -> ${command} <- executed by ${message.author.username}. Argument : ${args}`);
     }
 
     static error(message,type,text)
