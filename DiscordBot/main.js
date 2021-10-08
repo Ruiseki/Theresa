@@ -17,8 +17,7 @@ const Audio2 = require('./audiov2.js'),
     Help = require('./help.js'),
     YouTubeMgr = require('./YouTubeMgr.js'),
     EliteDangerous = require('./customServices/veritasKingdom/eliteDangerous.js'),
-    CodingFactory = require('./customServices/codingFactory/coding.js'),
-    TestL = require('./lucieTest');
+    CodingFactory = require('./customServices/codingFactory/coding.js');
 
 
 const client = new Discord.Client();
@@ -224,12 +223,6 @@ client.on('message', message => { // Will be executed when a message is emit
     }
     
     // ---------- TEST AREA ----------
-
-    else if(type == 'enter' || type == 'e')
-    {
-        TestL.cmd(message, command, newArgs);
-        return;
-    }
 
     //---------- ---------- ----------
 
