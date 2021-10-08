@@ -59,6 +59,10 @@ module.exports = class EliteDangerous {
                 .then(text => FS.writeFileSync(`./elite/${type[i]}`,text))
                 .then(() => {
                     console.log(`### Downloaded ${type[i]}`);
+                    if(i == type.length-1)
+                    {
+                        console.log('### Download completed');   
+                    }
                     
                     if(type[i].substring(type[i].length-4) == 'json' && type[i] != 'systems_populated.json' && type[i] != 'stations.json')
                     {
@@ -75,6 +79,10 @@ module.exports = class EliteDangerous {
             catch(error)
             {
                 console.log(`### Download failed -> ${type[i]}`);
+                if(i == type.length-1)
+                {
+                    console.log('### Download completed');   
+                }
                 console.log(error);
             }
         }

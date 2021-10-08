@@ -9,14 +9,15 @@ const Discord = require('discord.js'),  // Discord libraries
 
 
 const Audio = require('./audio.js'); // departed
-const Test = require('./lucieTest.js');
-    Audio2 = require('./audiov2.js'),
+
+const Audio2 = require('./audiov2.js'),
     Tools = require('./tools.js'),
     RP = require('./rp.js'),
     Theresa = require('./Theresa.js'),
     Help = require('./help.js'),
     YouTubeMgr = require('./YouTubeMgr.js'),
-    EliteDangerous = require('./eliteDangerous.js'),
+    EliteDangerous = require('./customServices/veritasKingdom/eliteDangerous.js'),
+    CodingFactory = require('./customServices/codingFactory/coding.js'),
     TestL = require('./lucieTest');
 
 
@@ -79,7 +80,7 @@ client.on('presenceUpdate',(oldStatus,newStatus) => { // Wiil be executed when a
     if(member.id === AlphaDragons.user.id) AlphaDragons.user.presence.status = newStatus.status;
     if(member.id === Krauhos.user.id) Krauhos.user.presence.status = newStatus.status;
 
-    if(oldStatus)
+    /* if(oldStatus)
     {
         if(oldStatus.status === 'offline' && newStatus.status !== 'offline' && member.id === Ruiseki.user.id)
         {
@@ -108,7 +109,7 @@ client.on('presenceUpdate',(oldStatus,newStatus) => { // Wiil be executed when a
             AlphaDragons.user.send(embed);
             Ruiseki.user.send(embed);
         }
-    }
+    } */
 });
 
 client.on('message', message => { // Will be executed when a message is emit
@@ -150,6 +151,16 @@ client.on('message', message => { // Will be executed when a message is emit
         +` I'm ready to serv you. Send **t!help** to view all my command !`);
     }
     
+
+    /* 
+        ----- TEST AREA -----
+
+    */
+    if(message.guild != null && message.guild.id == '889416369567834112') CodingFactory.checkWord(message);
+    /*
+        ---------------------    
+    */
+
     
     if(!message.content.startsWith(prefix)) return; // if the message doesnt start with the prefix, exit. The reste of the code is for the commands
     
@@ -200,15 +211,21 @@ client.on('message', message => { // Will be executed when a message is emit
         return;
     }
 
-    if(type == 'ed' || type == 'elite '|| type == 'elitedangerous')
+    else if(type == 'ed' || type == 'elite '|| type == 'elitedangerous')
     {
         EliteDangerous.cmd(servers[message.guild.id],message,command,newArgs);
         return;
     }
+
+    else if(type == 'c' || type == 'code' || type == 'coding')
+    {
+        CodingFactory.cmd(servers[message.guild.id],message,command,newArgs);
+        return; 
+    }
     
     // ---------- TEST AREA ----------
 
-    if(type == 'enter' || type == 'e')
+    else if(type == 'enter' || type == 'e')
     {
         TestL.randomnum(command, message);
         return;

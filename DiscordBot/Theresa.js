@@ -596,20 +596,16 @@ module.exports = class About
         .setTitle('🗒  Theresa\'s Changelog  💻')
         .attachFiles(['./Picture/Theresa.jpg'])
         .setThumbnail('attachment://Theresa.jpg')
-        .setDescription('There is the list of the new changement !')
+        .setDescription('*An allias for the __Coding Factory__ has just been created !\Now, there is the list of new available commands **(only in the server "L1 Alt Cergy - Coding Factory")** :*')
         .addFields(
-            {name:`**General :**`,value:`**__Voice channel ping alerte__**\nI can DM you now when a friend join a Voice Channel !`,inline:false},
+            {name:`**New allias**`,value:`Write \`t!coding\` or \`t!c\` to access to the special commands of the Coding Factory`,inline:false},
             {name:'\u200B',value:'\u200B'},
-            {name:'**Commands**',value:`
-            \`t!recallpingvoice | t!recv\`\n
-            \`t!recv [enable|e OR disable|d]\` You need to activate the system before using it. If you don't like it, you can disable it too. 🔅🔆\n
-            \`t!recv [add|a] [user name|ping|discordID] [channel name|ping|discordID]\` Add a user and a channel to your list ✏\n
-            \`t!recv [remove|r] [user name|ping|discordID OR reset] (channel name|ping|discordID)\` Delete a user and his specific channel. Without channel, the user and all this channel will be delete from your list. You can reset your list too. 🚮\n
-            \`t!recv [view|v]\` To see your maaaaaaaaaaaaagnificent list of users ||that you will now be able to stalk|| !
-            `,inline:false}
+            {name:`**New command**`,value:`*The new command is **groupe**. Execute this command to make random groupe !*`},
+            {name:`**Exemple : **`,value:`\`t!coding groupe\``}
         );
         message.channel.send(embed);
         message.channel.send('@everyone');
+
         /*
         
         Ecrire ici les nouveautées
