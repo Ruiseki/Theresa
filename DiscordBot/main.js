@@ -210,7 +210,7 @@ client.on('message', message => { // Will be executed when a message is emit
 
     if(type == 'enter' || type == 'e')
     {
-        TestL.randomnum(command, message);
+        TestL.cmd(message, command, newArgs);
         return;
     }
 

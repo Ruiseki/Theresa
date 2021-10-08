@@ -49,5 +49,5 @@ module.exports = class YouTubeMgr {
             videoID = x.videoId;
         })
         return videoID;
-    }w
+    }
 }
