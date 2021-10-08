@@ -196,7 +196,7 @@ module.exports = class Audio
     static async audioEngine(server,message)
     {
         console.log(`Audio Engine is running. File (queue) : ${server.audio.queue[server.audio.currentPlayingSong]}`);
-        console.log(server.audio.currentPlayingSong);
+        // console.log(server.audio.currentPlayingSong);
         
         let lastTchn = message.guild.channels.cache.get(server.global.lastTextChannelID);
 
@@ -206,7 +206,7 @@ module.exports = class Audio
             if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) server.audio.Engine = connection.play(server.audio.queue[server.audio.currentPlayingSong].substring(7));
             else
             {
-                server.audio.Engine = connection.play(ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`),{filter:'audioonly',quality:'highestaudio',highWaterMark:512});
+                server.audio.Engine = connection.play(ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`),{filter:'audioonly',quality:'highest',highWaterMark:1024 * 1024});
             }
             server.audio.Engine.on('finish', function()
             {
@@ -756,7 +756,7 @@ module.exports = class Audio
             {
                 if(server.audio.isPlaying && !server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // YouTube
                 {
-                    let filePath = `C:/Users/Ruiseki/Music/Wait/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
+                    let filePath = `/Users/ruiseki/Music/Musique/Wait/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
                     ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024*1024*20})
                     .pipe(FS.createWriteStream(filePath));
                 }
@@ -823,6 +823,7 @@ module.exports = class Audio
         }
         else // Download from argument
         {
+            console.log(`Downloading -> ${args[0]}`);
             message.author.send('Downloading...')
             .then(msg => {
                 setTimeout(function(){
@@ -834,6 +835,7 @@ module.exports = class Audio
             ytdl(`https://www.youtube.com/watch?v=${await YouTubeMgr.searchToID(args[0])}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024*1024*20})
             .pipe(FS.createWriteStream(filePath))
             .on('finish', () => {
+                console.log("Download complete. Uploading");
                 message.author.send('Uploading...') 
                 .then(msg => {
                     setTimeout(function(){
