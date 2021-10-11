@@ -8,6 +8,7 @@ const Tools = require('./tools.js')
 
 var musicDirectory=[];
 musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/\r\n/);
+console.log(musicDirectory);
 
 module.exports = class Audio
 {
