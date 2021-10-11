@@ -11,7 +11,8 @@ module.exports = class Coding {
         else  */if (command == 'groupe') this.makeRandomGroupe(message)
     }
 
-    static checkWord(message) {
+    static checkWord(message)
+    {
         let mots = message.content.split(/ +/);
         let forbidenWords = [
             "censure",
@@ -95,7 +96,7 @@ module.exports = class Coding {
 
     static editGroupe()
     {
-
+        JSON.stringify
     }
 
     static test()
