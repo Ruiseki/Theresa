@@ -206,7 +206,7 @@ module.exports = class Audio
             if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) server.audio.Engine = connection.play(server.audio.queue[server.audio.currentPlayingSong].substring(7));
             else
             {
-                server.audio.Engine = connection.play(ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`),{filter:'audioonly',quality:'highest',highWaterMark:1024 * 1024});
+                server.audio.Engine = connection.play(ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`),{filter:'audioonly',quality:'highest',highWaterMark:1024});
             }
             server.audio.Engine.on('finish', function()
             {
@@ -757,7 +757,7 @@ module.exports = class Audio
                 if(server.audio.isPlaying && !server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // YouTube
                 {
                     let filePath = `/Users/ruiseki/Music/Musique/Wait/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
-                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024*1024*20})
+                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
                     .pipe(FS.createWriteStream(filePath));
                 }
                 else if(!server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) message.author.send(message,3,'You already have this goshujin-sama~'); // Local
@@ -773,7 +773,7 @@ module.exports = class Audio
                         },120000);
                     });
                     let filePath = `./audio/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
-                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024*1024*20})
+                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024})
                     .pipe(FS.createWriteStream(filePath))
                     .on('finish', () => {
                         message.author.send('Uploading...')
@@ -832,7 +832,7 @@ module.exports = class Audio
             });
             
             let filePath = `./audio/${await YouTubeMgr.searchToTitle(args[0])}.mp3`;
-            ytdl(`https://www.youtube.com/watch?v=${await YouTubeMgr.searchToID(args[0])}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024*1024*20})
+            ytdl(`https://www.youtube.com/watch?v=${await YouTubeMgr.searchToID(args[0])}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
             .pipe(FS.createWriteStream(filePath))
             .on('finish', () => {
                 console.log("Download complete. Uploading");
