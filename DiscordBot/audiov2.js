@@ -7,7 +7,7 @@ const YouTubeMgr = require('./YouTubeMgr.js');
 const Tools = require('./tools.js')
 
 var musicDirectory=[];
-musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/\r\n/);
+musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/\n/);
 console.log(musicDirectory);
 
 module.exports = class Audio
@@ -31,7 +31,7 @@ module.exports = class Audio
     {
         /*
         
-        complete commande exemple : t!a World is mine >>1
+        complete commandex exemple : t!a World is mine >>1
         this command is special. They are no "command". The command variable contain the first word of the music.
         This isn't arranged like this for the other commands.
         
