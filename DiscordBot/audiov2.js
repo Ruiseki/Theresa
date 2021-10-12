@@ -7,8 +7,7 @@ const YouTubeMgr = require('./YouTubeMgr.js');
 const Tools = require('./tools.js')
 
 var musicDirectory=[];
-musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/\n/);
-console.log(musicDirectory);
+musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/ +/);
 
 module.exports = class Audio
 {
@@ -745,7 +744,7 @@ module.exports = class Audio
     {
         this.log(message,command,args);
 
-        if(!args[0]) // Download from the queue
+        if(!args[0]) // Download from the current song
         {
             if(!server.audio.queue[0])
             {
@@ -755,9 +754,16 @@ module.exports = class Audio
 
             if(message.author.id == '606684737611759628') // If it's from the server (from Ruiseki)
             {
+                let videoTitle = await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong]);
+                
+                videoTitle = videoTitle.split(/\//);
+                videoTitle = videoTitle.join(" ");
+                videoTitle = videoTitle.split(/\\/);
+                videoTitle = videoTitle.join(" ");
+
                 if(server.audio.isPlaying && !server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // YouTube
                 {
-                    let filePath = `/Users/ruiseki/Music/Musique/Wait/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
+                    let filePath = `/Users/ruiseki/Music/Wait/${videoTitle}.mp3`;
                     ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
                     .pipe(FS.createWriteStream(filePath));
                 }
@@ -824,16 +830,25 @@ module.exports = class Audio
         }
         else // Download from argument
         {
-            console.log(`Downloading -> ${args[0]}`);
+            let videoID = await YouTubeMgr.searchToID(args.join(" ")),
+            videoTitle = await YouTubeMgr.searchToTitle(videoID);
+
+            videoTitle = videoTitle.split(/\//);
+            videoTitle = videoTitle.join(" ");
+            videoTitle = videoTitle.split(/\\/);
+            videoTitle = videoTitle.join(" ");
+
+            console.log(`Downloading -> ${videoTitle}`);
+            
             message.author.send('Downloading...')
             .then(msg => {
                 setTimeout(function(){
                     msg.delete();
                 },120000);
             });
-            
-            let filePath = `./audio/${await YouTubeMgr.searchToTitle(args[0])}.mp3`;
-            ytdl(`https://www.youtube.com/watch?v=${await YouTubeMgr.searchToID(args[0])}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
+
+            let filePath = `./audio/${videoTitle}.mp3`;
+            ytdl(`https://www.youtube.com/watch?v=${videoID}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
             .pipe(FS.createWriteStream(filePath))
             .on('finish', () => {
                 console.log("Download complete. Uploading");
@@ -844,7 +859,7 @@ module.exports = class Audio
                     },120000);
                 });
                 message.author.send({
-                    content: 'Uploading complete !',
+                    content: `**Music Title :** *${videoTitle}\nhttps://www.youtube.com/watch?v=${videoID}*`,
                     files: [{
                         attachment: filePath,
                         name: this.getNameFromPath(filePath,true)
