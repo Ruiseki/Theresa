@@ -206,7 +206,7 @@ module.exports = class Audio
             if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) server.audio.Engine = connection.play(server.audio.queue[server.audio.currentPlayingSong].substring(7));
             else
             {
-                server.audio.Engine = connection.play(ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`),{filter:'audioonly',quality:'highest',highWaterMark:1024});
+                server.audio.Engine = connection.play(ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`),{filter:'audioonly',quality:'highest',highWaterMark:1024 * 1024 * 20});
             }
             server.audio.Engine.on('finish', function()
             {
