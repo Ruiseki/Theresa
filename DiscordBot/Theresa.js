@@ -554,15 +554,6 @@ module.exports = class About
                 leave:false,
                 arret:false,
                 restart:false,
-            },
-            elite:{
-                downloading:false,
-                user:[],
-                userOption:[
-                    /*
-                    position:undefined,
-                    */
-                ],
             }
         };
     }

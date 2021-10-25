@@ -1,14 +1,17 @@
 const Tools = require('../../tools.js');
 const FS = require('fs');
-var groupeArray = [];
+const { group } = require('console');
+var groupArray = [];
 
 module.exports = class Coding {
     static cmd(server, message, command, args)
     {
         message.delete();
 
-        /* if(message.guild.id != '889416369567834112') return;
-        else  */if (command == 'groupe') this.makeRandomGroupe(message)
+        if(message.guild.id != '889416369567834112') return;
+        else if(command == 'groupe') this.sprintGroup(message);
+        else if(command == 'remane' || command == 'r') this.rename(message, args);
+        else if(command == 'test') this.test();
     }
 
     static checkWord(message)
@@ -47,7 +50,7 @@ module.exports = class Coding {
         }
     }
 
-    static makeRandomGroupe(message)
+    static sprintGroup(message)
     {
         let membersNameArray = [];
         message.guild.members.cache.each(member => {
@@ -67,54 +70,83 @@ module.exports = class Coding {
         membersNameArray = tabAlea;
         
         // ------------------------------------------------------------
-
+        // creating the object and the embed
+        
+        groupArray = [];
         let groupe = 0, text = "", arrayTemp = [];
         while (membersNameArray.length >= 4)
         {
             text += `**Groupe ${groupe + 1} : **\n`;
             arrayTemp = [];
-
-            for (let i = 0; i < 4; i++) {
-                arrayTemp[i] = membersNameArray[membersNameArray.length - 1];
+            
+            for(let i = 0; i < 4; i++)
+            {
+                arrayTemp.push(membersNameArray[0]);
                 text += `*${membersNameArray.shift()}*\n`;
             }
-            text += "\n";
-            this.generateStruct(groupeArray, groupe, `groupe${groupe+1}`, arrayTemp);
 
+            text += "\n";
+            let objectElement = {
+                name: `groupe${groupe+1}`,
+                users: arrayTemp
+            };
+            groupArray.push(objectElement);
+            
             groupe++;
         }
+
+        // ------------------------------------------------------------
+        // Deleting the old channels and create news
+
+    /*     groupArray.forEach((element, index) => {
+
+            if(index != groupArray.length-1) FS.appendFileSync('./customServices/codingFactory/channel.tlist',`${element.name}\n`);
+            else if(index == 0) FS.writeFileSync('./customServices/codingFactory/channel.tlist',`${element.name}\n`);
+            else FS.appendFileSync('./customServices/codingFactory/channel.tlist',`${element.name}`);
+
+            message.guild.channels.create(element.name);
+        });
+
+        FS.writeFileSync('./customServices/codingFactory/channel.tlist','');
+        FS.writeFileSync('./customServices/codingFactory/groupes.json',JSON.stringify(groupArray)); */
+        
+        // ------------------------------------------------------------
+
         message.channel.send(text);
     }
 
-    static generateStruct(object, index, name, users)
+    static rename(message, args)
     {
-        object[index] = {
-            name,
-            users
-        };
-    }
-
-    static editGroupe()
-    {
-        JSON.stringify
+        let userName = message.author.username;
+        for(let group of groupArray)
+        {
+            for(let userOfGroup of group)
+            {
+                if(userName == userOfGroup)
+                {
+                    let previousName = group.name,
+                    newName = args.join(' ');
+                }
+            }
+        }
     }
 
     static test()
     {
-        let args = [];
+        console.log(JSON.parse(FS.readFileSync('./customServices/codingFactory/groupes.json','utf-8')));
     }
 
     static judge(message)
     {
 
         message.channel.send(`Dear, here is the order of teams for the judgement, good luck to everyone !`);
-        arrayIndex= [groupeArray.length];
+        arrayIndex= [groupArray.length];
         x= Tools.getRandomInt(2);
 
-        for (let i = 0; i < groupeArray.length; i++)
+        for (let i = 0; i < groupArray.length; i++)
         {
-            message.channel.send(`Team : **${groupeArray[arrayIndex[x]].name}**`);
-            message.channel.send(`Team : **${groupeArray[arrayIndex[x]].users}**`);     
+            message.channel.send(`Team : **${groupArray[arrayIndex[x]].name}**`);
+            message.channel.send(`Team : **${groupArray[arrayIndex[x]].users}**`);     
         }
     }
 }
