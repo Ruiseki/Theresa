@@ -14,6 +14,7 @@ module.exports = class Audio
     static cmd(server,prefix,command,args,message)
     {
         message.delete();
+        server.audio.lastMusicTextChannelID = message.channel.id;
         
         if(command == undefined) ;
         else
@@ -196,13 +197,12 @@ module.exports = class Audio
     static async audioEngine(server,message)
     {
         console.log(`Audio Engine is running. File (queue) : ${server.audio.queue[server.audio.currentPlayingSong]}`);
-        // console.log(server.audio.currentPlayingSong);
-        
-        let lastTchn = message.guild.channels.cache.get(server.global.lastTextChannelID);
 
-        this.queueDisplay(server,lastTchn,16,true);
+        
+
+        this.queueDisplay(server,message,16,true);
         server.audio.isPlaying = true;
-        lastTchn.guild.me.voice.channel.join().then(connection => {
+        message.guild.me.voice.channel.join().then(connection => {
             if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) server.audio.Engine = connection.play(server.audio.queue[server.audio.currentPlayingSong].substring(7));
             else
             {
@@ -215,20 +215,20 @@ module.exports = class Audio
                 if(server.audio.arret) return;
                 else if(server.audio.loop)    
                 {
-                    Audio.audioEngine(server,lastTchn);
+                    Audio.audioEngine(server,message);
                 }
                 else if(server.audio.queueLoop)
                 {
                     if(!server.audio.queue[server.audio.currentPlayingSong+1]) server.audio.currentPlayingSong = 0;
                     else server.audio.currentPlayingSong++;
-                    Audio.audioEngine(server,lastTchn);
+                    Audio.audioEngine(server,message);
                 }
                 else
                 {
                     server.audio.currentPlayingSong++;
                     if(server.audio.queue[server.audio.currentPlayingSong])
                     {
-                        Audio.audioEngine(server,lastTchn);
+                        Audio.audioEngine(server,message);
                     }
                     else
                     {
@@ -621,6 +621,9 @@ module.exports = class Audio
     {
         let text;
 
+        // --------------------------------------------------------------------------------
+        // Indique the loop status in top of the queue
+
         text = `*Playing options :* `;
 
         if(!server.audio.loop && !server.audio.queueLoop && !server.audio.restart)
@@ -635,6 +638,9 @@ module.exports = class Audio
             text += '\n\n';
         }
 
+        // --------------------------------------------------------------------------------
+        // calculating the index of the first music to be displayed
+
         let startAt;
         if(server.audio.queue.length <= nbrOfMusicDisplayed) startAt = 0;
         else
@@ -642,6 +648,9 @@ module.exports = class Audio
             if(server.audio.currentPlayingSong <= nbrOfMusicDisplayed/2) startAt = 0;
             else startAt = server.audio.currentPlayingSong - nbrOfMusicDisplayed/2;
         }
+
+        // --------------------------------------------------------------------------------
+        // building the text of the queue
 
         for(let i=startAt; i < server.audio.queue.length; i++)
         {
@@ -677,6 +686,8 @@ module.exports = class Audio
             if(i-startAt == nbrOfMusicDisplayed-1) break;
         }
 
+        // --------------------------------------------------------------------------------
+        // Embed generator
 
         if(server.audio.queue[server.audio.currentPlayingSong] && server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]'))
         {
@@ -707,6 +718,8 @@ module.exports = class Audio
             .setThumbnail(`https://img.youtube.com/vi/${server.audio.queue[server.audio.currentPlayingSong]}/sddefault.jpg`);
         }
 
+        // --------------------------------------------------------------------------------
+
         if(server.audio.lastQueue.channelID != undefined)
         {
             let channel = message.guild.channels.cache.get(server.audio.lastQueue.channelID);
@@ -714,9 +727,10 @@ module.exports = class Audio
             .then(m => m.delete());
         }
 
-        let chn;
-        if(message.channel) chn = message.channel // Gived value : DiscordMessage or DiscordTextChannel
-        else chn = message;
+        // --------------------------------------------------------------------------------
+
+        let chn = message.guild.channels.cache.get(server.audio.lastMusicTextChannelID);
+        console.log(`Last channel for the queue : ${chn.name}`);
 
         if(isKeep)
         {

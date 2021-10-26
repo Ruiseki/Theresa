@@ -545,6 +545,7 @@ module.exports = class About
                     messageID:undefined,
                     channelID:undefined
                 },
+                lastMusicTextChannelID:undefined,
                 messageTemp:[],
                 currentPlayingSong:undefined,
                 isPlaying:false,
