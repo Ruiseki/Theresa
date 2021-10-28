@@ -23,17 +23,17 @@ sql.connect(function(err){
 });
 
 module.exports = class EliteDangerous {
-    static async cmd(server,message,command,args)
+    static async cmd(message,command,args)
     {
         message.delete();
 
         if(command == undefined);
         else
         {
-            if(command == 'faction' || command == 'f') this.faction(server,message,command,args);
+            if(command == 'faction' || command == 'f') this.faction(message,command,args);
 
             else if((command == 'update' || command == 'up') && message.author.id == '606684737611759628') await this.downloadData();
-            else if((command == 'test' || command == 't') && message.author.id == '606684737611759628') this.test(server,message,command,args);
+            else if((command == 'test' || command == 't') && message.author.id == '606684737611759628') this.test(message,command,args);
         }
     }
 
@@ -46,7 +46,7 @@ module.exports = class EliteDangerous {
         'commodities.json', // 3
         'modules.json', // 4
         'systems_populated.json',
-        'stations.json']
+        'stations.json'];
         let lien='https://eddb.io/archive/v6/';
         
         console.log('### Starting download (EDDB database)');
@@ -58,7 +58,6 @@ module.exports = class EliteDangerous {
                 .then(result => result.text())
                 .then(text => FS.writeFileSync(`./elite/${type[i]}`,text))
                 .then(() => {
-                    console.log(`### Downloaded ${type[i]}`);
                     if(i == type.length-1)
                     {
                         console.log('### Download completed');   
@@ -88,7 +87,7 @@ module.exports = class EliteDangerous {
         }
     }
     
-    static faction(server,message,command,args)
+    static faction(message,command,args)
     {
         factionName = args.join(' ').toLocalLowerCase();
 
@@ -178,7 +177,7 @@ module.exports = class EliteDangerous {
         });
     }
     
-    static test(server,message,command,args)
+    static test(message,command,args)
     {
         sql.query(`SELECT systems_recently.name FROM systems_recently WHERE systems_recently.name = 'Chimiri'`,function(err){
             if(err)

@@ -212,7 +212,7 @@ client.on('message', message => { // Will be executed when a message is emit
 
     else if(type == 'ed' || type == 'elite '|| type == 'elitedangerous')
     {
-        EliteDangerous.cmd(servers[message.guild.id],message,command,newArgs);
+        EliteDangerous.cmd(message,command,newArgs);
         return;
     }
 
