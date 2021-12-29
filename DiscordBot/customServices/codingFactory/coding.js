@@ -26,15 +26,14 @@ module.exports = class Coding {
             "poutine",
             "nazi",
             "gay",
-            "dictateur",
-            "pradish"
+            "dictateur"
         ];
 
         for (let mot of mots)
         {
             for (let forbidenWord of forbidenWords)
             {
-                if (mot.toLocaleLowerCase() == forbidenWord)
+                if (mot.toLocaleLowerCase() == forbidenWord || mot.toLocaleLowerCase().startsWith('pradi'))
                 {
                     console.log(`Forbiden word detected : ${mot}. Writed by ${message.author.username}`);
                     message.delete();
