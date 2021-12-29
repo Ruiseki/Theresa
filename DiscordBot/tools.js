@@ -1,33 +1,20 @@
+const Voice = require('@discordjs/voice');
 const shell = require('shelljs'),
     FS = require('fs'),
-    Discord = require('discord.js');
+    Discord = require('discord.js'),
+    ytdl = require('ytdl-core'),
+    YTSearch = require('yt-search');
 
 module.exports = class tools
 {
-    static cmd(server,command,message,args,client,Audio,Theresa)
+    static cmd(servers, command, message)
     {
-        if(command === 'clear') this.clear(server,message,args);
-        else if(command === 'cleardm') this.clearDM(client,message);
-        else if(command === 'rns' || command === 'restartnextsong') this.restartNextSong(server,message);
-        else if(command === 'restart' || command === 'r') this.restart(message,Theresa);
-        else if(command === 'logerror') this.logError(message);
+        if(command === 'logerror') this.logError(message);
         else if(command === 'log') this.log(message);
         else if(command === 'clearlogs') this.clearLogs(message);
 
-
-        else if(command === 'test' || command==='t') this.test(server,client,message,args,Audio);
-
-
         else return false;
         return true;
-    }
-
-    static async test(server,client,message,args,Audio)
-    {
-        console.log(`Test detected (${message.author.username})`);
-        if(message.author.id != '606684737611759628') return;
-        message.delete();
-
     }
 
     static getRandomInt(max)
@@ -44,87 +31,200 @@ module.exports = class tools
             currentDate = Date.now();
         } while (currentDate - date < milliseconds);
     }
-
-    static restartNextSong(server,message)
+    
+    static addIntoArray(element,place,array)
     {
-        message.delete();
-        console.log('### Theresa will restart after this music ###');
-        server.audio.restart=true;
+        for(let i=array.length; i >= place; i--) array[i] = array [i-1]
+        array[place] = element;
+        return array;
     }
 
-    static restart(message,Theresa)
+    static simpleEmbed(server,message,text)
     {
-        message.delete().then(() => {
-            console.log('### Theresa has restarted ###');
-            Theresa.savePlace(message);
-            shell.exec('pm2 restart main');
+        this.simpleEmbed(server,message,text,undefined,false,false,undefined);
+    }
+
+    static simpleEmbed(server,message,text,image,needThumbnail)
+    {
+        this.simpleEmbed(server,message,text,image,needThumbnail,false,undefined);
+    }
+    
+    static simpleEmbed(server,message,text,image,needThumbnail,willDelete,time)
+    {
+        if(needThumbnail)
+        {
+            let embed = new Discord.MessageEmbed()
+            .setDescription(text)
+            .setColor('#000000')
+            .setThumbnail('attachment://file.jpg');
+
+            let messageOption = {
+                    embeds: [embed],
+                    files: [image]
+                };
+
+            if(willDelete)
+            {
+                message.channel.send(messageOption).then(msg => {
+                    server.global.messageTemp.push(
+                        {
+                            messageId:msg.id,
+                            channelId:msg.channel.id
+                        }
+                    );
+                    this.serverSave(server);
+
+                    setTimeout(() => {
+                        for(let i=0; i < server.global.messageTemp.length; i++)
+                        {
+                            if(server.global.messageTemp[i].messageId == msg.id)
+                            {
+                                server.global.messageTemp.splice(i,1);
+                                msg.delete();
+                                this.serverSave(server);
+                                break;
+                            }
+                        }
+                    }, time)
+                });
+            }
+            else message.channel.send(messageOption);
+        }
+        else
+        {
+            let embed = new Discord.MessageEmbed()
+            .setColor('#000000')
+            .setDescription(text);
+
+            let messageOption = {
+                embeds: [embed]
+            };
+
+            if(willDelete)
+            {
+                message.channel.send(messageOption).then(msg => {
+                    let object = {
+                        messageId:msg.id,
+                        channelId:msg.channel.id
+                    };
+                    server.global.messageTemp.push(object);
+                    this.serverSave(server);
+
+                    setTimeout(() => {
+                        for(let i=0; i < server.global.messageTemp.length; i++)
+                        {
+                            if(server.global.messageTemp[i].messageId == msg.id)
+                            {
+                                server.global.messageTemp.splice(i,1);
+                                msg.delete();
+                                this.serverSave(server);
+                                break;
+                            }
+                        }
+                    }, time)
+                });
+            }
+            else message.channel.send(messageOption);
+        }
+    }
+
+    static findUserId(element,guild)
+    {
+        var id = undefined;
+        if(element.startsWith('<@!')) return element.substring(3,element.length-1);
+        else
+        {
+            if(guild.members.cache.get(element) != undefined) return element;
+            guild.members.cache.find(member => {
+                if(member.user.username == element) id=member.user.id
+            });
+            return id;
+        }
+    }
+
+    static findChannel(element,message) // return a channel. The function accepte the Id, a channel ping or the name.
+    {
+        var channel;
+        if(element.startsWith('<#'))
+        {
+            channel=message.guild.channels.cache.get(element.substring(2,element.length-1));
+            if(channel == undefined) return undefined;
+            else if(channel.type!='voice') return undefined;
+            return channel.id;
+        }
+        else if(element.length==18 && !Number.isNaN(element))
+        {
+            channel=message.guild.channels.cache.get(element);
+            if(channel==undefined) return undefined;
+            else if(channel.type!='voice') return undefined;
+            return channel.id;
+        }
+        else
+        {
+            message.guild.channels.cache.each(chn => {
+                    if(chn.name.toLocaleLowerCase().startsWith(element.toLocaleLowerCase()))
+                    {
+                        channel = chn;
+                    }
+                });
+            return channel;
+        }
+    }
+
+    static isElementPresentInArray(array, element)
+    {
+        let isPresent = false;
+        array.forEach(elementOfArray => {
+            if(elementOfArray === element) isPresent = true;
+            else isPresent = false;
         });
+        return isPresent;
     }
 
-    static async clearDM(client,message)
+    static serverSave(server)
     {
-        message.delete();
-        console.log(`command -cleardm detected. Executed by ${message.author.username}.`);
-        var DMchannel= await message.author.createDM();
-        DMchannel.messages.fetch({limit:100}).then(messages => {
-            var text=messages.filter(m => (m.author=client.user));
-            console.log(`${text.size} message(s) have been deleted`);
-            text.forEach(m => m.delete());
+        // if we do var data = servers[guild.id], data will be a reference to servers[guild.id]
+        // so we made backup to restor the data
+        let voiceConnectionBackup = server.global.voiceConnection;
+        let guildBackup = server.global.guild;
+        let engineBackup = server.audio.Engine;
+
+        server.global.voiceConnection = null;
+        server.global.guild = null;
+        server.audio.Engine = null;
+
+        FS.writeFileSync(`./Servers/${server.global.guildId}/${server.global.guildId}.json`, JSON.stringify(server));
+
+        server.global.voiceConnection = voiceConnectionBackup;
+        server.global.guild = guildBackup;
+        server.audio.Engine = engineBackup;
+    }
+
+    static serversBackup(servers, client)
+    {
+        client.guilds.cache.each(guild => {
+            let voiceConnectionBackup = servers[guild.id].global.voiceConnection;
+            let guildBackup = servers[guild.id].global.guild;
+            let engineBackup = servers[guild.id].audio.Engine;
+
+            servers[guild.id].global.voiceConnection = null;
+            servers[guild.id].global.guild = null;
+            servers[guild.id].audio.Engine = null;
+
+            FS.writeFileSync(`./Servers Backup/${guild.id}/${Date.now()}.json`, JSON.stringify(servers[guild.id]));
+
+            servers[guild.id].global.voiceConnection = voiceConnectionBackup;
+            servers[guild.id].global.guild = guildBackup;
+            servers[guild.id].audio.Engine = engineBackup;
         });
     }
     
-    static clear(server,message,args)
-    {
-        console.log(`command -clear detected. Executed by ${message.author.username}.`);
-        if(message.author.id != '606684737611759628') {message.channel.send('Only my creator can do that'); return;}
-        var nbr;
-        if(!args[0]) nbr=100;
-        else
-        {
-            nbr=Number.parseInt(args[0]);
-            if(Number.isNaN(nbr))
-            {
-                message.channel.send('[...]');
-                return;
-            }
-            nbr++;
-            if(nbr < 0) nbr*=-1;
-            if(nbr > 100) nbr=100;
-        }
-        var messagesImposteur=new Discord.MessageManager(message.channel);
-        messagesImposteur.cacheType=message.channel.messages.cacheType;
-        message.channel.messages.fetch({limit:nbr}).then(messages => {
-            var text=messages.filter(m => Date.now()-m.createdTimestamp<1209600000);
-            console.log(`${text.size} message(s) have been deleted`);
-            text.forEach(m => 
-                {
-                    if(server.audio.lastQueue.messageID != undefined) // speed
-                    {
-                        if(server.audio.lastQueue.messageID == m.id)
-                        {
-                            server.audio.lastQueue.messageID = undefined;
-                            server.audio.lastQueue.channelID = undefined;
-                        }
-                    }
-                    for(let i=0; i < server.audio.messageTemp.length; i++)
-                    {
-                        if(m.id == server.audio.messageTemp[i].messageID)
-                        {
-                            server.audio.messageTemp.splice(i,1);
-                        }
-                    }
-                    messagesImposteur.cache.set(`${m.id}`,m);
-                });
-            message.channel.bulkDelete(messagesImposteur.cache);
-        });
-    }
-
     static clearLogs(message)
     {
         message.delete();
         if(message.author.id !== '606684737611759628') return;
-        FS.writeFileSync(`../../.pm2/logs/main-error.log`,'');
-        FS.writeFileSync(`../../.pm2/logs/main-out.log`,'');
+        FS.writeFileSync(`c:/users/ruiseki/.pm2/logs/main-error.log`,'');
+        FS.writeFileSync(`c:/users/ruiseki/main-out.log`,'');
     }
 
     static logError(message)

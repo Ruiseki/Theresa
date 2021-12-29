@@ -98,7 +98,7 @@ module.exports = class Coding {
         // ------------------------------------------------------------
         // Deleting the old channels and create news
 
-    /*     groupArray.forEach((element, index) => {
+        groupArray.forEach((element, index) => {
 
             if(index != groupArray.length-1) FS.appendFileSync('./customServices/codingFactory/channel.tlist',`${element.name}\n`);
             else if(index == 0) FS.writeFileSync('./customServices/codingFactory/channel.tlist',`${element.name}\n`);
@@ -108,7 +108,7 @@ module.exports = class Coding {
         });
 
         FS.writeFileSync('./customServices/codingFactory/channel.tlist','');
-        FS.writeFileSync('./customServices/codingFactory/groupes.json',JSON.stringify(groupArray)); */
+        FS.writeFileSync('./customServices/codingFactory/groupes.json',JSON.stringify(groupArray));
         
         // ------------------------------------------------------------
 

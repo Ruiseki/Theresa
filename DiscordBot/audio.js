@@ -1,1181 +1,1044 @@
-const MusicDirectory = `../../Music/Musique/`;
-const MusicDirectoryOST = `../../Music/Musique/OST/`;
-const MusicDirectoryWait = `../../Music/Wait/`;
-
 const FS = require('fs');
-const ffmpeg = require('ffmpeg-static');
 const Discord = require('discord.js');
-const shell = require('shelljs');
+const Voice = require('@discordjs/voice');
 const NodeID3 = require('node-id3');
 const ytdl = require('ytdl-core');
 
-const Tools = require('./tools.js');
+const Theresa = require('./Theresa.js');
 const YouTubeMgr = require('./YouTubeMgr.js');
+const Tools = require('./tools.js');
+const { audio } = require('./help.js');
+
+var musicDirectory=[];
+musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/ +/);
 
 module.exports = class Audio
 {
-    static cmd(server,prefix,client,command,args,message,YouTubeMgr,VodkaGirlz,Theresa)
-    {
-        if(command === 'a' || command === 'audio') this.audio(server,prefix,command,client,message,args,YouTubeMgr,VodkaGirlz,Theresa);
-        else if(command === 'ap' || command === 'audiopause') this.audioPause(server,message); // --> help
-        else if(command === 'as' || command === 'audioskip') this.audioSkip(server,prefix,command,message,args,VodkaGirlz);
-        else if(command === 'aq' || command === 'audioqueue') this.audioqueue(server,message,YouTubeMgr,Theresa);
-        else if(command === 'ash' || command === 'audioshuffle') this.audioshuffle(server,message,client,VodkaGirlz,Theresa);
-        else if(command === 'aqm' || command === 'audioqueuemove') this.audioqueuemove(server,message,args,Theresa);
-        else if(command === 'aqw' || command === 'audioqueueswap') this.audioqueueswap(server,message,args,Theresa);
-        else if(command === 'aqs' || command === 'audioqueueshuffle') this.audioqueueshuffle(server,message,args,client,VodkaGirlz,Theresa);
-        else if(command === 'aqc' || command === 'audioqueueclear') this.audioqueueclear(server,message,Theresa);
-        else if(command === 'ad' || command === 'audiodelete') this.audiodelete(server,message,args,Theresa);
-        else if(command === 'ads' || command === 'audiodeleteselect') this.audiodeleteselect(server,message,args,Theresa);
-        else if(command === 'af' || command === 'audiofind') this.audiofind(server,prefix,command,message,Theresa);
-        else if(command === 'astop' || command === 'audiostop') this.stop(server,message,Theresa);
-        else if(command === 'aql' || command === 'audioloopqueue') this.audioloopqueue(server,message,Theresa);
-        else if(command === 'al' || command === 'audioloop') this.audioloop(server,message,Theresa);
-        else if(command === 'ar' || command === 'audioreplay') this.audioreplay(server,message,client,VodkaGirlz,Theresa);
-        else if(command === 'aly' || command === 'audiolyrics') this.audioLyrics(server,message);
-        else if(command === 'ac' || command === 'audiocurrent') this.audioCurrent(server,message);
-
-        //else if(command == 'adl' || command === 'audiodownload') this.audioDownload();
-
-        else if(command === 'apl' || command === 'audioplaylist') this.audioplaylist(server,message,args,client,VodkaGirlz,Theresa);
-        else if(command === 'pa' || command === 'playlistadd') this.playlistadd(server,prefix,command,message,args,Theresa);
-        else if(command === 'pr' || command === 'playlistremove') this.playlistremove(server,message,args,Theresa);
-        else if(command === 'pv' || command === 'playlistview') this.playlistview(server,message,args,Theresa);
-        else if(command === 'apl2') this.audioplaylist2(server,message,args,client,VodkaGirlz,Theresa)
-
-        else if(command === 'callroza') this.callRoza(server,message,args,VodkaGirlz);
-        else if(command === 'continueplayingtheresa') this.continueplayingtheresa(server,message,client,VodkaGirlz,Theresa);
-        else if(command === 'rozastartplaying') this.rozaStartPlaying(server,message,VodkaGirlz,Theresa);
-        else if(command === 'rozastopplaying') this.rozaStopPlaying(server,message,client,VodkaGirlz,Theresa);
-
-
-        else return false;
-        return true;
-    }
-
-    static audioplaylist2(server,message,args,client,VodkaGirlz,Theresa)
-    {
-        console.log(`command -audioplaylist detected. Executed by ${message.author.username}.`);
-        console.log();
-        if(!args[0])
-        {
-            
-        }
-        else if(args[0]==('play'||'p'))
-        {
-            if(!args[1])
-            {
-                message.channel.send('[...]');
-                return;
-            }
-            let result = this.findPlaylist(args[1]);
-            if(result.length==0)
-            {
-                message.channel.send(`No matching playlist`);
-                return;
-            }
-            else if(result.length>1)
-            {
-                message.channel.send(`You need to be more precise, some playlist start with the same word`);
-            }
-            let contain = FS.readFileSync(`./audio/playlist/${result[0]}`,'utf8').split(/\n/);
-            for(let music of contain) server.queue.push(music);
-
-            message.channel.send(`Playlist ${args[0]} added to the queue !`);
-
-            if(!server.isPlaying)
-            {
-                message.member.voice.channel.join();
-                this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-            }
-            this.queueEmbed(server,message.channel);
-            this.queueSave(server,message);
-        }
-        else if(args[0]==('add'||'a'))
-        {
-            
-        }
-        else if(args[0]==('remove'||'r'))
-        {
-            if(!args[1])
-            {
-                message.channel.send('[...]');
-                return;
-            }
-        }
-        else if(args[0]==('view'||'v'))
-        {
-            
-        }
-    }
-
-    static audioCurrent(server,message)                                                                                                                                                                                                                                                                      
+    static cmd(servers,prefix,command,args,message)
     {
         message.delete();
-        if(!server.queue[0]) {message.channel.send(`[...]`); return;}
-        if(this.findMusic(server.queue[0]).length == 1)
-        {
-            var tags=NodeID3.read(this.getPathOfMusic(server.queue[0])),
-            image={
-                attachment: tags.image.imageBuffer,
-                name: tags.title+'.jpg'
-            };
-            FS.writeFileSync('./audio/image.jpg',tags.image.imageBuffer);
-
-            
-            /*var avancemement=server.Engine.streamTime*100/server.Engine.totalStreamTime,
-            nmbrLigne=avancemement/15,
-            LignesRestantes=15-nmbrLigne;
-            nmbrLigne--;
-            var text="𝄞 ";
-            for(var i=0;i<=nmbrLigne;i++) text+="⏤";
-            text+="◯";
-            for(var i=0;i<=LignesRestantes;i++) text+="⏤";*/
-            //⏤◯𝄞
-
-
-            var embed=new Discord.MessageEmbed()
-            .setColor('#000000')
-            .attachFiles([`./audio/image.jpg`])
-            .setThumbnail(`attachment://image.jpg`)
-            .setTitle(`:notes:  **${tags.title}**  :notes:`)
-            .setDescription(`*${tags.artist}*`)
-            .addField('About :',`Album : ${tags.album}`,false);
-
-            message.channel.send(embed)
-            .then(FS.rm('./audio/image.jpg'));
-        }
-        else if(this.findMusic(server.queue[0]).length > 1)
-        {
-            message.channel.send(`[...]`);
-        }
+        servers[message.guild.id].audio.lastMusicTextchannelId = message.channel.id;
+        
+        if(command == undefined) ;
         else
         {
-            
+            if(command == 'queue' || command == 'q') this.queueMgr(servers,message,command,args);
+            else if(command == 'player' || command == 'p') this.engineMgr(servers,message,command,args);
+            else if(command == 'miscellaneous' || command == 'm') this.miscellaneous(servers,message,command,args);
+            else if(command == 'download' || command == 'dl') this.download(servers,message,command,args);
+            else this.audioMaster(servers,message,command,args);
         }
-        
-        /*var embed = new Discord.MessageEmbed
-        .setColor('#000000')
-        .setTitle(``);*/
-
-        //message.channel.send(embed);
     }
-    
-    static async audio(server,prefix,command,client,message,args,YouTubeMgr,VodkaGirlz,Theresa)
+
+    static async audioMaster(servers,message,command,args)
     {
-        var freeadd=0;
-        var isOnPC=true;
-        console.log(`command -audio detected. Executed by ${message.author.username}.`);
-        message.delete();
-        if(message.author.id === VodkaGirlz.id) waitingRoza=false;
+        let server = servers[message.guild.id]
+        /*
+        
+        complete commande exemple : t!a World is mine >>1
+        this command is special. They are no "command". The command variable contain the first word of the music.
+        This isn't arranged like this for the other commands.
+        
+        POV :
+
+        queuePos : user view
+        currentPlayingSong : array view
+        (user view = 1 is the first. array view = 0 is the first)
+
+        */
+
+        let music = command,
+        queuePos = undefined;
+        
         if(!message.member.voice.channel)
         {
-            message.channel.send(`It's ok, please connect yourselft in a vocal channel, retry the command and we are good for the music !`);
+            this.error(server,message,3,"Please connect yourselft in a voice channel first");
             return;
         }
-        
-        if(!args[0])
-        {
-            if(server.queue[0] && server.Engine != undefined)
-            {
-                server.Engine.resume();
-                return;
-            }
-            if(!server.queue[0]) message.channel.send('[...]');
-            else this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa)
-            return;
-        }
-        if(args[args.length-1].startsWith('>>')) freeadd=args[args.length-1].substring(2);
-        
-        var musicName = message.content.substring(prefix.length + command.length + 1);
-        if(freeadd!==0)
-        {
-            console.log(`-audio parameter >>${freeadd}`);
-            var finder;
-            for(var i=0;finder!=='>';i++)
-            {
-                finder=musicName[i];
-                if(finder=='>') musicName=musicName.substring(0,i-1);
-            }
-        }
-        
-        if(this.getPathOfMusic(musicName) == '[---]')
-        {
-            var musicTab = this.findMusic(musicName);
-            if(musicTab.length == 1)
-            {
-                musicName = musicTab[0].substring(0, musicTab[0].length - 4);
-            }
-            else if(musicTab.length > 1)
-            {
-                message.channel.send(`I need to have more precision about the title of the music. There is some music that begins with this word.`);
-                var findFile=message.content.substring(prefix.length + command.length + 1);
-                var audioFiles = this.findMusic(findFile);
-                this.audioFilesEmbed(message.channel,audioFiles);
-                
-                return;
-            }
-            else if(VodkaGirlz.user.presence.status === 'online' && server.enableVodkaGirlz)
-            {
-                isOnPC=false;
-            }
-            else
-            {
-                isOnPC=false;
-            }
-        }
-        
-        if(freeadd==0) server.queue.push(musicName);
-        else
-        {
-            var tab=[];
-            if(freeadd > server.queue.length) freeadd=server.queue.length;
-            for(var i=0;i<freeadd;i++) tab.push(server.queue[i]);
-            tab.push(musicName);
-            for(var i=freeadd;i<server.queue.length;i++) tab.push(server.queue[i]);
-            server.queue=tab;
-        }
-        
-        if(isOnPC)
-        {
-            var tags=NodeID3.read(this.getPathOfMusic(musicName));
-            if(tags.title === undefined)
-            {
-                if(!server.queue[1]) {message.channel.send(`*User ${message.author.username} have requested "${musicName}"*\nHai hai~~ ! Next song is : "*${musicName}*".`);}
-                else message.channel.send(`*User ${message.author.username} have requested "${musicName}"*\nHai hai~~ ! Added "*${musicName}*" to the queue.`);
-            }
-            else
-            {
-                if(!server.queue[1]) {message.channel.send(`*User ${message.author.username} have requested "${musicName}"*\nHai hai~~ ! Next song is : "*${tags.title}*".`);}
-                else message.channel.send(`*User ${message.author.username} have requested "${musicName}"*\nHai hai~~ ! Added "*${tags.title}*" to the queue.`);
-            }
-        }
-        else
-        {
-            var title = await YouTubeMgr.searchToTitle(musicName);
-            if(title == undefined)
-            {
-                message.channel.send(`[...]`);
-                return;
-            }
-            if(!server.queue[1]) {message.channel.send(`*User ${message.author.username} have requested "${musicName}"*\nHai hai~~ ! Next song is : "*${title}*".`);}
-            else message.channel.send(`*User ${message.author.username} have requested "${musicName}"*\nHai hai~~ ! Added "*${title}*" to the queue.`);
-        }
-        
-        
-        console.log(`added to queue : ${musicName}`);
-        
-        message.member.voice.channel.join();
-        
-        if(server.queue[1] == undefined)
-        {
-            this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-        }
-        else
-        {
-            this.queueSave(server,message);
-            Theresa.savePlace(message);
-        }
-    }
-    
-    static audioPause(server,message)
-    {
-        message.delete();
-        if(server.Engine == undefined) return;
-        else if(server.pause)
-        {
-            server.pause = false;
-            server.Engine.resume();
-        }
-        else
-        {
-            server.pause = true;
-            server.Engine.pause();
-        }
-    }
 
-    static async audioSkip(server,prefix,command,message,args,VodkaGirlz)
-    {
-        console.log(`command -audioskip detected. Executed by ${message.author.username}.`);
-        message.delete();
-        if(!args[0] && server.VodkaGirlzIsPlaying) message.channel.send('v!s');
-        else if(!args[0] && server.isPlaying) server.Engine.end();
-        else if(args[0].startsWith('>>'))
+        if(args[0])
         {
-            if(args[0] === '>>>to')
+            while(args[0])
             {
-                console.log('-audioskip parameter : >>>to');
-                var musics=this.findMusic(message.content.substring(prefix.length + command.length + 7));
-                if(musics.length == 0) //a tester
+                if(args[0].startsWith('>>'))
                 {
-                    for(var i=0;i<server.queue.length;i++)
+                    if(args[0].substring(2) == 'current' || args[0].substring(2) == 'c')
                     {
-                        if(this.findMusic(server.queue[i]).length == 1) continue;
-                        else
+                        if(server.audio.Engine == null)
                         {
-                            var title = await YouTubeMgr.searchToTitle(args[1]);
-                            if(title == undefined)
-                            {
-                                message.channel.send(`[...]`);
-                                return;
-                            }
-                            if(server.queue[i] == title)
-                            {
-                                server.queue.splice(i,0);
-                            }
-                            else continue;
+                            this.error(server,message,3,'There is no current song');
+                            return;
+                        }
+                        if(server.audio.currentPlayingSong) queuePos = server.audio.currentPlayingSong+1;
+                        else queuePos = 1;
+                    }
+                    else if(args[0].substring(2) == 'after' || args[0].substring(2) == 'aft')
+                    {
+                        if(server.audio.currentPlayingSong != null) queuePos = server.audio.currentPlayingSong+2;
+                    }
+                    else if(Number.isNaN(args[0].substring(2)))
+                    {
+                        this.error(server,message,0,'Expected value : integer');
+                        return;
+                    }
+                    else queuePos = args[0].substring(2);
+                    break;
+                }
+                else
+                {
+                    music += ' '+args.shift();
+                }
+            }
+        }
+        if(server.audio.queue.length == 0) queuePos = 1;
+        else if(queuePos == undefined) queuePos = server.audio.queue.length+1;
+
+        // Adding music
+        let array = this.getPathOfFile(music,musicDirectory);
+        if(array == undefined) // YouTube
+        {
+            let videoID = await YouTubeMgr.searchToID(music),
+            title = await YouTubeMgr.IdToTitle(videoID),
+            URL = await YouTubeMgr.IdToURL(videoID),
+            text = `**${title}**  :notes:\n*__${URL}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
+            console.log(title);
+
+            let embed = new Discord.MessageEmbed()
+            .setDescription(text)
+            .setColor('#000000')
+            .setThumbnail(`https://img.youtube.com/vi/${videoID}/sddefault.jpg`);
+
+            message.channel.send({embeds :[embed]}).then(msg => {
+                let object = {
+                    messageId:msg.id,
+                    channelId:msg.channel.id
+                };
+                server.global.messageTemp.push(object);
+                Tools.serverSave(server);
+
+                setTimeout(() => {
+                    for(let i=0; i < server.global.messageTemp.length; i++)
+                    {
+                        if(server.global.messageTemp[i].messageId == msg.id)
+                        {
+                            server.global.messageTemp.splice(i,1);
+                            msg.delete();
+                            Tools.serverSave(server);
+                            break;
                         }
                     }
-                    return;
-                }
-                else if(musics.length != 1)
-                {
-                    message.channel.send(`I need to have more precision about the title of the music. There is some music that begins with this word.`);
-                    this.audioFilesEmbed(message.channel,musics);
-                    return;
-                }
-                musics[0]=musics[0].substring(0,musics[0].length-4);
-                for(var i=0;i<server.queue.length;i++)
-                {
-                    if(server.queue[i] === musics[0])
-                    {
-                        server.queue.splice(0,i-1);
-                        server.queueDisplayBool = true;
-                        server.Engine.end();
-                        continue;
-                    }
-                }
-            }
-            else //>>'nom de la musique'
-            {
-                var musicName = message.content.substring(prefix.length + command.length + 3);
-                console.log(`-audioskip parameter : >>${musicName}`);
-                if(this.getPathOfMusic(musicName) == '[---]')
-                {
-                    var musics=this.findMusic(musicName);
-                    if(musics.length == 0)
-                    {
-                        message.channel.send(`No music was founded. You need to verify if VodkaGirlz are here Ruiseki-sama.`)
-                        return;
-                    }
-                    else if(musics.length != 1)
-                    {
-                        message.channel.send(`I need to have more precision about the title of the music. There is some music that begins with this word.`);
-                        this.audioFilesEmbed(message.channel,musics);
-                        return;
-                    }
-                    musicName=musics[0].substring(0,musics[0].length-4);
-                }
-                var tab=[];
-                tab.push(server.queue[0]);
-                tab.push(musicName);
-                for(var i=1;i<server.queue.length;i++) tab.push(server.queue[i]);
-                server.queue.splice(0,server.queue.length);
-                for(var music of tab) server.queue.push(music);
-                server.queueDisplayBool=true;
-                server.Engine.end();
-            }
-        }
-        else if(args[0] && server.isPlaying)
-        {
-            var a=Number.parseInt(args[0]);
-            if(Number.isNaN(a) === true) {message.channel.send('[...]'); return;}
-            if(a>=1 && a<server.queue.length) server.queue.splice(0,a-1);
-            server.queueDisplayBool = true;
-            server.Engine.end();
-        }
-        else if(!server.isPlaying && VodkaGirlz.user.presence.status === 'online')
-        {
-            console.log('Rozaliya');
-            server.queue.shift();
-            message.channel.send('v!p');
-        }
-        else
-        {
-            message.channel.send(`There is nothing to skip~`);
-        }
-    }
-
-    static audioqueue(server,message,YouTubeMgr,Theresa)
-    {
-        message.delete();
-        Theresa.savePlace(message);
-        console.log(`command -audioqueue detected. Executed by ${message.author.username}.`);
-        if(server.queue[0]) this.queueEmbed(server,message.channel);
-        else message.channel.send(`There is no queue !`);
-    }
-
-    static audioshuffle(server,message,client,VodkaGirlz,Theresa)
-    {
-        message.delete();
-        console.log(`command -audioshuffle detected. Executed by ${message.author.username}.`);
-        message.channel.send(`*${message.author.username}* have requested a shuffle play !`);
-        var audioFiles = [];
-        var allMusicTab = FS.readdirSync(MusicDirectory);
-        var allMusicOST = FS.readdirSync(MusicDirectoryOST);
-        var allMusicWait = FS.readdirSync(MusicDirectoryWait);
-
-        for(var music of allMusicTab)
-        {
-            if((music.substring(music.length-4) === '.mp3') || (music.substring(music.length-4) === '.wav'))
-            {
-                music = music.substring(0,music.length-4);
-                audioFiles.push(music);
-            }
-        }
-        for(var music of allMusicOST)
-        {
-            if((music.substring(music.length-4) === '.mp3') || (music.substring(music.length-4) === '.wav'))
-            {
-                music = music.substring(0,music.length-4);
-                audioFiles.push(music);
-            }
-        }
-        for(var music of allMusicWait)
-        {
-            if((music.substring(music.length-4) === '.mp3') || (music.substring(music.length-4) === '.wav'))
-            {
-                music = music.substring(0,music.length-4);
-                audioFiles.push(music);
-            }
-        }
-
-        var indiceAlea;
-        for(var i=audioFiles.length;i>0;i--)
-        {
-            indiceAlea = Tools.getRandomInt(audioFiles.length-1);
-            server.queue.push(audioFiles[indiceAlea]);
-            audioFiles.splice(indiceAlea,1);
-        }
-        
-        if(!server.isPlaying)
-        {
-            message.member.voice.channel.join();
-            this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-        }
-        else this.queueSave(server,message);
-        this.queueEmbed(server,message.channel);
-    }
-
-    static audioqueueshuffle(server,message,args,client,VodkaGirlz,Theresa)
-    {
-        console.log(`command -audioqueue detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        var tabAlea = [];
-        var tab = [];
-        if(args[0] === 'p' || args[0] === 'play')
-        {
-            for(var music of server.queue) tab.push(music);
-            tab.shift();
-            while(tab[0])
-            {
-                var indiceAlea = Tools.getRandomInt(tab.length-1);
-                tabAlea.push(tab[indiceAlea]);
-                tab.splice(indiceAlea,1);
-            }
-            for(var i=0;i<tabAlea.length;i++) server.queue[i+1] = tabAlea[i];
-        }
-        else
-        {
-            while(server.queue[0])
-            {
-                var indiceAlea = Tools.getRandomInt(server.queue.length-1);
-                tabAlea.push(server.queue[indiceAlea]);
-                server.queue.splice(indiceAlea,1);
-            }
-            server.queue = tabAlea;
-            this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-        }
-
-        if(server.queue[0])
-        {
-            message.channel.send(`Here's the queue :`);
-            this.queueEmbed(server,message.channel);
-        }
-        else message.channel.send(`There is no queue !`);
-    }
-
-    static audioqueuemove(server,message,args,Theresa) // faire une multi commande pour déplacer plusieurs musique d'un coup
-    {
-        console.log(`command -audioqueuemove detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        var argsCount=0;
-        var argsA=args[argsCount];
-        var argsB=args[argsCount+1];
-
-        if(!argsA || !argsB) return;
-        argsA=Number.parseInt(argsA);
-        if(Number.isNaN(argsA) == true) return;
-        argsB=Number.parseInt(argsB);
-        if(Number.isNaN(argsB) == true) return;
-        
-        
-        var tab=[];
-        
-        if(argsA == argsB) return;
-        for(var i = 0; i<server.queue.length;i++)
-        {
-            if(i == argsB)
-            {
-                tab.push(server.queue[argsA]);
-                tab.push(server.queue[i]);
-            }
-            else if(i != argsA) tab.push(server.queue[i]);
-        }
-
-        server.queue = tab;
-        this.queueEmbed(server,message.channel);
-        this.queueSave(server,message);
-    }
-
-    static audioqueueswap(server,message,args,Theresa)
-    {
-        console.log(`command -audioqueueswap detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        var nom1;
-        var nom2;
-        var id1;
-        var id2;
-        for(var i=0;args[i] && args[i+1];i+=2)
-        {
-            id1=args[i];
-            id2=args[i+1];
-
-            console.log(`id1 : ${id1}`);
-            console.log(`id2 : ${id2}`);
-
-            nom1=server.queue[id1];
-            nom2=server.queue[id2];
-
-            server.queue[id1]=nom2;
-            server.queue[id2]=nom1;
-        }
-        this.queueSave(server,message);
-        this.queueEmbed(server,message.channel);
-    }
-
-    static audioqueueclear(server,message,Theresa)
-    {
-        console.log(`command -audioqueueclear detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        server.queue.splice(0,server.queue.length);
-        if(server.Engine) server.Engine.end();
-    }
-
-    static audiodelete(server,message,args,Theresa)
-    {
-        message.delete();
-        console.log(`command -audiodelete detected. Executed by ${message.author.username}.`);
-        Theresa.savePlace(message);
-        if(!args[0]) return;
-        else if(Number.isNaN(parseInt(args[0])) && !(args[0] < server.queue.length))
-        {
-            message.channel.send('[...]');
-            return;
-        }
-        else if(!args[1]) server.queue.splice(args[0],1);
-        else if(Number.isNaN(parseInt(args[1])) && !(args[1] < server.queue.length))
-        {
-            message.channel.send('[...]');
-            return;
-        }
-        else if(args[0] && args[1])
-        {
-            if(args[1] == 0) args[1] = server.queue.length-1;
-            else args[1] = args[1] - args[0] + 1;
-            server.queue.splice(args[0],args[1]);
-        }
-        this.queueEmbed(server,message.channel);
-        this.queueSave(server,message);
-    }
-
-    static audiodeleteselect(server,message,args,Theresa)
-    {
-        console.log(`command -audiodeleteselect detected. Executed by ${message.author.username}.`);
-        Theresa.savePlace(message);
-        if(!args[0]) return;
-        else if(Number.isNaN(args[0])) message.channel.send('[...]');
-        else
-        {
-            var i = 0;
-            while(args[i])
-            {
-                server.queue.splice(args[i]-i,1);
-                i++;
-            }
-            this.queueEmbed(server,message.channel);
-            this.queueSave(server,message);
-        }
-    }
-
-    static audiofind(server,prefix,command,message,Theresa)
-    {
-        console.log(`command -audiofind detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        var findFile = message.content.substring(prefix.length + command.length + 1);
-        var audioFiles = this.findMusic(findFile);
-        if(audioFiles.length === 1 && message.guild.me.voice.channel !== null)
-        {
-            for(var i=0;i<server.queue.length;i++)
-            {
-                if(server.queue[i] === audioFiles[0].substring(0,audioFiles[0].length-4))
-                {
-                    console.log(i);
-                    message.channel.send(`Position of *"__${audioFiles[0].substring(0,audioFiles[0].length-4)}__"* in the queue : **${i}**`);
-                    i=server.queue.length;
-                }
-            }
-        }
-        else this.audioFilesEmbed(message.channel,audioFiles);
-    }
-
-    static stop(server,message,Theresa)
-    {
-        console.log(`command -stop detected. Executed by ${message.author.username}.`);
-        if(!server.VodkaGirlzIsPlaying) message.delete();
-        Theresa.savePlace(message);
-        server.arret = true;
-        server.Engine.end();
-    }
-
-    static audioloopqueue(server,message,Theresa)
-    {
-        console.log(`command -audioqueueloop detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        if(server.queueLoop) 
-        {
-            server.queueLoop = false
-            message.channel.send(`Audio Queue Loop disable !`);
-        }
-        else
-        {
-            server.queueLoop = true;
-            message.channel.send(`Audio Queue Loop enable !`);
-        } 
-    }
-
-    static audioloop(server,message,Theresa)
-    {
-        console.log(`command -audioloop detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        if(server.loop)
-        {
-            server.loop = false;
-            message.channel.send(`Loop is disable !`);
-        }
-        else
-        {
-            server.loop = true;
-            message.channel.send(`Loop is enable !`);
-        }
-    }
-
-    static audioreplay(server,message,client,VodkaGirlz,Theresa)
-    {
-        console.log(`command -audioreplay detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        Tools.sleep(1000);
-        server.Engine.pause();
-        this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-    }
-
-    static audioLyrics(server,message)
-    {
-        message.delete();
-        if(!server.queue[0]) {message.channel.send('[...]'); return;}
-        if(this.findMusic(server.queue[0]).length !== 1) {message.channel.send('[...]'); return;}
-        try {var tab = NodeID3.read(this.getPathOfMusic(server.queue[0])).unsynchronisedLyrics.text.split(/\r\n/);}
-        catch(error)
-        {
-            message.channel.send('[...]');
-            console.log(error);
-            return;
-        }
-        var tabB = [];
-        for(var i=0;i<tab.length;i++)
-        {
-            if(i%60 == 0)
-            {
-                tabB.push(tab[i]+'\n');
-            }
+                }, 30000)
+            });
+            
+            if(queuePos == server.audio.queue.length+1) server.audio.queue.push(videoID);
             else
             {
-                tabB[tabB.length-1]+=tab[i]+'\n';
-            }
-        }
-        message.channel.send(`Here are the lyrics of __**${server.queue[0]}**__ : \n\n :headphones:`);
-        for(var i=0;i<tabB.length;i++) message.channel.send(tabB[i]);
-    }
-
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
-
-    static callRoza(server,message,args,VodkaGirlz)
-    {
-        message.delete();
-        console.log(`command -callroza detected. Executed by ${message.author.username}.`);
-        if(!args[0]) message.channel.send(`[...]`);
-        else if(VodkaGirlz.user.presence.status !== 'online') {message.channel.send(`[...]`); server.enableVodkaGirlz=false;}
-        else if(args[0] == 'enable') {message.channel.send(`I will call VodkaGirlz next time.`); server.enableVodkaGirlz=true;}
-        else if(args[0] == 'disable') {message.channel.send(`I will make my own research now.`); server.enableVodkaGirlz=false;}
-    }
-
-    static continueplayingtheresa(server,message,client,VodkaGirlz,Theresa)
-    {
-        console.log(`command -continueplayingtheresa detected. Executed by ${message.author.username}.`);
-        message.delete();
-        if(message.author.id != VodkaGirlz.user.id && message.author.id != '606684737611759628') return;
-        server.queue.shift();
-        this.queueSave(server,message);
-        if(server.queue[0]) this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-    }
-
-    static rozaStartPlaying(server,message,VodkaGirlz,Theresa)
-    {
-        console.log(`command -rozaStartPlaying detected. Executed by ${message.author.username}.`);
-        message.delete();
-        if(message.author.id != VodkaGirlz.user.id && message.author.id != '606684737611759628') return;
-        server.VodkaGirlzIsPlaying = true;
-        if(server.isPlaying) this.stop(server,message,Theresa);
-    }
-
-    static rozaStopPlaying(server,message,client,VodkaGirlz,Theresa)
-    {
-        console.log(`command -rozaStopPlaying detected. Executed by ${message.author.username}.`);
-        message.delete();
-        if(message.author.id != VodkaGirlz.user.id && message.author.id != '606684737611759628') return;
-        server.VodkaGirlzIsPlaying = false;
-        if(server.queue[0])
-        {
-            var tab = this.findMusic(server.queue[0])
-            if(tab.length != 0) this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-        }
-    }
-
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
-
-    static audioplaylist(server,message,args,client,VodkaGirlz,Theresa)
-    {
-        message.delete();
-        console.log(`command -audioplaylist detected. Executed by ${message.author.username}.`);
-        Theresa.savePlace(message);
-        if(!args[0]) return;
-        var PlaylistFile = `./audio/Playlist/${args[0]}.txt`;
-        if(FS.existsSync(PlaylistFile))
-        {
-            var data = FS.readFileSync(PlaylistFile,'utf8');
-            var tab = data.split(/\n/);
-            for(var i=0;i<tab.length;i++) server.queue.push(tab[i]);
-        }
-        else
-        {
-            message.channel.send(`[...]`);
-            return;
-        }
-
-        if(!server.isPlaying)
-        {
-            message.member.voice.channel.join();
-            this.musicPlay(server,this,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-        }
-        message.channel.send(`Playlist ${args[0]} added to the queue !`);
-        this.queueEmbed(server,message.channel);
-        this.queueSave(server,message);
-    }
-
-    static playlistadd(server,prefix,command,message,args,Theresa)
-    {
-        console.log(`command -playlistadd detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        if(!args[0]) return;
-        var PlaylistFile = `./audio/Playlist/${args[0]}.txt`;
-
-        if(!args[1])
-        {
-            if(!FS.existsSync(`${PlaylistFile}`))
-            {
-                FS.writeFileSync(PlaylistFile,``);
-                message.channel.send(`Playlist *"${args[0]}"* created !`);
-                console.log(`Playlist "${args[0]}" created by ${message.author.username}.`);
-            }
-            else message.channel.send(`This playlist is already here !`);
-        }
-        else
-        {
-            args[1] = message.content.substring(prefix.length + command.length + 1 + args[0].length+1);
-            if(FS.existsSync(PlaylistFile) && args[1] === 'queue' && server.queue[0])
-            {
-                for(var i=0;i<server.queue.length;i++)
+                if(server.audio.currentPlayingSong == queuePos-1) server.audio.queue[server.audio.currentPlayingSong] = videoID;
+                else
                 {
-                    if(i!=server.queue.length-1) FS.appendFileSync(PlaylistFile,`${server.queue[i]}\n`);
-                    else FS.appendFileSync(PlaylistFile,`${server.queue[i]}`);
+                    if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
+                    server.audio.queue = Tools.addIntoArray(videoID,queuePos-1,server.audio.queue);
                 }
+            }
+        }
+        else // Local
+        {
+            if(array.length > 1)
+            {
+                let text = '**Multiple files found**\n\n';
+                for(let i = 0; i < array.length; i++)
+                {
+                    if(i == array.length - 1) text += this.getNameFromPath(array[i],false);
+                    else text += this.getNameFromPath(array[i],false)+'\n';
+                }
+                Tools.simpleEmbed(server,message,text,undefined,false,true,10000);
                 return;
             }
-            else if(FS.existsSync(`${MusicDirectory}${args[1]}.mp3`) || FS.existsSync(`${MusicDirectoryOST}${args[1]}.mp3`) || FS.existsSync(`${MusicDirectoryWait}${args[1]}.mp3`)) {}
-            else if(FS.existsSync(`${MusicDirectory}${args[1]}.wav`) || FS.existsSync(`${MusicDirectoryOST}${args[1]}.wav`) || FS.existsSync(`${MusicDirectoryWait}${args[1]}.wav`)) {}
             else
             {
-                var musicFind = this.findMusic(args[1]);
-                if(musicFind.length != 1)
+                let tags = NodeID3.read(array[0]),
+                title, artist;
+                if(tags.title === undefined) title = this.getNameFromPath(array[0],false);
+                else title = tags.title;
+                if(tags.artist === undefined) artist = '<unknown>';
+                else artist = tags.artist;
+                let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
+                
+                if(tags.image != undefined) Tools.simpleEmbed(server,message,text,tags.image.imageBuffer,true,true,30000);
+                else Tools.simpleEmbed(server,message,text,undefined,false,true,30000);
+                
+                if(queuePos == server.audio.queue.length+1) server.audio.queue.push(`[LOCAL]${array[0]}`);
+                else
+                {
+                    if(server.audio.currentPlayingSong == queuePos-1) server.audio.queue[server.audio.currentPlayingSong] = `[LOCAL]${array[0]}`;
+                    else
                     {
-                        console.log(`(!) plusieurs musique trouver`);
-                        message.channel.send(`I need to have more precision about the title of the music. There is some music that begins with this word.`);
-                        return;
+                        if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
+                        server.audio.queue = Tools.addIntoArray(`[LOCAL]${array[0]}`,queuePos-1,server.audio.queue);
                     }
-                else args[1] = musicFind[0].substring(0,musicFind[0].length-4);
+                }
             }
+        }
 
-            if(FS.existsSync(PlaylistFile))
+        if(server.audio.queue.length == 1 && !server.audio.isPlaying) // play for the first time
+        {
+            server.audio.currentPlayingSong = 0;
+            this.runAudioEngine(servers, server, message.guild);
+        }
+        else if(queuePos - 1 == server.audio.currentPlayingSong && server.audio.isPlaying) // with the option "current"
+        {
+            this.runAudioEngine(servers, server, message.guild);
+        }
+        else if(!server.audio.isPlaying && !server.audio.pause) // when the queue is complete and not reset
+        {
+            this.runAudioEngine(servers, server, message.guild);
+        }
+        else this.queueDisplay(server, 16,true); // when the engine the playing something
+
+        Tools.serverSave(server);
+    }
+
+    static async runAudioEngine(servers, server, guild)
+    {
+        console.log(`Audio Engine is running. File (queue) : ${server.audio.queue[server.audio.currentPlayingSong]}`);
+
+        this.queueDisplay(server,16,true);
+        server.audio.isPlaying = true;
+
+        let voiceChannel = guild.channels.cache.get(servers[guild.id].global.lastVoiceChannelId)
+        Theresa.joinVoice(server, voiceChannel);
+
+        if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // local file
+        {
+            server.audio.Engine = Voice.createAudioPlayer();
+            server.audio.Engine.play(Voice.createAudioResource(server.audio.queue[server.audio.currentPlayingSong].substring(7)));
+            server.global.voiceConnection.subscribe(server.audio.Engine);
+        }
+        else // youtube"
+        {
+            server.audio.Engine = Voice.createAudioPlayer();
+            server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong]),{filter:'audioonly',quality:'highest',highWaterMark:512}));
+            server.global.voiceConnection.subscribe(server.audio.Engine);
+        }
+        Tools.serverSave(servers[guild.id]);
+
+        server.audio.Engine.on('idle', oldEngineStatu =>
+        {
+            server.audio.isPlaying = false;
+            if(server.audio.arret) return;
+            else if(server.audio.loop)    
             {
-                FS.appendFileSync(PlaylistFile,`\n${args[1]}`);
-                message.channel.send(`*"${args[1]}"* was added to *"${args[0]}"*.`);
+                this.runAudioEngine(servers, server, guild);
+            }
+            else if(server.audio.queueLoop)
+            {
+                if(!server.audio.queue[server.audio.currentPlayingSong+1]) server.audio.currentPlayingSong = 0;
+                else server.audio.currentPlayingSong++;
+                this.runAudioEngine(servers, server, guild);
             }
             else
             {
-                console.log(`(!) playlist introuvable`);
-                message.channel.send(`This playlist doesn't exist~`);
+                server.audio.currentPlayingSong++;
+                if(server.audio.queue[server.audio.currentPlayingSong])
+                {
+                    this.runAudioEngine(servers, server, guild);
+                }
+                else
+                {
+                    if(server.audio.lastQueue.messageId != null)
+                    {
+                        let channel = guild.channels.cache.get(server.audio.lastQueue.channelId);
+                        channel.messages.fetch(server.audio.lastQueue.messageId).then(msg => msg.delete());
+                        server.audio.lastQueue.messageId = null;
+                        server.audio.lastQueue.channelId = null;
+                    }
+                    server.audio.queue = [];
+                    server.audio.currentPlayingSong = 0;
+                    console.log('Audio Engine Off.');
+                }
+            }
+            Tools.serverSave(server);
+        });
+    }
+
+    static engineMgr(servers,message,command,args)
+    {
+        let server = servers[message.guild.id]
+
+        this.log(message,command,args);
+        if(server.audio.Engine == null) return;
+        else if(!args[0]) ;
+        else if(args[0] == 'stop' || args[0] == 's')
+        {
+            if(server.audio.isPlaying)
+            {
+                server.audio.arret = true;
+                server.audio.Engine.stop();
+            }
+            else
+            {
+                this.error(server,message,3,`Audio Engine isn't playing.`);
+            }
+        }
+        else if(args[0] == 'pause' || args[0] == 'p')
+        {
+            if(!server.audio.pause && server.audio.isPlaying)
+            {
+                server.audio.Engine.pause();
+                server.audio.pause = true;
+            }
+            else if(!server.audio.isPlaying)
+            {
+                this.error(server,message,3,`Audio Engine isn't playing.`);
+            }
+            else if(server.audio.pause)
+            {
+                this.error(server,message,3,`Audio Engine is in pause.`);
+            }
+        }
+        else if(args[0] == 'play' || args[0] == 'pl')
+        {
+            if(server.audio.pause && server.audio.isPlaying)
+            {
+                server.audio.Engine.unpause();
+                server.audio.pause = false;
+            }
+            else
+            {
+                if(server.audio.lastQueue.channelId != null)
+                {
+                    let channel = message.guild.channels.cache.get(server.audio.lastQueue.channelId);
+                    channel.messages.fetch(server.audio.lastQueue.messageId)
+                    .then(m => m.delete());
+                }
+                this.error(server,message,3,`Audio Engine isn't playing.`);
+            }
+        }
+        else if(args[0] == 'replay' || args[0] == 'r')
+        {
+            if(server.audio.Engine)
+            {
+                server.audio.currentPlayingSong--;
+                server.audio.Engine.stop();
+            }
+            else
+            {
+                if(server.audio.queue[0])
+                {
+                    server.audio.currentPlayingSong--;
+                    server.audio.Engine.stop();
+                }
+                else
+                {
+                    this.error(server,message,3,'There is no queue');
+                }
             }
         }
     }
 
-    static playlistremove(server,message,args,Theresa)
+    static async queueMgr(servers,message,command,args)
     {
-        console.log(`command -playlistremove detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
-        if(!args[0]) return;
-        if(FS.existsSync(`./audio/Playlist/${args[0]}.txt`))
-        {
-            FS.unlinkSync(`./audio/Playlist/${args[0]}.txt`);
-            message.channel.send(`The playlist ${args[0]} has been deleted !`);
-        }
-    }
+        let server = servers[message.guild.id]
+        /*
+            Command exemple :
+            t!a queue
+            t!a queue skip | t!a queue previous
+            t!a queue go 3
+            t!a delete 3 | t!a delete 3 7 | t!a delete 1 3 4 5 7 8 9 34
+            t!a queue clear
+            ...
 
-    static playlistview(server,message,args,Theresa)
-    {
-        console.log(`command -playlistview detected. Executed by ${message.author.username}.`);
-        message.delete();
-        Theresa.savePlace(message);
+        */
+        this.log(message,command,args)
         if(!args[0])
         {
-            var playlistName=FS.readdirSync(`./audio/Playlist/`);
-            for(var i=0;i<playlistName.length;i++) playlistName[i]=playlistName[i].substring(0,playlistName[i].length-4);
-            var Embed = new Discord.MessageEmbed()
-            .setColor('#000000')
-            .setTitle(`**:headphones:  Available Playlist  :headphones:**`)
-            .attachFiles([`./Picture/Theresa.jpg`])
-            .setThumbnail(`attachment://Theresa.jpg`)
-            .setDescription(playlistName);
-            message.channel.send(Embed);
+            if(!server.audio.queue[0]) return;
+            else this.queueDisplay(server,40,true);
         }
-        else
+        else if(args[0] == 'clear' || args[0] == 'c')
         {
-            if(FS.existsSync(`./audio/Playlist/${args[0]}.txt`))
+            server.audio.currentPlayingSong = null;
+            server.audio.queue.splice(0,server.audio.queue.length);
+            if(server.audio.loop) server.audio.loop = false;
+            if(server.audio.queueLoop) server.audio.queueLoop = false;
+            if(server.audio.Engine) server.audio.Engine.stop();
+            let text = '**Done ✅**';
+            Tools.simpleEmbed(server,message,text,undefined,false,true,1000);
+            if(server.audio.lastQueue.channelId != null)
             {
-                var name = FS.readFileSync(`./audio/Playlist/${args[0]}.txt`,'utf8');
-                var Embed = new Discord.MessageEmbed()
-                .setColor('#000000')
-                .setTitle(`**:headphones:  Available Song in ${args[0]}  :headphones:**`)
-                .attachFiles([`./Picture/Theresa.jpg`])
-                .setThumbnail(`attachment://Theresa.jpg`)
-                .setDescription(name);
-                message.channel.send(Embed);
-            }
-            else
-            {
-                console.log(`(!) playlist introuvable`);
-                return;
+                let channel = message.guild.channels.cache.get(server.audio.lastQueue.channelId);
+                channel.messages.fetch(server.audio.lastQueue.messageId)
+                .then(m => {
+                    m.delete();
+                    server.audio.lastQueue.messageId = null;
+                    server.audio.lastQueue.channelId = null;
+                });
             }
         }
-    }
-
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
-
-
-    static async musicPlay(server,audio,message,client,YouTubeMgr,VodkaGirlz,Theresa)
-    {
-        Theresa.savePlace(message);
-        if(server.VodkaGirlzIsPlaying)
+        else if(args[0] == 'delete' || args[0] == 'd')
         {
-            this.queueSave(server,message);
-            return;
-        }
-
-        var musicPath;
-        var isOnPC=true;
-
-        if(!server.queue[0])
-        {
-            server.isPlaying=false;
-            this.queueSave(server,message);
-            return;
-        }
-
-        musicPath=this.getPathOfMusic(server.queue[0])
-
-        if(musicPath !== '[---]') {}
-        else if(musicPath == '[---]' && !server.enableVodkaGirlz) isOnPC=false;
-        else if(VodkaGirlz.user.presence.status === 'online' && server.enableVodkaGirlz)
-        {
-            console.log('Calling VodkaGirlz...');
-            message.channel.send(`Rozaliya, Liliya, please search this : ${server.queue[0]}.`);
-            message.channel.send(`v!p ${server.queue[0]}`);
-            server.isPlaying=true;
-            this.queueSave(server,message);
-            return;
-        }
-        else
-        {
-            console.log(`Unknown Error !`);
-            server.queue.shift();
-            return;
-        }
-        
-        server.isPlaying=true;
-        this.queueSave(server,message);
-        
-        if(isOnPC) console.log(`Playing ${server.queue[0]}`);
-        else console.log(`Playing ${await YouTubeMgr.searchToTitle(server.queue[0])}`);
-
-        if(isOnPC) server.Engine = await message.guild.me.voice.connection.play(musicPath);
-        else server.Engine = await message.guild.me.voice.connection.play(ytdl(await YouTubeMgr.titleToURL(server.queue[0]),{filter:'audioonly',quality:'highest',highWaterMark:1024*1024*2}));
-        server.Engine.on('finish', function()
-        {
-            server.isPlaying=false;
-            server.Engine=undefined; //reset streamTime (entre-autre)
-            if(server.restart)
+            if(!args[1]) this.error(server,message,1,'No argument(s) detected');
+            else if(args.length == 2)
             {
-                server.restart=false;
-                server.isPlaying=true;
-                server.queue.shift();
-                audio.queueSave(server,message);
-                console.log('### Theresa has restarted ###');
-                Theresa.savePlace(message);
-                shell.exec('pm2 restart main');
-            }
-            else if(server.leave)
-            {
-                server.queue.splice(0,server.queue.length);
-                server.leave=false;
-                server.isPlaying=false;
-                audio.queueSave(server,message);
-                return;
-            }
-            else if(server.arret)
-            {
-                server.arret = false;
-                return;
-            }
-            else if(server.queueLoop)
-            {
-                    server.queue.push(server.queue[0]);
-                    server.queue.shift();
-                    audio.musicPlay(server,audio,message,client,YouTubeMgr,VodkaGirlz,Theresa)
-            }
-            else if(!server.loop)
-            {
-                server.queue.shift();
-                if(server.queue[0])
+                args[1] = this.QueueSelectorConverter(server, args[1]);
+                if(args[1] == null)
                 {
-                    if(server.queueDisplayBool)
+                    this.error(server,message, 0, "The argument must be a queue selector or an number between 0 and the size of the queue.");
+                    return;
+                }
+
+                server.audio.queue.splice(args[1],1);
+                if(args[1] <= server.audio.currentPlayingSong)
+                {
+                    server.audio.currentPlayingSong--;
+                    this.queueDisplay(server,16,true);
+                }
+                if(args[1] == server.audio.currentPlayingSong) server.audio.Engine.stop();
+            }
+            else if(args.length == 3)
+            {
+                args[1] = this.QueueSelectorConverter(server, args[1]);
+                args[2] = this.QueueSelectorConverter(server, args[2]);
+                
+                if(args[2] <= args[1])
+                {
+                    this.error(server,message,0,'2nd argument must be superior to the 1st argument');
+                    return;
+                }
+                else
+                {
+                    server.audio.queue.splice(args[1], args[2] - args[1] + 1);
+                    if(server.audio.currentPlayingSong >= args[1] && server.audio.currentPlayingSong <= args[2])
                     {
-                        server.queueDisplayBool=false;
-                        audio.queueEmbed(server,message.channel);
+                        server.audio.currentPlayingSong = args[1]-1;
+                        server.audio.Engine.stop();
                     }
-                    Tools.sleep(1000);
-                    audio.queueSave(server,message);
-                    audio.musicPlay(server,audio,message,client,YouTubeMgr,VodkaGirlz,Theresa);
-                }
-                else
-                {
-                    client.user.setActivity(`Waiting for your order`);
-                    message.channel.send("There is nothing left in the queue~");
-                    audio.queueSave(server,message);
+                    else if(server.audio.currentPlayingSong > args[2])
+                    {
+                        server.audio.currentPlayingSong -= args[2] - args[1] + 1;
+                        this.queueDisplay(server,16,true);
+                    }
                 }
             }
             else
             {
-                Tools.sleep(1000);
-                audio.musicPlay(server,audio,message,client,YouTubeMgr,VodkaGirlz,Theresa);
+                let needStop = false
+                for(let i = 1; i < args.length; i++)
+                {
+                    args[i] = this.QueueSelectorConverter(server, args[i]);
+                    if(args[i] == null)
+                    {
+                        this.error(server,message, 0, `\"${args[i]}\" This argument must be a queue selector or an number between 0 and the size of the queue.`);
+                        continue;
+                    }
+                    server.audio.queue.splice(args[1],1);
+                    if(args[i] <= server.audio.currentPlayingSong) server.audio.currentPlayingSong--;
+                    if(args[i] == server.audio.currentPlayingSong && server.audio.isPlaying) needStop = true;
+                }
+                if(needStop) server.audio.Engine.stop();
+                queueDisplay(server,16,true);
             }
-        });
-        /*server.Engine.on('error', function(error)
-        {
-            console.log(error);
-            message.channel.send('[...]');
-        }*/
-    }
 
-    static leaving(server)
-    {
-        server.leave=true;
-        if(server.Engine != undefined) server.Engine.end();
-    }
-
-    static queueSave(server,message)
-    {
-        FS.writeFileSync(`./Servers/${message.guild.id}/queueSave.tsave`,``);
-        if(server.queue[0]) for(var i=0;i<server.queue.length;i++) FS.appendFileSync(`./Servers/${message.guild.id}/queueSave.tsave`,`${server.queue[i]}\n`);
-        if(server.isPlaying) FS.appendFileSync(`./Servers/${message.guild.id}/queueSave.tsave`,`inPlaying`);
-        else FS.appendFileSync(`./Servers/${message.guild.id}/queueSave.tsave`,`---`);
-    }
-
-    static async queueEmbed(server,channel)
-    {
-        var Embed = new Discord.MessageEmbed()
-        .setColor('#000000')
-        .setTitle(`**:headphones:  Music queue  :headphones:**`)
-        .attachFiles([`./Picture/Theresa.jpg`])
-        .setThumbnail(`attachment://Theresa.jpg`)
-        .setDescription(await this.queueDisplay(server));
-        channel.send(Embed);
-    }
-
-    static async queueDisplay(server)
-    {
-        var path=this.getPathOfMusic(server.queue[0]);
-        if(path === '[---]')
-        {
-            var text = `**__Now playing__**  :arrow_right:  **${await YouTubeMgr.searchToTitle(server.queue[0])}** \n`
+            let text = `**Done ✅**`;
+            Tools.simpleEmbed(server,message,text,undefined,false,true,1000);
+            this.queueDisplay(server,16,true);
         }
-        else
+        else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
-            var tags=NodeID3.read(path);
-            if(tags.title === undefined) var text = `**__Now playing__**  :arrow_right:  **${server.queue[0]}** \n`
-            else var text = `**__Now playing__**  :arrow_right:  **${tags.title}** \n`
+            if(!server.audio.Engine);   
+            else if(server.audio.currentPlayingSong+1 > server.audio.queue.length) this.error(server,message,3,'Queue Manager -> skip error');
+            else server.audio.Engine.stop();
         }
-
-        if(server.queue.length <= 41)
+        else if(args[0] == 'previous' || args[0] == '<')
         {
-            for(var i=1;i<server.queue.length;i++)
+            if(server.audio.currentPlayingSong == 0) this.error(server,message,3,'There is nothing befor');
+            else
             {
-                path=this.getPathOfMusic(server.queue[i]);
-                if(path==='[---]') text += `${i} : ${await YouTubeMgr.searchToTitle(server.queue[i])}\n`;
+                if(server.audio.Engine)
+                {
+                    server.audio.currentPlayingSong -= 2;
+                    server.audio.Engine.stop();
+                }
                 else
                 {
-                    tags=NodeID3.read(path);
-                    if(tags.title === undefined) text += `${i} : ${server.queue[i]}\n`;
-                    else text += `${i} : ${tags.title}\n`;
+                    server.audio.currentPlayingSong--;
+                    this.runAudioEngine(servers, server, message.guild);
                 }
             }
         }
-        else
+        else if(args[0] == 'go')
         {
-            for(var i=1;i<41;i++)
+            if(args[1])
             {
-                path=this.getPathOfMusic(server.queue[i]);
-                if(path==='[---]') text += `${i} : ${await YouTubeMgr.searchToTitle(server.queue[i])}\n`;
+                if(Number.isNaN(args[1])) this.error(server,message,0,'Expected value : integer');
+                else if(Number.parseInt(args[1]) > server.audio.queue.length-1 || Number.parseInt(args[1] <= 0)) this.error(server,message,3,'Queue number doesn\'t exist');
                 else
                 {
-                    tags=NodeID3.read(path);
-                    if(tags.title === undefined) text += `${i} : ${server.queue[i]}\n`;
-                    else text += `${i} : ${tags.title}\n`;
+                    server.audio.currentPlayingSong = Number.parseInt(args[1])-1;
+                    if(server.audio.Engine) 
+                    {
+                        server.audio.currentPlayingSong--;
+                        server.audio.Engine.stop();
+                    }
+                    else this.runAudioEngine(servers, server, message.guild);
                 }
             }
-            text += `\n **AND __${server.queue.length-41}__ MORE !**`;
         }
-        return text;
-    }
-    
-    static getPathOfMusic(musicName)
-    {
-        var path='[---]';
-        var allMusicTab = FS.readdirSync(MusicDirectory);
-        var allMusicOST = FS.readdirSync(MusicDirectoryOST);
-        var allMusicWait = FS.readdirSync(MusicDirectoryWait);
+        else if(args[0] == 'loop' || args[0] == 'l')
+        {
+            if(!server.audio.queue[0])
+            { 
+                this.error(server,message,3,'There is no queue');
+            }
+            else
+            {
+                if(server.audio.loop)
+                {
+                    server.audio.loop = false;
+                    Tools.simpleEmbed(server,message,'**Loop Off ➡**',undefined,false,true,1000);
+                }
+                else
+                {
+                    server.audio.loop = true;
+                    Tools.simpleEmbed(server,message,'**Loop On 🔂**',undefined,false,true,1000);
+                }
 
-        for(var music of allMusicTab)
-        {
-            if(music.toLocaleLowerCase() === musicName.toLocaleLowerCase()+'.mp3') {path=MusicDirectory+musicName+'.mp3'; continue;}
-            if(music.toLocaleLowerCase() === musicName.toLocaleLowerCase()+'.wav') {path=MusicDirectory+musicName+'.wav'; continue;}
+                this.queueDisplay(server,16,true);
+            }
         }
-        for(var music of allMusicOST)
+        else if(args[0] == 'loopqueue' || args[0] == 'lq')
         {
-            if(music.toLocaleLowerCase() === musicName.toLocaleLowerCase()+'.mp3') {path=MusicDirectoryOST+musicName+'.mp3'; continue;}
-            if(music.toLocaleLowerCase() === musicName.toLocaleLowerCase()+'.wav') {path=MusicDirectoryOST+musicName+'.wav'; continue;}
+            if(!server.audio.queue[0])
+            { 
+                this.error(server,message,3,'There is no queue');
+            }
+            else
+            {
+                if(server.audio.queueLoop)
+                {
+                    server.audio.queueLoop = false;
+                    Tools.simpleEmbed(server,message,'**Loop queue Off ➡**',undefined,false,true,1000);
+                }
+                else
+                {
+                    server.audio.queueLoop = true;
+                    Tools.simpleEmbed(server,message,'**Loop queue On 🔁**',undefined,false,true,1000);
+                }
+
+                this.queueDisplay(server,16,true);
+            }
         }
-        for(var music of allMusicWait)
+        else if(args[0] == 'move' || args[0] == 'm') this.error(server,message,3,'Work in progress');
+        else if(args[0] == 'swap' || args[0] == 'sw')
         {
-            if(music.toLocaleLowerCase() === musicName.toLocaleLowerCase()+'.mp3') {path=MusicDirectoryWait+musicName+'.mp3'; continue;}
-            if(music.toLocaleLowerCase() === musicName.toLocaleLowerCase()+'.wav') {path=MusicDirectoryWait+musicName+'.wav'; continue;}
+            if(args.length == 1)
+            {
+                this.error(server,message,1,'Please precise the 1st arguments');
+                return;
+            }
+            else if(args.length == 2)
+            {
+                this.error(server,message,1,'Please precise the 2nd arguments');
+                return;
+            }
+
+            args[1] = this.QueueSelectorConverter(server, args[1]);
+            args[2] = this.QueueSelectorConverter(server, args[2]);
+
+            if(args[1] == null || args[2] == null) this.error(server,message, 0, 'The argument must be a queue selector or an number between 0 and the size of the queue.')
+            else if(args[1] == args[2]) this.error(server,message, 0, 'The arguments can\'t have the same value');
+            
+            if(args[1] == server.audio.currentPlayingSong || args[2] == server.audio.currentPlayingSong) 
+            {
+                server.audio.Engine.stop();
+            }
+
+
+
+            let temp = server.audio.queue[args[1]];
+            server.audio.queue[args[1]] = server.audio.queue[args[2]];
+            server.audio.queue[args[2]] = temp;
         }
+        else if(args[0] == 'shuffle' || args[0] == 'sh') this.error(server,message,3,'Work in progress');
+        else if(args[0] == 'current' || args[0] == 'ct') this.error(server,message,3,'Work in progress');
+    }
+
+    static miscellaneous(servers,message,command,args)
+    {
+        /*
+            Command exemple :
+            t!a miscellaneous localshuffle | t!a m ls
+            t!a m find ka
+        */
         
-        return path;
-    }
-
-    static findPlaylist(playName)
-    {
-        let playlistTab=FS.readdirSync(`./audio/playlist`);
-        let result=[];
-        for(let playlistName of playlistTab)
+        let server = servers[message.guild.id]
+        this.log(message,command,args);
+        if(!args[0]) this.error(server,message,1,'Please precise your intention(s).');
+        else if(args[0] == 'find' || args[0] == 'f')
         {
-            if(playlistName.toLocaleLowerCase().startsWith(playName.toLocaleLowerCase())) result.push(playlistName);
+            let array = this.getPathOfFile(args[1],musicDirectory);
+            if(array == undefined) Tools.simpleEmbed(server,message,'No file was found ❌',undefined,false,true,3000);
+            else
+            {
+                let text = '';
+                for(let object of array) text += this.getNameFromPath(object,false)+'\n';
+                let embed = new Discord.MessageEmbed()
+                .setColor('#000000')
+                .setTitle('Found file(s) :')
+                .setDescription(text);
+                message.channel.send({embeds :[embed]}).then(msg => {
+                    server.global.messageTemp.push({
+                        messageId: msg.id,
+                        channelId: msg.channel.id
+                    });
+                    Tools.serverSave(server);
+                    
+                    setTimeout(() => {
+                        for(let i=0; i < server.global.messageTemp.length; i++)
+                        {
+                            if(server.global.messageTemp[i].messageId == msg.id)
+                            {
+                                server.global.messageTemp.splice(i,1);
+                                msg.delete();
+                                Tools.serverSave(server);
+                                break;
+                            }
+                        }
+                    }, 10000);
+                });
+            }
         }
-        return result;
+        else if(args[0] == 'localshuffle' || args[0] == 'ls')
+        {
+            let shuffledMusic = [];
+            if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
+            for(let path of musicDirectory)
+            {
+                let musics = FS.readdirSync(path);
+                for(let music of musics)
+                {
+                    if(music.substring(music.length-4) == '.mp3' || music.substring(music.length-4) == '.wav')
+                    {
+                        music = '[LOCAL]'+this.getPathOfFile(music,musicDirectory);
+                        shuffledMusic.push(music);
+                    }
+                }
+            }
+            let indiceAlea;
+            for(let i=shuffledMusic.length;i>0;i--)
+            {
+                indiceAlea = Tools.getRandomInt(shuffledMusic.length-1);
+                server.audio.queue.push(shuffledMusic[indiceAlea]);
+                shuffledMusic.splice(indiceAlea,1);
+            }
+
+            if(!server.audio.isPlaying && !server.audio.pause)
+            {
+                this.runAudioEngine(servers, server, message.guild);
+            }
+            else this.queueDisplay(server, message, 16, true)
+        }
     }
     
-    static findMusic(musicName)
+    static async queueDisplay(server, nbrOfMusicDisplayed, isKeep)
     {
-        var audioFiles = [];
-        var allMusicTab = FS.readdirSync(MusicDirectory);
-        var allMusicOST = FS.readdirSync(MusicDirectoryOST);
-        var allMusicWait = FS.readdirSync(MusicDirectoryWait);
-        for(var music of allMusicTab)
+        let text;
+
+        // --------------------------------------------------------------------------------
+        // Indique the loop status in top of the queue
+
+        text = `*Playing options :* `;
+
+        if(!server.audio.loop && !server.audio.queueLoop && !server.audio.restart)
         {
-            if(music.toLocaleLowerCase().startsWith(musicName.toLocaleLowerCase()) && ((music.substring(music.length - 4) === '.mp3') || (music.substring(music.length - 4) === '.wav'))) audioFiles.push(music);
+            text += '**None**\n\n';
         }
-        for(var music of allMusicOST)
+        else
         {
-            if(music.toLocaleLowerCase().startsWith(musicName.toLocaleLowerCase()) && ((music.substring(music.length - 4) === '.mp3') || (music.substring(music.length - 4) === '.wav'))) audioFiles.push(music);
+            if(server.audio.loop) text += '🔂';
+            if(server.audio.queueLoop) text += '🔁';
+            if(server.audio.restart) text += '⏏';
+            text += '\n\n';
         }
-        for(var music of allMusicWait)
+
+        // --------------------------------------------------------------------------------
+        // calculating the index of the first music to be displayed
+
+        let startAt;
+        if(server.audio.queue.length <= nbrOfMusicDisplayed) startAt = 0;
+        else
         {
-            if(music.toLocaleLowerCase().startsWith(musicName.toLocaleLowerCase()) && ((music.substring(music.length - 4) === '.mp3') || (music.substring(music.length - 4) === '.wav'))) audioFiles.push(music);
+            if(server.audio.currentPlayingSong <= nbrOfMusicDisplayed/2) startAt = 0;
+            else startAt = server.audio.currentPlayingSong - nbrOfMusicDisplayed/2;
         }
-        return audioFiles;
+
+        // --------------------------------------------------------------------------------
+        // building the text of the queue
+
+        for(let i=startAt; i < server.audio.queue.length; i++)
+        {
+            if(i == server.audio.currentPlayingSong)
+            {
+                if(server.audio.queue[i].startsWith('[LOCAL]'))
+                {
+                    let tags = NodeID3.read(server.audio.queue[i].substring(7));
+                    if(tags.title != undefined) text += `:arrow_right:  **${tags.title}**  :arrow_left:\n`;
+                    else text += `:arrow_right:  **${this.getNameFromPath(server.audio.queue[i].substring(7))}**  :arrow_left:\n`;
+                }
+                else
+                {
+                    // youtube
+                    text += `:arrow_right:  **${await YouTubeMgr.IdToTitle(server.audio.queue[i])}**  :arrow_left:\n`;
+                }
+            }
+            else
+            {
+                if(server.audio.queue[i].startsWith('[LOCAL]'))
+                {
+                    let tags = NodeID3.read(server.audio.queue[i].substring(7));
+                    if(tags.title != undefined) text += `${i+1}: ${tags.title}\n`;
+                    else text += `${i+1}: ${this.getNameFromPath(server.audio.queue[i].substring(7),false)}\n`;
+                }
+                else
+                {
+                    // youtube
+                    text += `${i+1}: ${await YouTubeMgr.IdToTitle(server.audio.queue[i])}\n`;
+                }
+            }
+
+            if(i-startAt == nbrOfMusicDisplayed-1) break;
+        }
+
+        // --------------------------------------------------------------------------------
+        // Embed generator
+
+        if(server.audio.queue[server.audio.currentPlayingSong] && server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]'))
+        {
+            let tags = NodeID3.read(server.audio.queue[server.audio.currentPlayingSong].substring(7));
+            var messageOption;
+
+            if(tags.image != undefined)
+            {
+                var embed = new Discord.MessageEmbed()
+                .setColor('#000000')
+                .setTitle('Music Queue  :notes:')
+                .setDescription(text)
+                .setThumbnail('attachment://file.jpg');
+
+                messageOption = {
+                    embeds: [embed],
+                    files: [tags.image.imageBuffer]
+                };
+            }
+            else
+            {
+                var embed = new Discord.MessageEmbed()
+                .setColor('#000000')
+                .setTitle('Music Queue  :notes:')
+                .setDescription(text);
+
+                messageOption = {
+                    embeds: [embed]
+                };
+            }
+        }
+        else
+        {
+            var embed = new Discord.MessageEmbed()
+            .setColor('#000000')
+            .setTitle('Music Queue  :notes:')
+            .setDescription(text)
+            .setThumbnail(`https://img.youtube.com/vi/${server.audio.queue[server.audio.currentPlayingSong]}/sddefault.jpg`);
+            
+            messageOption = {
+                embeds: [embed]
+            };
+        }
+
+        // --------------------------------------------------------------------------------
+
+        if(server.audio.lastQueue.channelId != null) // delete the old queue
+        {
+            let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
+            channelOfTheLastQueue.messages.fetch(server.audio.lastQueue.messageId)
+            .then(m => m.delete());
+        }
+
+        // --------------------------------------------------------------------------------
+
+        let chn = server.global.guild.channels.cache.get(server.audio.lastMusicTextchannelId); // last music channel
+
+        if(isKeep)
+        {
+            chn.send(messageOption)
+            .then(m => {
+                server.audio.lastQueue.messageId = m.id;
+                server.audio.lastQueue.channelId = m.channel.id;
+                Tools.serverSave(server);
+            })
+        }
+        else
+        {
+            chn.send(messageOption)
+            .then(msg => {
+                server.audio.lastQueue.messageId = msg.id;
+                server.audio.lastQueue.channelId = msg.channel.id;
+                Tools.serverSave(server);
+                setTimeout(function(){
+                    if(server.audio.lastQueue.messageId != null) msg.delete();
+                },5000);
+            });
+            server.audio.lastQueue.channelId=undefined;
+            server.audio.lastQueue.messageId=undefined;
+            Tools.serverSave(server);
+        }
     }
 
-    static audioFilesEmbed(channel,audioFiles)
+    static async download(servers,message,command,args)
     {
-        var Embed = new Discord.MessageEmbed()
-        .setColor('#000000')
-        .setTitle('Audio Find :')
-        .setDescription(this.audioFilesDisplay(audioFiles))
-        channel.send(Embed);
-    }
+        let server = servers[message.guild.id]
+        this.log(message,command,args);
 
-    static audioFilesDisplay(audioFiles)
-    {
-        var text = '';
-        for(var a of audioFiles)
+        if(!args[0]) // Download from the current song
         {
-            text += `${a}\n`;
+            if(!server.audio.queue[0])
+            {
+                this.error(server,message,3,'There is not queue');
+                return;
+            }
+
+            if(message.author.id == '606684737611759628') // If it's from the server (from Ruiseki)
+            {
+                let videoTitle = await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong]);
+                
+                videoTitle = videoTitle.split(/\//);
+                videoTitle = videoTitle.join(" ");
+                videoTitle = videoTitle.split(/\\/);
+                videoTitle = videoTitle.join(" ");
+
+                if(server.audio.isPlaying && !server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // YouTube
+                {
+                    let filePath = `/Users/ruiseki/Music/Wait/${videoTitle}.mp3`;
+                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
+                    .pipe(FS.createWriteStream(filePath));
+                }
+                else if(!server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) message.author.send(message,3,'You already have this goshujin-sama~'); // Local
+            }
+            else // If it's a user request
+            {
+                if(server.audio.isPlaying && !server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // YouTube
+                {
+                    message.author.send('Downloading...')
+                    .then(msg => {
+                        setTimeout(function(){
+                            msg.delete();
+                        },120000);
+                    });
+                    let filePath = `./audio/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
+                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024})
+                    .pipe(FS.createWriteStream(filePath))
+                    .on('finish', () => {
+                        message.author.send('Uploading...')
+                        .then(msg => {
+                            setTimeout(function(){
+                                msg.delete();
+                            },120000);
+                        });
+                        message.author.send({
+                            content: 'Uploading complete !',
+                            files: [{
+                                attachment: filePath,
+                                name: this.getNameFromPath(filePath,true)
+                            }]
+                        })
+                        .then(msg => {
+                            setTimeout(function(){
+                                msg.delete();
+                                FS.unlinkSync(filePath);
+                            },120000);
+                        });
+                    });
+                }
+                else if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // Local
+                {
+                    let filePath = server.audio.queue[server.audio.currentPlayingSong].substring(7);
+                    message.author.send('Uploading...')
+                    .then(msg => {
+                        setTimeout(function(){
+                            msg.delete();
+                        },120000);
+                    });
+                    message.author.send({
+                        content: 'Uploading complete !',
+                        files: [{
+                            attachment: filePath,
+                            name: this.getNameFromPath(filePath,true)
+                        }]
+                    })
+                    .then(msg => {
+                        setTimeout(function(){
+                            msg.delete();
+                        },120000);
+                    });
+                }
+            }
         }
-        return text;
+        else // Download from argument
+        {
+            let videoID = await YouTubeMgr.searchToID(args.join(" ")),
+            videoTitle = await YouTubeMgr.searchToTitle(videoID);
+
+            videoTitle = videoTitle.split(/\//);
+            videoTitle = videoTitle.join(" ");
+            videoTitle = videoTitle.split(/\\/);
+            videoTitle = videoTitle.join(" ");
+
+            console.log(`Downloading -> ${videoTitle}`);
+            
+            message.author.send('Downloading...')
+            .then(msg => {
+                setTimeout(function(){
+                    msg.delete();
+                },120000);
+            });
+
+            let filePath = `./audio/${videoTitle}.mp3`;
+            ytdl(`https://www.youtube.com/watch?v=${videoID}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
+            .pipe(FS.createWriteStream(filePath))
+            .on('finish', () => {
+                console.log("Download complete. Uploading");
+                message.author.send('Uploading...') 
+                .then(msg => {
+                    setTimeout(function(){
+                        msg.delete();
+                    },120000);
+                });
+                message.author.send({
+                    content: `**Music Title :** *${videoTitle}\nhttps://www.youtube.com/watch?v=${videoID}*`,
+                    files: [{
+                        attachment: filePath,
+                        name: this.getNameFromPath(filePath,true)
+                    }]
+                })
+                .then(msg => {
+                    setTimeout(function(){
+                        msg.delete();
+                        FS.unlinkSync(filePath);
+                    },120000);
+                });
+            });
+        }
+    }
+    
+    static QueueSelectorConverter(server, arg)
+    {
+        if(arg == "c" || arg == "current") return server.audio.currentPlayingSong;
+        else if(arg == "a" || arg == "after") return server.audio.currentPlayingSong + 1;
+        else if(arg == "p" || arg == "previous") return server.audio.currentPlayingSong - 1;
+        else if(arg == "f" || arg == "final") return server.audio.queue.length - 1;
+        else
+        {
+            if(isNaN(Number.parseInt(arg))) return null;
+            arg = Number.parseInt(arg) - 1;
+            if(Number.parseInt(arg) >= 0 && Number.parseInt(arg) < server.audio.queue.length) return arg;
+            else return null;
+        }
     }
 
-    static getQueueSave(message)
+    static getNameFromPath(path,needExtension)
     {
-        var tab = FS.readFileSync(`./Servers/${message.guild.id}/queueSave.tsave`,'utf8').split(/\n/);
-        tab.pop();
-        return tab;
+        let word = path.split(/\//);
+        let fileName = word[word.length-1];
+        if(needExtension) return fileName;
+        else
+        {
+            let extension = fileName.split(/\./),
+            extensionSize = extension[extension.length-1].length+1;
+            return fileName.substring(0,fileName.length-extensionSize);
+        }
     }
 
-    static getIsPlaying(server)
+    static getPathOfFile(targetName,directory)
     {
-        return server.isPlaying;
+        /*
+            Will give the path of "targetName" in "directory".
+            Return an array of all file that commence by this name.
+            Return -1 if doesn't exist.
+        */
+        let array=[];
+        for(let path of directory)
+        {
+            let files = FS.readdirSync(path);
+            for(let file of files)
+            {
+                if(file.toLocaleLowerCase() == (targetName.toLocaleLowerCase()+'.mp3' || targetName.toLocaleLowerCase()+'.wav'))
+                {
+                    array.splice(0,array.length);
+                    array.push(path+file);
+                    return array;
+                }
+                if(file.toLocaleLowerCase().startsWith(targetName.toLocaleLowerCase())) array.push(path+file);
+            }
+        }
+        if(array.length == 0) return undefined;
+        else return array;
+    }
+
+
+    static clearMessagesTemps(server, guild)
+    {
+        server.global.messageTemp.forEach(element => // deleting other audio temporary message
+            {
+                console.log(element);
+                let channel = guild.channels.cache.get(element.channelId);
+                channel.messages.fetch(element.messageId)
+                .then( m => {
+                    try
+                    {
+                        m.delete();
+                    }
+                    catch(err)
+                    {
+                        console.log(err);
+                        console.log(' -> in "clearChannel"');
+                    }
+                });
+            });
+        server.global.messageTemp = [];
+    }
+
+    static log(message,command,args)
+    {
+        console.log(`In "Audio" -> ${command} <- executed by ${message.author.username}. Argument : ${args}`);
+    }
+
+    static error(server,message,type,text)
+    {
+        /*
+            Error type :
+            -1 : Invalid Syntaxe
+            0 : Invalid Argument
+            1 : Missing Argument
+            2 : Incomplete Command
+            3 : Command fail
+        */
+        let messageContent;
+        if(type == -1) messageContent = `**⚠ Invalid syntaxe ⚠**\n${text}`;
+        else if(type == 0) messageContent = `**⚠ Invalide argument ⚠**\n${text}`;
+        else if(type == 1) messageContent = `**⚠ Missing argument ⚠**\n${text}`;
+        else if(type == 2) messageContent = `**⚠ Incomplete command ⚠**\n${text}`;
+        else if(type == 3) messageContent = `**⚠ Command has fail ⚠**\n${text}`;
+
+        message.channel.send(messageContent).then(msg => {
+            server.audio.lastQueue.messageId = msg.id;
+            server.audio.lastQueue.channelId = msg.channel.id;
+            Tools.serverSave(server);
+            setTimeout(function(){
+                if(server.audio.lastQueue.messageId != null) msg.delete();
+            },5000);
+        });
+        server.audio.lastQueue.channelId=undefined;
+        server.audio.lastQueue.messageId=undefined;
+        Tools.serverSave(server);
     }
 }

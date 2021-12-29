@@ -13,14 +13,14 @@ var sql = mySQL.createConnection({
     database: 'elite'
 });
 
-sql.connect(function(err){
+/* sql.connect(function(err){
     if(err)
     {
         console.error('Cant connect to the DB');
         return;
     }
     else console.log('Connection to DataBase : OK');
-});
+}); */
 
 module.exports = class EliteDangerous {
     static async cmd(message,command,args)

@@ -7,12 +7,12 @@ module.exports = class RP
 {
     static cmd(server,message,command,args)
     {
+        message.delete();
         if(command === 'tankrq') this.tankrq(command,message,args)
         else if(command === 'planerq') this.planerq(command,message,args)
         else if(command === 'elimin' || command === 'elimination') this.elimination(command,message,args);
         else if(command === 'bomb') this.bomb(command,message,args);
         else if(command === 'strafing' || command === 'straf') this.strafing(command,message,args);
-        else if(command === 'victory') this.victory(command,message);
         else if(command === 'neko') this.neko(command,message);
         else return false;
         return true;
@@ -23,8 +23,8 @@ module.exports = class RP
         console.log(`command -planerq detected. Executed by ${message.author.username}.`);
         if(args[0])
         {
-            var u=this.findUserID(args[0],message);
-            if(u=='#undefined#') message.channel.send(`[...]`);
+            var u=Tools.findUserId(args[0],message);
+            if(u == undefined) message.channel.send(`[...]`);
             else u=message.guild.members.cache.get(u);
             this.embedPingGif(`**PLANE REQUEST**`,`${u.user.username}, ***${message.author.username} IS WAITING YOU TO THE BATTLEFIELD***`,this.getGifPath(command),message,u.user.username);
         }
@@ -39,8 +39,8 @@ module.exports = class RP
         console.log(`command -tankrq detected. Executed by ${message.author.username}.`);
         if(args[0])
         {
-            var u=this.findUserID(args[0],message);
-            if(u=='#undefined#') message.channel.send(`[...]`);
+            var u=Tools.findUserId(args[0],message);
+            if(u == undefined) message.channel.send(`[...]`);
             else u=message.guild.members.cache.get(u);
             this.embedPingGif(`**TANK REQUEST**`,`${u.user.username}, ***${message.author.username} IS WAITING YOU TO THE BATTLEFIELD***`,this.getGifPath(command),message,u.user.username);
         }
@@ -69,12 +69,6 @@ module.exports = class RP
             this.embedPingGif(`CLOSE AIR SUPPORT`,`*${args[0]}* **was destroyed by** *${message.author.username}*`,this.getGifPath(command),message,args[0]);
         }
         else message.channel.send(`It's ok Goshujin-sama, but I need a target.`);
-    }
-
-    static victory(command,message)
-    {
-        console.log(`command -victory detected. Executed by ${message.author.username}.`);
-        message.channel.send(`**OPEN THE CHAMPAGNE ! DRINK AT YOUR VICTORY**`,{files:[this.getGifPath(command)]});
     }
 
     static battleship()
@@ -113,29 +107,30 @@ module.exports = class RP
 
     static embedGif(title,command,message)
     {
-        message.delete();
         var imgPath = this.getGifPath(command);
         var imgName = imgPath.split('/')
-        var Embed = new Discord.MessageEmbed()
+        var embed = new Discord.MessageEmbed()
             .setColor(`#000000`)
             .setTitle(title)
-            .attachFiles([imgPath])
             .setImage(`attachment://${imgName[imgName.length-1]}`);
-        message.channel.send(Embed);
+        message.channel.send({
+            embeds :[embed],
+            file : [imgPath]
+        });
     }
 
     static embedPingGif(title,text,imgPath,message,targetName)
     {
-        message.delete();
         message.channel.send(`${targetName}-sama, ${message.author.username} is pinging you.`)
-        const imgName = imgPath.split('/');
-        var Embed = new Discord.MessageEmbed()
+        var embed = new Discord.MessageEmbed()
             .setColor('#000000')
             .setTitle(title)
             .setDescription(text)
-            .attachFiles([imgPath])
-            .setImage(`attachment://${imgName[imgName.length-1]}`);
-        message.channel.send(Embed);
+            .setImage(`attachment://file.gif`);
+        message.channel.send({
+            embeds: [embed],
+            files: [imgPath]
+        });
     }
 
     static getGifsOfFolder(folder)
@@ -151,7 +146,7 @@ module.exports = class RP
 
     static findUserID(element,message)
     {
-        var id='#undefined#';
+        var id=undefined;
         if(element.startsWith('<@!')) return element.substring(3,element.length-1);
         else
         {

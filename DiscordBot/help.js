@@ -59,7 +59,8 @@ module.exports = class Help
                 {name:'\u200B',value:'\u200B'},
                 {name:`**Audio**`,value:`*Play music in a voice channel*`,inline:true},
                 {name:`**Playlist**`,value:`*You can create playlist and play it*`,inline:true},
-                {name:`**Elite Dangerous**`,value:`*All about the data in the game !*`,inline:true},
+                //{name:`**Elite Dangerous**`,value:`*All about the data in the game !*`,inline:true},
+                //{name:`**Coding Factory**`,value:`*Manage a group of undisplined developers*`,inline:true},
                 {name:`**Theresa**`,value:`*I can do many thing, like custom DM and more*`,inline:true},
                 /*{name:``,value:``,inline:true},
                 {name:'\u200B',value:'\u200B'},
@@ -70,7 +71,7 @@ module.exports = class Help
                 {name:``,value:``,inline:true},
                 {name:``,value:``,inline:true},*/
             );
-            message.channel.send(embed);
+            message.channel.send({embeds :[embed]});
         }
     }
     
@@ -106,7 +107,7 @@ module.exports = class Help
         \`-audiolyrics|aly\`  🎙\n
         \`-audiocurrent|ac\`  🎵\n
         `);
-        message.channel.send(embed);
+        message.channel.send({embeds :[embed]});
     }
 
     static audio(prefix,message)
@@ -143,7 +144,7 @@ module.exports = class Help
             //{name:``,value:``,inline:true},
             {name:'\u200B',value:'\u200B'},
         );
-        message.channel.send(embed);
+        message.channel.send({embeds :[embed]});
     }
     static playlistShort(prefix,message)
     {message.channel.send(`\`Work in progresse\``);}

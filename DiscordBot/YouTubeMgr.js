@@ -3,16 +3,21 @@ const YTsearch = require('yt-search');
 
 module.exports = class YouTubeMgr {
 
-    static async titleToURL(title)
+    static async IdToURL(id)
     {
-        var videoURL;
-        try{var result = await YTsearch(title);}
-        catch(error) {console.error(error); return undefined;}
-        var videos = result.videos.slice(0,1);
-        videos.forEach(function(x) {
-            videoURL = x.url;
-        })
-        return videoURL;
+        try
+        {
+            var array = (await YTsearch(id)).videos.slice(0,6);
+        }
+        catch(error)
+        {
+            console.error(error); return undefined;
+        }
+        var videoUrl;
+        array.forEach(element => {
+            if(element.videoId == id) videoUrl = element.url;
+        });
+        return videoUrl;
     }
 
     static async searchToTitle(rqst)
@@ -27,14 +32,19 @@ module.exports = class YouTubeMgr {
         return videoTitle;
     }
 
-    static async IDtoTitle(rqst)
+    static async IdToTitle(id)
     {
+        try
+        {
+            var array = (await YTsearch(id)).videos.slice(0,6);
+        }
+        catch(error)
+        {
+            console.error(error); return undefined;
+        }
         let videoTitle;
-        try{var result = await YTsearch(rqst);}
-        catch(error) {console.error(error); return undefined;}
-        let videos = result.videos.slice(0,1);
-        videos.forEach(function(x) {
-            videoTitle = x.title;
+        array.forEach(element => {
+            if(element.videoId == id) videoTitle = element.title;
         });
         return videoTitle;
     }

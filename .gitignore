@@ -1,2 +1,6 @@
 .DS_Store
+desktop.ini
 Icon?
+/DiscordBot/node_modules
+/DiscordBot/Servers/
+/DiscordBot/Servers Backup/
