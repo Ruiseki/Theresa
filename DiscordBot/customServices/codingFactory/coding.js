@@ -20,18 +20,25 @@ module.exports = class Coding {
         let forbidenWords = [
             "censure",
             "dictature",
+            "dictateur",
+            "dictature",
             "liberté",
             "liberte",
+            "democratie",
+            "démocratie",
+            "revolution",
+            "révolution",
             "lepen",
             "zemmour",
             "poutine",
             "nazi",
-            "gay",
-            "dictateur"
+            "gay"
         ];
 
         for (let mot of mots)
         {
+            console.log(mot.toLocaleLowerCase());
+
             for (let forbidenWord of forbidenWords)
             {
                 if (mot.toLocaleLowerCase() == forbidenWord || mot.toLocaleLowerCase().startsWith('pradi'))
@@ -68,8 +75,12 @@ module.exports = class Coding {
             '215499737497862144',
             '764149560904777788',
             '409080031223218177',
-            '310798191153119232'
+            '310798191153119232',
+            '602633396774240257',
+            '884386204521463818'
         ];
+
+        let maxMemberInGroupe = 3;
 
         for(let i = 0; i < membersNameArray.length; i++)
         {
@@ -96,7 +107,7 @@ module.exports = class Coding {
             text += `**Groupe ${groupe + 1} : **\n`;
             arrayTemp = [];
             
-            for(let i = 0; i < 4; i++)
+            for(let i = 0; i < maxMemberInGroupe; i++)
             {
                 arrayTemp.push(membersNameArray[0]);
                 text += `*${membersNameArray.shift()}*\n`;
