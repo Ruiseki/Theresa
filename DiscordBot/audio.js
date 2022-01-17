@@ -7,10 +7,28 @@ const ytdl = require('ytdl-core');
 const Theresa = require('./Theresa.js');
 const YouTubeMgr = require('./YouTubeMgr.js');
 const Tools = require('./tools.js');
-const { audio } = require('./help.js');
 
+// local music
 var musicDirectory=[];
 musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/ +/);
+
+// button
+var previousBtn = new Discord.MessageButton()
+                    .setCustomId('previousBtn')
+                    .setLabel('⏮')
+                    .setStyle('SECONDARY'),
+    nextBtn = new Discord.MessageButton()
+                    .setCustomId('nextBtn')
+                    .setLabel('⏭')
+                    .setStyle('SECONDARY'),
+    pausePlayBtn = new Discord.MessageButton()
+                    .setCustomId('pausePlayBtn')
+                    .setLabel('⏯')
+                    .setStyle('SECONDARY'),
+    stopBtn = new Discord.MessageButton()
+                    .setCustomId('stopBtn')
+                    .setLabel('⏹')
+                    .setStyle('SECONDARY');
 
 module.exports = class Audio
 {
@@ -226,7 +244,7 @@ module.exports = class Audio
         {
             server.audio.isPlaying = false;
             if(server.audio.arret) return;
-            else if(server.audio.loop)    
+            else if(server.audio.loop)
             {
                 this.runAudioEngine(servers, server, guild);
             }
@@ -719,39 +737,66 @@ module.exports = class Audio
 
             if(tags.image != undefined)
             {
-                var embed = new Discord.MessageEmbed()
+                let embed = new Discord.MessageEmbed()
                 .setColor('#000000')
                 .setTitle('Music Queue  :notes:')
                 .setDescription(text)
                 .setThumbnail('attachment://file.jpg');
 
+                let row = new Discord.MessageActionRow()
+                .addComponents(
+                    previousBtn,
+                    stopBtn,
+                    pausePlayBtn,
+                    nextBtn
+                );
+
                 messageOption = {
                     embeds: [embed],
-                    files: [tags.image.imageBuffer]
+                    files: [tags.image.imageBuffer],
+                    components: [row]
                 };
             }
             else
             {
-                var embed = new Discord.MessageEmbed()
+                let embed = new Discord.MessageEmbed()
                 .setColor('#000000')
                 .setTitle('Music Queue  :notes:')
                 .setDescription(text);
 
+                let row = new Discord.MessageActionRow()
+                .addComponents(
+                    previousBtn,
+                    stopBtn,
+                    pausePlayBtn,
+                    nextBtn
+                );
+                
                 messageOption = {
-                    embeds: [embed]
+                    embeds: [embed],
+                    components: [row]
                 };
             }
         }
         else
         {
-            var embed = new Discord.MessageEmbed()
+            let embed = new Discord.MessageEmbed()
             .setColor('#000000')
             .setTitle('Music Queue  :notes:')
             .setDescription(text)
             .setThumbnail(`https://img.youtube.com/vi/${server.audio.queue[server.audio.currentPlayingSong]}/sddefault.jpg`);
+
+            let row = new Discord.MessageActionRow()
+            .addComponents(
+                previousBtn,
+                stopBtn,
+                pausePlayBtn,
+                nextBtn
+            );
             
             messageOption = {
-                embeds: [embed]
+                embeds: [embed],
+                components: [row]
             };
         }
 

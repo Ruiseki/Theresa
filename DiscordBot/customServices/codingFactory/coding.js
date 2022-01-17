@@ -21,6 +21,7 @@ module.exports = class Coding {
             "censure",
             "dictature",
             "liberté",
+            "liberte",
             "lepen",
             "zemmour",
             "poutine",
@@ -51,13 +52,30 @@ module.exports = class Coding {
 
     static sprintGroup(message)
     {
-        let membersNameArray = [];
+        /* let membersNameArray = [];
         message.guild.members.cache.each(member => {
             if (member.user.id != '735541067759353957' && member.user.id != '532642158231027722' && !member.user.bot) membersNameArray.push(member.user.username)
-        });
+        }); */
 
         // ------------------------------------------------------------
         // shuffle the array of members
+
+        let membersNameArray = [
+            '606684737611759628',
+            '260502791707951115',
+            '301301940640546817',
+            '286547841889861634',
+            '215499737497862144',
+            '764149560904777788',
+            '409080031223218177',
+            '310798191153119232'
+        ];
+
+        for(let i = 0; i < membersNameArray.length; i++)
+        {
+            let u = message.guild.members.cache.get(membersNameArray[i]);
+            membersNameArray[i] = u.user.username;
+        }
 
         let tabAlea = [];
         while (membersNameArray[0])
@@ -97,7 +115,7 @@ module.exports = class Coding {
         // ------------------------------------------------------------
         // Deleting the old channels and create news
 
-        groupArray.forEach((element, index) => {
+        /* groupArray.forEach((element, index) => {
 
             if(index != groupArray.length-1) FS.appendFileSync('./customServices/codingFactory/channel.tlist',`${element.name}\n`);
             else if(index == 0) FS.writeFileSync('./customServices/codingFactory/channel.tlist',`${element.name}\n`);
@@ -107,7 +125,7 @@ module.exports = class Coding {
         });
 
         FS.writeFileSync('./customServices/codingFactory/channel.tlist','');
-        FS.writeFileSync('./customServices/codingFactory/groupes.json',JSON.stringify(groupArray));
+        FS.writeFileSync('./customServices/codingFactory/groupes.json',JSON.stringify(groupArray)); */
         
         // ------------------------------------------------------------
 

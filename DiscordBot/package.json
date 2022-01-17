@@ -27,6 +27,6 @@
     "shelljs": "^0.8.4",
     "youtube-sr": "^4.1.7",
     "yt-search": "^2.7.6",
-    "ytdl-core": "^4.9.1"
+    "ytdl-core": "^4.9.2"
   }
 }

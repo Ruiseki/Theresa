@@ -205,6 +205,28 @@ client.on('guildMemberSpeaking',(member,speaking) => { // will be executed when 
     else {}
 });
 
+client.on('interactionCreate', i => {
+    if(!i.isButton()) return;
+    
+    if(i.customId == 'nextBtn')
+    {
+        Audio.queueMgr(servers, i.message, 'queue', ['>']);
+    }
+    else if(i.customId == 'previousBtn')
+    {
+        Audio.queueMgr(servers, i.message, 'queue', ['<']);
+    }
+    else if(i.customId == 'stopBtn')
+    {
+        Audio.queueMgr(servers, i.message, 'queue', ['clear']);
+    }
+    else if(i.customId == 'pausePlayBtn')
+    {
+        if(!servers[i.guild.id].audio.pause) Audio.engineMgr(servers, i.message, 'p', ['pause']);
+        else Audio.engineMgr(servers, i.message, 'p', ['play']);
+    }
+});
+
 setInterval(function() { // each 10sec, change the activity of the bot (playing at : [message] in discord)
     client.user.setActivity(clientActivity[selectedActivity]);
     selectedActivity++;
