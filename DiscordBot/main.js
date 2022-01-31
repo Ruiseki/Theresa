@@ -42,7 +42,10 @@ var changeStatus = true;
 
 var selectedActivity = 0;
 var clientActivity = [
-    `Theresa V3 incoming`
+    `t!help`,
+    `t!help`,
+    `t!a [music title]`,
+    `Version : 0.3.0`
 ];
 
 client.once('ready', () => {
@@ -193,9 +196,45 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
         Tools.serverSave(servers[newState.guild.id]);
     }
 
-    if(newState.channel != null && oldState.channel != newState.channel)
+    if(newState.channel != null && oldState.channel != newState.channel) // voice tracking DM code here
     {
-        // voice tracking DM code here
+        for(voiceTrackingElement of servers[newState.guild.id].tracking.voice)
+        {
+            voiceTrackingElement.usersAdded.forEach((userId, index) => {
+                if(userId == newState.id && newState.channel.id == voiceTrackingElement.inChannel[index])
+                {
+                    for(element of servers[newState.guild.id].tracking.voice)
+                    {
+                        if(element.userId != userId) continue;
+                        else
+                        {
+                            if(Tools.isElementPresentInArray(element.authorizedUsers, voiceTrackingElement.userId))
+                            {
+                                let mainUser = client.users.cache.get(voiceTrackingElement.userId);
+                                let targetUser = client.users.cache.get(userId);
+                                let targetChannel = client.channels.cache.get(voiceTrackingElement.inChannel[index]);
+
+                                let membersIdInChannel = [];
+                                newState.member.voice.channel?.members.each(member => {
+                                    membersIdInChannel.push(member.user.id);
+                                });
+
+                                if(!Tools.isElementPresentInArray(membersIdInChannel, mainUser.id))
+                                {
+                                    mainUser.send({embeds:[
+                                        {
+                                            color: '#000000',
+                                            title: 'Voice tracking notification 🔍',
+                                            description: `***${targetUser.username}*** is in a voice channel !\n\nChannel : **${targetChannel.name}**\nServer : **${targetChannel.guild.name}**`
+                                        }
+                                    ]});
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }
 });
 
@@ -228,9 +267,12 @@ client.on('interactionCreate', i => {
 });
 
 setInterval(function() { // each 10sec, change the activity of the bot (playing at : [message] in discord)
-    client.user.setActivity(clientActivity[selectedActivity]);
-    selectedActivity++;
-    if(selectedActivity == clientActivity.length) selectedActivity = 0;
+    if(changeStatus)
+    {
+        client.user.setActivity(clientActivity[selectedActivity]);
+        selectedActivity++;
+        if(selectedActivity == clientActivity.length) selectedActivity = 0;
+    }
 }, 10000);
 
 setInterval(function() { // each minutes,
@@ -262,4 +304,5 @@ catch(error)
 } */
 
 client.login(process.env.key);
+
 console.log('### Login : OK');

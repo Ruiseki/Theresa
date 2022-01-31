@@ -1,6 +1,6 @@
 const Tools = require('../../tools.js');
 const FS = require('fs');
-const { group } = require('console');
+const shell = require('shelljs');
 var groupArray = [];
 
 module.exports = class Coding {
@@ -9,11 +9,16 @@ module.exports = class Coding {
         message.delete();
 
         if(message.guild.id != '889416369567834112') return;
-        else if(command == 'groupe') this.sprintGroup(message);
+        else if(command == 'groupe') this.sprintGroup(server, message);
         else if(command == 'remane' || command == 'r') this.rename(message, args);
-        else if(command == 'test') this.test();
+        else if(command == 'bootmcserver') this.bootMC();
     }
 
+    static bootMC()
+    {
+        shell.exec('start /d "C:\Users\Ruiseki\Desktop\Minecraft Serveur\Serveur 1.18.1\Codeur" boot.bat');
+    }
+    
     static checkWord(message)
     {
         let mots = message.content.split(/ +/);
@@ -37,8 +42,6 @@ module.exports = class Coding {
 
         for (let mot of mots)
         {
-            console.log(mot.toLocaleLowerCase());
-
             for (let forbidenWord of forbidenWords)
             {
                 if (mot.toLocaleLowerCase() == forbidenWord || mot.toLocaleLowerCase().startsWith('pradi'))
@@ -57,7 +60,9 @@ module.exports = class Coding {
         }
     }
 
-    static sprintGroup(message)
+    
+
+    static sprintGroup(server, message)
     {
         /* let membersNameArray = [];
         message.guild.members.cache.each(member => {
@@ -67,18 +72,39 @@ module.exports = class Coding {
         // ------------------------------------------------------------
         // shuffle the array of members
 
-        let membersNameArray = [
-            '606684737611759628',
-            '260502791707951115',
-            '301301940640546817',
-            '286547841889861634',
-            '215499737497862144',
-            '764149560904777788',
-            '409080031223218177',
-            '310798191153119232',
-            '602633396774240257',
-            '884386204521463818'
-        ];
+        let membersNameArray = [];
+
+        server.guild.members.cache.each(member => {
+            member.roles.cache.each(role => {
+                if(role.id = '932948164640653312') membersNameArray.push(member.user.username);
+            });
+        });
+
+        // new
+        let numberOfPersonPerGroup = [4,3,3];
+
+        // shuffle the array
+        let tabAlea = [];
+        while (membersNameArray[0])
+        {
+            var indiceAlea = Tools.getRandomInt(membersNameArray.length - 1);
+            tabAlea.push(membersNameArray[indiceAlea]);
+            membersNameArray.splice(indiceAlea, 1);
+        }
+        membersNameArray = tabAlea;
+        
+        let count = 0;
+        personPerGroupCount = 0;
+        groupArray = [];
+        let array = [];
+        for(let name of membersNameArray)
+        {
+            if(count == numberOfPersonPerGroup[personPerGroupCount])
+            count++;
+            personPerGroupCount++;
+        }
+
+        /* // old
 
         let maxMemberInGroupe = 3;
 
@@ -121,7 +147,7 @@ module.exports = class Coding {
             groupArray.push(objectElement);
             
             groupe++;
-        }
+        } */
 
         // ------------------------------------------------------------
         // Deleting the old channels and create news

@@ -232,7 +232,7 @@ module.exports = class Audio
             server.audio.Engine.play(Voice.createAudioResource(server.audio.queue[server.audio.currentPlayingSong].substring(7)));
             server.global.voiceConnection.subscribe(server.audio.Engine);
         }
-        else // youtube"
+        else // youtube
         {
             server.audio.Engine = Voice.createAudioPlayer();
             server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong]),{filter:'audioonly',quality:'highest',highWaterMark:512}));

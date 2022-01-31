@@ -582,32 +582,32 @@ module.exports = class About
         }
         else if(args[0] == 'aut' || args[0] == 'authorize')
         {
-            let targetUser = Tools.findUserId(args[1], server.global.guild);
-            if(targetUser == undefined)
+            let targetUserId = Tools.findUserId(args[1], server.global.guild);
+            if(targetUserId == undefined)
             {
                 // user not found
                 return;
             }
             else
             {
-                if(!Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUser.id)) server.tracking.voice[index].authorizedUsers.push(targetUser.id);
+                if(!Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUserId)) server.tracking.voice[index].authorizedUsers.push(targetUserId);
                 else /* already added */;
             }
         }
         else if(args[0] == 'rev' || args[0] == 'revoke')
         {
-            let targetUser = Tools.findUserId(args[1], server.global.guild);
-            if(targetUser == undefined)
+            let targetUserId = Tools.findUserId(args[1], server.global.guild);
+            if(targetUserId == undefined)
             {
                 // user not found
                 return;
             }
             else
             {
-                if(Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUser.id))
+                if(Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUserId))
                 {
                     server.tracking.voice[index].authorizedUsers.forEach((element, i) => {
-                        if(element == targetUser.id) server.tracking.voice[index].authorizedUsers.splice(i, 1);
+                        if(element == targetUserId) server.tracking.voice[index].authorizedUsers.splice(i, 1);
                     });
                 }
                 else /* already added */;

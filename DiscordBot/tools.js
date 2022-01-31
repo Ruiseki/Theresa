@@ -174,6 +174,7 @@ module.exports = class tools
     static isElementPresentInArray(array, element)
     {
         let isPresent = false;
+        if(array == undefined) return false;
         array.forEach(elementOfArray => {
             if(elementOfArray === element) isPresent = true;
             else isPresent = false;
