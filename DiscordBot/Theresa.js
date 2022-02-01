@@ -105,13 +105,23 @@ module.exports = class About
        +----------------------------+
     */
     
+    static checkTheresaFile()
+    {
+        if(!FS.existsSync('./Servers')) FS.mkdirSync('./Servers');
+        if(!FS.existsSync('./Servers Backup')) FS.mkdirSync('./Servers Backup');
+        if(!FS.existsSync('./Servers Backup/lastBackup.ttime')) FS.writeFileSync('./Servers Backup/lastBackup.ttime', '0');
+        if(!FS.existsSync('./audio')) FS.mkdirSync('./audio');
+        if(!FS.existsSync('./audio/buttonImg')) FS.mkdirSync('./audio/buttonImg');
+        // mettre les images en base de donnée et les ajouter
+
+        // if(!FS.existsSync('./audio/playslist')) FS.writeFileSync('./audio/playlist', '');
+        if(!FS.existsSync('./customServices')) FS.mkdirSync(''); 
+    }
+
     static checkServerFile(guild) // check is file exist. If not create a file. Return false is the data is not present
     {
-        if(!FS.existsSync('./Servers')) FS.mkdirSync('./Servers')
-        if(!FS.existsSync('./Servers Backup')) FS.mkdirSync('./Servers Backup')
-
         if(!FS.existsSync(`./Servers/${guild.id}`)) FS.mkdirSync(`./Servers/${guild.id}`);
-        if(!FS.existsSync(`./Servers Backup/${guild.id}`)) FS.mkdirSync(`./Servers Backup/${guild.id}`)
+        if(!FS.existsSync(`./Servers Backup/${guild.id}`)) FS.mkdirSync(`./Servers Backup/${guild.id}`);
         
         if(!FS.existsSync(`./Servers/${guild.id}/${guild.id}.json`)) return false;
         else return true;
@@ -625,11 +635,13 @@ module.exports = class About
 
     static boot(client, servers, Audio)
     {
+        this.checkTheresaFile();
         client.guilds.cache.each(guild =>
         {
             console.log(`### Loading Server : ${guild.name}`);
             if(!this.checkServerFile(guild))
             {
+                console.log(`    ❗ Server save doesn't exist ! Reseting all data and creating a saving file`);
                 this.resetAllDataOfAGuild(servers, guild);
             }
             else
