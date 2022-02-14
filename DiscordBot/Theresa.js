@@ -177,11 +177,11 @@ module.exports = class About
             if(index == -1)
             {
                 server.global.adminList.push(targetUser.id);
-                Tools.simpleEmbed(server, message, `***${targetUser.username}*** was added to the admin list ✅`, undefined, false, true, 1500);
+                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** was added to the admin list ✅`, undefined, false, true, 3000);
             }
             else
             {
-                Tools.simpleEmbed(server, message, `***${targetUser.username}*** is already admin`, undefined, false, true, 1500);
+                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** is already admin`, undefined, false, true, 3000);
             }
         }
         else if(args[0] == 'remove' || args[0] == 'r')
@@ -198,16 +198,16 @@ module.exports = class About
 
             if(targetUser.id == server.global.guild.ownerId)
             {
-                Tools.simpleEmbed(server, message, `Server owner (***${targetUser.username}***) can't be deleted from the administrator list ❌`, undefined, false, true, 1500);
+                Tools.simpleEmbed(server, message, `Server owner (***${targetUser.user.username}***) can't be deleted from the administrator list ❌`, undefined, false, true, 5000);
             }
             else if(index != -1)
             {
                 server.global.adminList.splice(index, 1);
-                Tools.simpleEmbed(server, message, `***${targetUser.username}*** was added to the administrator list ✅`, undefined, false, true, 1500);
+                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** was added to the administrator list ✅`, undefined, false, true, 3000);
             }
             else
             {
-                Tools.simpleEmbed(server, message, `***${targetUser.username}*** is not an administrator ❌`, undefined, false, true, 1500);
+                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** is not an administrator ❌`, undefined, false, true, 3000);
             }
         }
         else if(args[0] == 'view' || args[0] == 'v')
@@ -344,6 +344,13 @@ module.exports = class About
                             else text += `***${member.nickname}***\n`;
                         }
                     });
+                });
+
+                text += '\nYou have autorized :\n';
+                server.tracking.voice[index].authorizedUsers.forEach(userId => {
+                    let member = server.global.guild.members.cache.get(userId);
+                    if(member.nickname == null) text += `***${member.user.username}***\n`;
+                    else text += `***${member.nickname}***\n`;
                 });
 
                 Tools.simpleEmbed(server, message, text, undefined, false, true, 60000);
@@ -847,12 +854,13 @@ module.exports = class About
 
     static offline(server, message)
     {
-        server.global.guild.client.user.presence.status='offline';
+        server.global.guild.client.user.setStatus('invisible');
+        //On peut pas mettre "offline"(parceque ça existe pas) donc on met "invisible"
     }
     
     static online(server, message)
     {
-        server.global.guild.client.user.presence.status='online';
+        server.global.guild.client.user.setStatus('online');
     }
 
     static joinVoice(server, channel)

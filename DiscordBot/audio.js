@@ -5,7 +5,7 @@ const NodeID3 = require('node-id3');
 const ytdl = require('ytdl-core');
 
 const Theresa = require('./Theresa.js');
-const YouTubeMgr = require('./YouTubeMgr.js');
+const yts = require('yt-search');
 const Tools = require('./tools.js');
 
 // local music
@@ -115,16 +115,38 @@ module.exports = class Audio
         let array = this.getPathOfFile(music,musicDirectory);
         if(array == undefined) // YouTube
         {
-            let videoID = await YouTubeMgr.searchToID(music),
-            title = await YouTubeMgr.IdToTitle(videoID),
-            URL = await YouTubeMgr.IdToURL(videoID),
+            let video;
+            if(music.startsWith('https://youtu.be/'))
+            {
+                //https://youtu.be/[videoId(11caractère)]?list=[playlistId(34caractère)]
+                video = await yts({
+                    videoId: music.substring('https://youtu.be/'.length, 'https://youtu.be/'.length + 11)
+                });
+            }
+            else if(music.startsWith('https://www.youtube.com/watch?v='))
+            {
+                //https://www.youtube.com/watch?v=[videoId(11caractère)]&list=[playlistId(34caractère)]&index=[indexdelavideo]
+                video = await yts({ 
+                    videoId: music.substring(32, 32 + 11)
+                }); // 32 : Size of https://www.youtube.com/watch?v=
+                
+            }    
+            else
+            {
+                let result = await yts(music);
+                video = result.videos[0];
+            }
+
+            
+            let title = video.title,
+            URL = video.url,
             text = `**${title}**  :notes:\n*__${URL}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
             console.log(title);
 
             let embed = new Discord.MessageEmbed()
             .setDescription(text)
             .setColor('#000000')
-            .setThumbnail(`https://img.youtube.com/vi/${videoID}/sddefault.jpg`);
+            .setThumbnail(`https://img.youtube.com/vi/${video.videoId}/sddefault.jpg`);
 
             message.channel.send({embeds :[embed]}).then(msg => {
                 let object = {
@@ -148,14 +170,14 @@ module.exports = class Audio
                 }, 30000)
             });
             
-            if(queuePos == server.audio.queue.length+1) server.audio.queue.push(videoID);
+            if(queuePos == server.audio.queue.length+1) server.audio.queue.push(video.videoId);
             else
             {
-                if(server.audio.currentPlayingSong == queuePos-1) server.audio.queue[server.audio.currentPlayingSong] = videoID;
+                if(server.audio.currentPlayingSong == queuePos-1) server.audio.queue[server.audio.currentPlayingSong] = video.videoId;
                 else
                 {
                     if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
-                    server.audio.queue = Tools.addIntoArray(videoID,queuePos-1,server.audio.queue);
+                    server.audio.queue = Tools.addIntoArray(video.videoId,queuePos-1,server.audio.queue);
                 }
             }
         }
@@ -235,12 +257,12 @@ module.exports = class Audio
         else // youtube
         {
             server.audio.Engine = Voice.createAudioPlayer();
-            server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong]),{filter:'audioonly',quality:'highest',highWaterMark:512}));
+            server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong],{filter:'audioonly',quality:'highest',highWaterMark:1 << 25})));
             server.global.voiceConnection.subscribe(server.audio.Engine);
         }
         Tools.serverSave(servers[guild.id]);
 
-        server.audio.Engine.on('idle', oldEngineStatu =>
+        server.audio.Engine.on('idle', oldEngineStatut =>
         {
             server.audio.isPlaying = false;
             if(server.audio.arret) return;
@@ -705,8 +727,9 @@ module.exports = class Audio
                 }
                 else
                 {
-                    // youtube
-                    text += `:arrow_right:  **${await YouTubeMgr.IdToTitle(server.audio.queue[i])}**  :arrow_left:\n`;
+                    // YouTube
+                    let video = await yts({ videoId: server.audio.queue[i] });
+                    text += `:arrow_right:  **${video.title}**  :arrow_left:\n`;
                 }
             }
             else
@@ -719,8 +742,9 @@ module.exports = class Audio
                 }
                 else
                 {
-                    // youtube
-                    text += `${i+1}: ${await YouTubeMgr.IdToTitle(server.audio.queue[i])}\n`;
+                    // YouTube
+                    let video = await yts({ videoId: server.audio.queue[i] });
+                    text += `${i+1}: ${video.title}\n`;
                 }
             }
 

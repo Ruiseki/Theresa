@@ -12,7 +12,6 @@ const Audio = require('./audio.js'),
     RP = require('./rp.js'),
     Theresa = require('./Theresa.js'),
     Help = require('./help.js'),
-    YouTubeMgr = require('./YouTubeMgr.js'),
     EliteDangerous = require('./customServices/veritasKingdom/eliteDangerous.js'),
     CodingFactory = require('./customServices/codingFactory/coding.js');
 
@@ -118,9 +117,9 @@ client.on('messageCreate', message => { // Will be executed when a message is em
 
 
     let type, command;
-    const args = message.content.slice(prefix.length).split(/ +/);               // delete the prefix and split all word of message
-    type = args.shift().toLocaleLowerCase();                                     // the first word will be the TYPE
-    if(args[0] != undefined) command = args.shift().toLocaleLowerCase();      // The next word the COMMAND, and the reste the ARGUMENTS
+    const args = message.content.slice(prefix.length).split(/ +/);            // delete the prefix and split all word of message
+    type = args.shift().toLocaleLowerCase();                                  // the first word will be the TYPE
+    if(args[0] != undefined) command = args.shift();      // The next word the COMMAND, and the reste the ARGUMENTS
 
     /*
 
