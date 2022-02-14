@@ -34,8 +34,17 @@ module.exports = class tools
     
     static addIntoArray(element,place,array)
     {
-        for(let i=array.length; i >= place; i--) array[i] = array [i-1]
+       /* for(let i=array.length; i >= place; i--) array[i] = array [i-1]
         array[place] = element;
+        return array; */
+
+        array.splice(place, 0, element);
+        return array;
+    }
+
+    static insertArrayIntoArray(arrayToInsert,place,array)
+    {
+        array.splice(place,0,...arrayToInsert);
         return array;
     }
 

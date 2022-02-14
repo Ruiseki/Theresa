@@ -74,7 +74,7 @@ module.exports = class Audio
             return;
         }
 
-        if(args[0])
+        if(args[0]) // check parameters
         {
             while(args[0])
             {
@@ -113,10 +113,24 @@ module.exports = class Audio
 
         // Adding music
         let array = this.getPathOfFile(music,musicDirectory);
+        
         if(array == undefined) // YouTube
         {
-            let video;
-            if(music.startsWith('https://youtu.be/'))
+            let list, video;
+
+            if(music.startsWith('https://www.youtube.com/playlist?list='))
+            {
+                list = await yts({
+                    listId: music.substring(38)
+                });
+            }
+            else if(music.startsWith('https://youtube.com/playlist?list='))
+            {
+                list = await yts({
+                    listId: music.substring(34)
+                });
+            }
+            else if(music.startsWith('https://youtu.be/'))
             {
                 //https://youtu.be/[videoId(11caractère)]?list=[playlistId(34caractère)]
                 video = await yts({
@@ -130,23 +144,39 @@ module.exports = class Audio
                     videoId: music.substring(32, 32 + 11)
                 }); // 32 : Size of https://www.youtube.com/watch?v=
                 
-            }    
+            }
             else
             {
                 let result = await yts(music);
                 video = result.videos[0];
             }
 
-            
-            let title = video.title,
-            URL = video.url,
-            text = `**${title}**  :notes:\n*__${URL}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
-            console.log(title);
-
-            let embed = new Discord.MessageEmbed()
-            .setDescription(text)
-            .setColor('#000000')
-            .setThumbnail(`https://img.youtube.com/vi/${video.videoId}/sddefault.jpg`);
+            let embed;
+            if(list == undefined)
+            {
+                let text = `**${video.title}**  :notes:\n*__${video.url}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
+                console.log(video.title);
+    
+                embed = {
+                    color: '#000000',
+                    description: text,
+                    thumbnail: {
+                        url: video.thumbnail
+                    }
+                };
+            }
+            else
+            {
+                let text = `**${list.title}**  :notes:\n*__${list.url}__*\n\n*Number of songs : ${list.videos.length}\nPosition : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
+                console.log(`[LIST] ${list.title}`);
+                embed = {
+                    color: '#000000',
+                    description: text,
+                    thumbnail: {
+                        url: list.thumbnail
+                    }
+                };
+            }
 
             message.channel.send({embeds :[embed]}).then(msg => {
                 let object = {
@@ -162,7 +192,14 @@ module.exports = class Audio
                         if(server.global.messageTemp[i].messageId == msg.id)
                         {
                             server.global.messageTemp.splice(i,1);
-                            msg.delete();
+                            try
+                            {
+                                msg.delete();
+                            }
+                            catch(err)
+                            {
+                                console.err(`Message id ${msg.id} can't be reach`)
+                            }
                             Tools.serverSave(server);
                             break;
                         }
@@ -170,7 +207,18 @@ module.exports = class Audio
                 }, 30000)
             });
             
-            if(queuePos == server.audio.queue.length+1) server.audio.queue.push(video.videoId);
+
+            // -------------------------------------------------------------------------------------------------------------------------------------------- //
+            if(list == undefined) server.audio.queue.splice(queuePos, 0, video.videoId);
+            else
+            {
+                let videosId = [];
+                list.videos.forEach(video => {
+                    videosId.push(video.videoId);
+                });
+                server.audio.queue.splice(queuePos, 0, ...videosId);
+            }
+            /* if(queuePos == server.audio.queue.length+1) server.audio.queue.push(video.videoId);
             else
             {
                 if(server.audio.currentPlayingSong == queuePos-1) server.audio.queue[server.audio.currentPlayingSong] = video.videoId;
@@ -179,7 +227,7 @@ module.exports = class Audio
                     if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
                     server.audio.queue = Tools.addIntoArray(video.videoId,queuePos-1,server.audio.queue);
                 }
-            }
+            } */
         }
         else // Local
         {
@@ -639,7 +687,14 @@ module.exports = class Audio
                             if(server.global.messageTemp[i].messageId == msg.id)
                             {
                                 server.global.messageTemp.splice(i,1);
-                                msg.delete();
+                                try
+                                {
+                                    msg.delete();
+                                }
+                                catch(err)
+                                {
+                                    console.err(`Message id ${msg.id} can't be reach`)
+                                }
                                 Tools.serverSave(server);
                                 break;
                             }
@@ -854,7 +909,17 @@ module.exports = class Audio
                 server.audio.lastQueue.channelId = msg.channel.id;
                 Tools.serverSave(server);
                 setTimeout(function(){
-                    if(server.audio.lastQueue.messageId != null) msg.delete();
+                    if(server.audio.lastQueue.messageId != null)
+                    {
+                        try
+                        {
+                            msg.delete();
+                        }
+                        catch(err)
+                        {
+                            console.err(`Message id ${msg.id} can't be reach`)
+                        }
+                    }
                 },5000);
             });
             server.audio.lastQueue.channelId=undefined;
@@ -900,7 +965,14 @@ module.exports = class Audio
                     message.author.send('Downloading...')
                     .then(msg => {
                         setTimeout(function(){
-                            msg.delete();
+                            try
+                            {
+                                msg.delete();
+                            }
+                            catch(err)
+                            {
+                                console.err(`Message id ${msg.id} can't be reach`)
+                            }
                         },120000);
                     });
                     let filePath = `./audio/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
@@ -910,7 +982,14 @@ module.exports = class Audio
                         message.author.send('Uploading...')
                         .then(msg => {
                             setTimeout(function(){
-                                msg.delete();
+                                try
+                                {
+                                    msg.delete();
+                                }
+                                catch(err)
+                                {
+                                    console.err(`Message id ${msg.id} can't be reach`)
+                                }
                             },120000);
                         });
                         message.author.send({
