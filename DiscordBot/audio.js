@@ -206,28 +206,26 @@ module.exports = class Audio
                     }
                 }, 30000)
             });
-            
 
-            // -------------------------------------------------------------------------------------------------------------------------------------------- //
-            if(list == undefined) server.audio.queue.splice(queuePos, 0, video.videoId);
+            if(list == undefined) server.audio.queue.splice(queuePos, 0, {
+                title: video.title,
+                videoId: video.videoId,
+                url: video.url,
+                thumbnail: video.thumbnail
+            });
             else
             {
-                let videosId = [];
+                let videos = [];
                 list.videos.forEach(video => {
-                    videosId.push(video.videoId);
+                    videos.push({
+                        title: video.title,
+                        videoId: video.videoId,
+                        url: `https://www.youtube.com/watch?v=${video.videoId}`,
+                        thumbnail: video.thumbnail
+                    });
                 });
-                server.audio.queue.splice(queuePos, 0, ...videosId);
+                server.audio.queue.splice(queuePos, 0, ...videos);
             }
-            /* if(queuePos == server.audio.queue.length+1) server.audio.queue.push(video.videoId);
-            else
-            {
-                if(server.audio.currentPlayingSong == queuePos-1) server.audio.queue[server.audio.currentPlayingSong] = video.videoId;
-                else
-                {
-                    if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
-                    server.audio.queue = Tools.addIntoArray(video.videoId,queuePos-1,server.audio.queue);
-                }
-            } */
         }
         else // Local
         {
@@ -288,7 +286,7 @@ module.exports = class Audio
 
     static async runAudioEngine(servers, server, guild)
     {
-        console.log(`Audio Engine is running. File (queue) : ${server.audio.queue[server.audio.currentPlayingSong]}`);
+        console.log(`Audio Engine is running. File (queue) : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
 
         this.queueDisplay(server,16,true);
         server.audio.isPlaying = true;
@@ -296,7 +294,7 @@ module.exports = class Audio
         let voiceChannel = guild.channels.cache.get(servers[guild.id].global.lastVoiceChannelId)
         Theresa.joinVoice(server, voiceChannel);
 
-        if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // local file
+        if(server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // local file
         {
             server.audio.Engine = Voice.createAudioPlayer();
             server.audio.Engine.play(Voice.createAudioResource(server.audio.queue[server.audio.currentPlayingSong].substring(7)));
@@ -305,7 +303,7 @@ module.exports = class Audio
         else // youtube
         {
             server.audio.Engine = Voice.createAudioPlayer();
-            server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong],{filter:'audioonly',quality:'highest',highWaterMark:1 << 25})));
+            server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong].url,{filter:'audioonly',quality:'highest',highWaterMark:1 << 25})));
             server.global.voiceConnection.subscribe(server.audio.Engine);
         }
         Tools.serverSave(servers[guild.id]);
@@ -774,7 +772,7 @@ module.exports = class Audio
         {
             if(i == server.audio.currentPlayingSong)
             {
-                if(server.audio.queue[i].startsWith('[LOCAL]'))
+                if(server.audio.queue[i].url.startsWith('[LOCAL]'))
                 {
                     let tags = NodeID3.read(server.audio.queue[i].substring(7));
                     if(tags.title != undefined) text += `:arrow_right:  **${tags.title}**  :arrow_left:\n`;
@@ -783,13 +781,12 @@ module.exports = class Audio
                 else
                 {
                     // YouTube
-                    let video = await yts({ videoId: server.audio.queue[i] });
-                    text += `:arrow_right:  **${video.title}**  :arrow_left:\n`;
+                    text += `:arrow_right:  **${server.audio.queue[i].title}**  :arrow_left:\n`;
                 }
             }
             else
             {
-                if(server.audio.queue[i].startsWith('[LOCAL]'))
+                if(server.audio.queue[i].url.startsWith('[LOCAL]'))
                 {
                     let tags = NodeID3.read(server.audio.queue[i].substring(7));
                     if(tags.title != undefined) text += `${i+1}: ${tags.title}\n`;
@@ -798,8 +795,7 @@ module.exports = class Audio
                 else
                 {
                     // YouTube
-                    let video = await yts({ videoId: server.audio.queue[i] });
-                    text += `${i+1}: ${video.title}\n`;
+                    text += `${i+1}: ${server.audio.queue[i].title}\n`;
                 }
             }
 
@@ -809,7 +805,7 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // Embed generator
 
-        if(server.audio.queue[server.audio.currentPlayingSong] && server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]'))
+        if(server.audio.queue[server.audio.currentPlayingSong] && server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]'))
         {
             let tags = NodeID3.read(server.audio.queue[server.audio.currentPlayingSong].substring(7));
             var messageOption;
@@ -863,7 +859,8 @@ module.exports = class Audio
             .setColor('#000000')
             .setTitle('Music Queue  :notes:')
             .setDescription(text)
-            .setThumbnail(`https://img.youtube.com/vi/${server.audio.queue[server.audio.currentPlayingSong]}/sddefault.jpg`);
+            .setThumbnail(server.audio.queue[server.audio.currentPlayingSong].thumbnail);
+            // .setThumbnail(`https://img.youtube.com/vi/${server.audio.queue[server.audio.currentPlayingSong].videoId}/sddefault.jpg`);
 
             let row = new Discord.MessageActionRow()
             .addComponents(
