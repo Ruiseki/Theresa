@@ -243,24 +243,51 @@ module.exports = class Audio
             else
             {
                 let tags = NodeID3.read(array[0]),
-                title, artist;
+                title, artist, thumbnail;
                 if(tags.title === undefined) title = this.getNameFromPath(array[0],false);
                 else title = tags.title;
                 if(tags.artist === undefined) artist = '<unknown>';
                 else artist = tags.artist;
                 let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
                 
-                if(tags.image != undefined) Tools.simpleEmbed(server,message,text,tags.image.imageBuffer,true,true,30000);
-                else Tools.simpleEmbed(server,message,text,undefined,false,true,30000);
-                
-                if(queuePos == server.audio.queue.length+1) server.audio.queue.push(`[LOCAL]${array[0]}`);
+                if(tags.image != undefined)
+                {
+                    thumbnail = tags.image.imageBuffer;
+                    Tools.simpleEmbed(server,message,text,thumbnail,true,true,30000);
+                }
                 else
                 {
-                    if(server.audio.currentPlayingSong == queuePos-1) server.audio.queue[server.audio.currentPlayingSong] = `[LOCAL]${array[0]}`;
+                    thumbnail = undefined;
+                    Tools.simpleEmbed(server,message,text,undefined,false,true,30000);
+                }
+                
+                if(queuePos == server.audio.queue.length+1)
+                {
+                    server.audio.queue.push({
+                        title,
+                        url: `[LOCAL]${array[0]}`,
+                        artist,
+                    });
+                }
+                else
+                {
+                    if(server.audio.currentPlayingSong == queuePos-1)
+                    {
+                        server.audio.queue[server.audio.currentPlayingSong] = {
+                            title,
+                            url: `[LOCAL]${array[0]}`,
+                            artist,
+                        };
+                    }
                     else
                     {
                         if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
-                        server.audio.queue = Tools.addIntoArray(`[LOCAL]${array[0]}`,queuePos-1,server.audio.queue);
+                        server.audio.queue = Tools.addIntoArray({
+                            title,
+                            url: `[LOCAL]${array[0]}`,
+                            artist,
+                            thumbnail
+                        }, queuePos-1, server.audio.queue);
                     }
                 }
             }
@@ -297,7 +324,7 @@ module.exports = class Audio
         if(server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // local file
         {
             server.audio.Engine = Voice.createAudioPlayer();
-            server.audio.Engine.play(Voice.createAudioResource(server.audio.queue[server.audio.currentPlayingSong].substring(7)));
+            server.audio.Engine.play(Voice.createAudioResource(server.audio.queue[server.audio.currentPlayingSong].url.substring(7)));
             server.global.voiceConnection.subscribe(server.audio.Engine);
         }
         else // youtube
@@ -774,9 +801,7 @@ module.exports = class Audio
             {
                 if(server.audio.queue[i].url.startsWith('[LOCAL]'))
                 {
-                    let tags = NodeID3.read(server.audio.queue[i].substring(7));
-                    if(tags.title != undefined) text += `:arrow_right:  **${tags.title}**  :arrow_left:\n`;
-                    else text += `:arrow_right:  **${this.getNameFromPath(server.audio.queue[i].substring(7))}**  :arrow_left:\n`;
+                    text += `:arrow_right:  **${server.audio.queue[i].title}**  :arrow_left:\n`;
                 }
                 else
                 {
@@ -788,9 +813,7 @@ module.exports = class Audio
             {
                 if(server.audio.queue[i].url.startsWith('[LOCAL]'))
                 {
-                    let tags = NodeID3.read(server.audio.queue[i].substring(7));
-                    if(tags.title != undefined) text += `${i+1}: ${tags.title}\n`;
-                    else text += `${i+1}: ${this.getNameFromPath(server.audio.queue[i].substring(7),false)}\n`;
+                    text += `${i+1}: ${server.audio.queue[i].title}\n`;
                 }
                 else
                 {
@@ -801,13 +824,13 @@ module.exports = class Audio
 
             if(i-startAt == nbrOfMusicDisplayed-1) break;
         }
-
+        
         // --------------------------------------------------------------------------------
         // Embed generator
 
         if(server.audio.queue[server.audio.currentPlayingSong] && server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]'))
         {
-            let tags = NodeID3.read(server.audio.queue[server.audio.currentPlayingSong].substring(7));
+            let tags = NodeID3.read(server.audio.queue[server.audio.currentPlayingSong].url.substring(7));
             var messageOption;
 
             if(tags.image != undefined)

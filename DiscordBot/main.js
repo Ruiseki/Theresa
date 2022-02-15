@@ -44,7 +44,7 @@ var clientActivity = [
     `t!help`,
     `t!help`,
     `t!a [music title]`,
-    `Version : 0.3.0`
+    `Version : 0.3.1`
 ];
 
 client.once('ready', () => {
