@@ -674,6 +674,8 @@ module.exports = class Audio
         }
         else if(args[0] == 'shuffle' || args[0] == 'sh') this.error(server,message,3,'Work in progress');
         else if(args[0] == 'current' || args[0] == 'ct') this.error(server,message,3,'Work in progress');
+
+        Tools.serverSave(server);
     }
 
     static miscellaneous(servers,message,command,args)
@@ -739,7 +741,23 @@ module.exports = class Audio
                 {
                     if(music.substring(music.length-4) == '.mp3' || music.substring(music.length-4) == '.wav')
                     {
-                        music = '[LOCAL]'+this.getPathOfFile(music,musicDirectory);
+                        let tags = NodeID3.read(this.getPathOfFile(music, musicDirectory)[0]);
+                        if(tags.title != undefined)
+                        {
+                            music = {
+                                title: tags.title,
+                                url: '[LOCAL]'+this.getPathOfFile(music,musicDirectory),
+                                artist: tags.artist,
+                            };
+                        }
+                        else
+                        {
+                            music = {
+                                title: music.substring(0, music.length-4),
+                                url: '[LOCAL]'+this.getPathOfFile(music,musicDirectory),
+                                artist: tags.artist,
+                            };
+                        }
                         shuffledMusic.push(music);
                     }
                 }
