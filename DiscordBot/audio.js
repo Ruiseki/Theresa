@@ -28,10 +28,48 @@ var previousBtn = new Discord.MessageButton()
     stopBtn = new Discord.MessageButton()
                     .setCustomId('stopBtn')
                     .setLabel('⏹')
+                    .setStyle('SECONDARY'),
+    viewMore = new Discord.MessageButton()
+                    .setCustomId('viewMore')
+                    .setLabel('🔎')
+                    .setStyle('SECONDARY'),
+    loop = new Discord.MessageButton()
+                    .setCustomId('loop')
+                    .setLabel('🔂')
+                    .setStyle('SECONDARY'),
+    loopQueue = new Discord.MessageButton()
+                    .setCustomId('loopQueue')
+                    .setLabel('🔁')
+                    .setStyle('SECONDARY'),
+    replay = new Discord.MessageButton()
+                    .setCustomId('replay')
+                    .setLabel('⏪')
                     .setStyle('SECONDARY');
 
 module.exports = class Audio
 {
+    static init(servers, client)
+    {
+        client.on('interactionCreate', i => {
+            if(!i.isButton()) return;
+            
+            if(i.customId == 'nextBtn') Audio.queueMgr(servers, i.message, 'queue', ['>']);
+            else if(i.customId == 'previousBtn') Audio.queueMgr(servers, i.message, 'queue', ['<']);
+            else if(i.customId == 'stopBtn') Audio.queueMgr(servers, i.message, 'queue', ['clear']);
+            else if(i.customId == 'pausePlayBtn')
+            {
+                if(!servers[i.guild.id].audio.pause) Audio.engineMgr(servers, i.message, 'player', ['pause']);
+                else Audio.engineMgr(servers, i.message, 'p', ['play']);
+                Audio.queueDisplay(servers[i.guildId], 16, true);
+            }
+
+            else if(i.customId == 'viewMore') Audio.queueMgr(servers, i.message, 'queue', []);
+            else if(i.customId == 'loop') Audio.queueMgr(servers, i.message, 'queue', ['loop']);
+            else if(i.customId == 'loopQueue') Audio.queueMgr(servers, i.message, 'queue', ['loopqueue']);
+            else if(i.customId == 'replay') Audio.engineMgr(servers, i.message, 'player', ['replay']);
+        });
+    }
+
     static cmd(servers,prefix,command,args,message)
     {
         message.delete();
@@ -466,7 +504,7 @@ module.exports = class Audio
         if(!args[0])
         {
             if(!server.audio.queue[0]) return;
-            else this.queueDisplay(server,40,true);
+            else this.queueDisplay(server, 40, true);
         }
         else if(args[0] == 'clear' || args[0] == 'c')
         {
@@ -776,6 +814,35 @@ module.exports = class Audio
             }
             else this.queueDisplay(server, message, 16, true)
         }
+        else if(args[0] == 'folder' || args[0] == 'fd')
+        {
+            if(!args[1])
+            {
+                this.error(server, message, 1, 'Folder path is missing');
+                return;
+            }
+            else
+            {
+                args.shift();
+                let filePath = args.join(' ');
+                if(FS.existsSync(filePath))
+                {
+                    FS.readdirSync(filePath).forEach(file => {
+                        if(file.substring(file.length-4) == '.mp3' || file.substring(file.length-4) == '.wav' || file.substring(file.length-5) == '.flac')
+                        {
+                            server.audio.queue.push({
+                                title: file,
+                                url: `[LOCAL]${filePath}\\${file}`,
+                                artist: '<unknown>'
+                            });
+                        }
+                    });
+
+                    if(!server.audio.isPlaying) this.runAudioEngine(servers, server, server.global.guild);
+                    else this.queueDisplay(server, 16, true);
+                }
+            }
+        }
     }
     
     static async queueDisplay(server, nbrOfMusicDisplayed, isKeep)
@@ -785,22 +852,31 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // Indique the loop status in top of the queue
 
-        text = `*Playing options :* `;
+        text = '*Playing options :* ';
 
         if(!server.audio.loop && !server.audio.queueLoop && !server.audio.restart)
         {
-            text += '**None**\n\n';
+            text += '**None**';
         }
         else
         {
             if(server.audio.loop) text += '🔂';
             if(server.audio.queueLoop) text += '🔁';
             if(server.audio.restart) text += '⏏';
-            text += '\n\n';
         }
+        text += '\n';
+
+        // --------------------------------------------------------------------------------
+        // playing status
+
+        text += '*Status :* ';
+        if(server.audio.pause) text += '**Paused** ⏸';
+        else text += '**Playing** ▶';
+        text += '\n\n';
 
         // --------------------------------------------------------------------------------
         // calculating the index of the first music to be displayed
+
 
         let startAt;
         if(server.audio.queue.length <= nbrOfMusicDisplayed) startAt = 0;
@@ -859,18 +935,25 @@ module.exports = class Audio
                 .setDescription(text)
                 .setThumbnail('attachment://file.jpg');
 
-                let row = new Discord.MessageActionRow()
+                let firstRow = new Discord.MessageActionRow()
                 .addComponents(
                     previousBtn,
                     stopBtn,
                     pausePlayBtn,
                     nextBtn
                 );
+                let secondRow = new Discord.MessageActionRow()
+                .addComponents(
+                    viewMore,
+                    loop,
+                    loopQueue,
+                    replay
+                );
 
                 messageOption = {
                     embeds: [embed],
                     files: [tags.image.imageBuffer],
-                    components: [row]
+                    components: [firstRow, secondRow]
                 };
             }
             else
@@ -880,17 +963,24 @@ module.exports = class Audio
                 .setTitle('Music Queue  :notes:')
                 .setDescription(text);
 
-                let row = new Discord.MessageActionRow()
+                let firstRow = new Discord.MessageActionRow()
                 .addComponents(
                     previousBtn,
                     stopBtn,
                     pausePlayBtn,
                     nextBtn
                 );
-                
+                let secondRow = new Discord.MessageActionRow()
+                .addComponents(
+                    viewMore,
+                    loop,
+                    loopQueue,
+                    replay
+                );
+
                 messageOption = {
                     embeds: [embed],
-                    components: [row]
+                    components: [firstRow, secondRow]
                 };
             }
         }
@@ -903,18 +993,25 @@ module.exports = class Audio
             .setThumbnail(server.audio.queue[server.audio.currentPlayingSong].thumbnail);
             // .setThumbnail(`https://img.youtube.com/vi/${server.audio.queue[server.audio.currentPlayingSong].videoId}/sddefault.jpg`);
 
-            let row = new Discord.MessageActionRow()
-            .addComponents(
-                previousBtn,
-                stopBtn,
-                pausePlayBtn,
-                nextBtn
-            );
-            
-            messageOption = {
-                embeds: [embed],
-                components: [row]
-            };
+            let firstRow = new Discord.MessageActionRow()
+                .addComponents(
+                    previousBtn,
+                    stopBtn,
+                    pausePlayBtn,
+                    nextBtn
+                );
+                let secondRow = new Discord.MessageActionRow()
+                .addComponents(
+                    viewMore,
+                    loop,
+                    loopQueue,
+                    replay
+                );
+
+                messageOption = {
+                    embeds: [embed],
+                    components: [firstRow, secondRow]
+                };
         }
 
         // --------------------------------------------------------------------------------

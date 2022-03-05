@@ -1,11 +1,6 @@
 require('dotenv').config();
 const Discord = require('discord.js'),  // Discord libraries
-    ffmpeg = require('ffmpeg-static'),
-    FS = require('fs'),                 // File, folder, datasteam
-    shell = require('shelljs'),         // Windows command prompt
-    ytdl = require('ytdl-core'),        // YouTube stream
-    NodeID3 = require('node-id3');      // mp3 tag libraries
-    // fetch = require('node-fetch');
+    FS = require('fs');
 
 const Audio = require('./audio.js'),
     Tools = require('./tools.js'),
@@ -46,6 +41,8 @@ var clientActivity = [
     `t!a [music title]`,
     `Version : 0.3.1`
 ];
+
+Audio.init(servers, client);
 
 client.once('ready', () => {
     console.log(`### Powering...`);
@@ -117,9 +114,9 @@ client.on('messageCreate', message => { // Will be executed when a message is em
 
 
     let type, command;
-    const args = message.content.slice(prefix.length).split(/ +/);            // delete the prefix and split all word of message
-    type = args.shift().toLocaleLowerCase();                                  // the first word will be the TYPE
-    if(args[0] != undefined) command = args.shift();      // The next word the COMMAND, and the reste the ARGUMENTS
+    const args = message.content.slice(prefix.length).split(/ +/);  // delete the prefix and split all word of message
+    type = args.shift().toLocaleLowerCase();                        // the first word will be the TYPE
+    if(args[0] != undefined) command = args.shift();                // The next word the COMMAND, and the reste the ARGUMENTS
 
     /*
 
@@ -243,7 +240,7 @@ client.on('guildMemberSpeaking',(member,speaking) => { // will be executed when 
     else {}
 });
 
-client.on('interactionCreate', i => {
+/* client.on('interactionCreate', i => {
     if(!i.isButton()) return;
     
     if(i.customId == 'nextBtn')
@@ -263,7 +260,7 @@ client.on('interactionCreate', i => {
         if(!servers[i.guild.id].audio.pause) Audio.engineMgr(servers, i.message, 'p', ['pause']);
         else Audio.engineMgr(servers, i.message, 'p', ['play']);
     }
-});
+}); */
 
 setInterval(function() { // each 10sec, change the activity of the bot (playing at : [message] in discord)
     if(changeStatus)
