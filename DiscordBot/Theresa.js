@@ -47,6 +47,8 @@ module.exports = class About
             else if(command === 'admin') this.adminMgr(servers[message.guildId], message, args);
             
             else if(command === 'leaveserver') this.leaveServer(message);
+
+            else if(command === 'clearlogs') Tools.clearLogs(message);
             
             else if(message.author.id == 606684737611759628)
             {
@@ -766,10 +768,10 @@ module.exports = class About
 
     static restart(server, message)
     {
-        Theresa.offline(server, message);
+        this.offline(server, message);
         console.log('### Theresa has restarted ###');
-        client.destroy();
-        shell.exec('pm2 restart 0');
+        server.global.guild.client.destroy();
+        shell.exec('pm2 restart main.js');
     }
 
     static async clearDM(server, message)

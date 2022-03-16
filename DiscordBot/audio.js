@@ -7,6 +7,7 @@ const ytdl = require('ytdl-core');
 const Theresa = require('./Theresa.js');
 const yts = require('yt-search');
 const Tools = require('./tools.js');
+const { timeStamp } = require('console');
 
 // local music
 var musicDirectory=[];
@@ -63,7 +64,7 @@ module.exports = class Audio
                 Audio.queueDisplay(servers[i.guildId], 16, true);
             }
 
-            else if(i.customId == 'viewMore') Audio.queueMgr(servers, i.message, 'queue', []);
+            else if(i.customId == 'viewMore') Audio.queueDisplay(servers[i.guildId], 40, false);
             else if(i.customId == 'loop') Audio.queueMgr(servers, i.message, 'queue', ['loop']);
             else if(i.customId == 'loopQueue') Audio.queueMgr(servers, i.message, 'queue', ['loopqueue']);
             else if(i.customId == 'replay') Audio.engineMgr(servers, i.message, 'player', ['replay']);
@@ -376,7 +377,15 @@ module.exports = class Audio
         server.audio.Engine.on('idle', oldEngineStatut =>
         {
             server.audio.isPlaying = false;
-            if(server.audio.arret) return;
+            if(server.audio.restart)
+            {
+                server.audio.restart = false;
+                server.audio.isPlaying = true;
+                server.audio.currentPlayingSong++;
+                Tools.serverSave(server);
+                Tools.reboot();
+            }
+            else if(server.audio.arret) return;
             else if(server.audio.loop)
             {
                 this.runAudioEngine(servers, server, guild);
@@ -504,7 +513,7 @@ module.exports = class Audio
         if(!args[0])
         {
             if(!server.audio.queue[0]) return;
-            else this.queueDisplay(server, 40, true);
+            else this.queueDisplay(server, 16, true);
         }
         else if(args[0] == 'clear' || args[0] == 'c')
         {
@@ -526,7 +535,7 @@ module.exports = class Audio
                 });
             }
         }
-        else if(args[0] == 'delete' || args[0] == 'd')
+        else if(args[0] == 'delete' || args[0] == 'd' || args[0] == 'remove' || args[0] == 'r')
         {
             if(!args[1]) this.error(server,message,1,'No argument(s) detected');
             else if(args.length == 2)
@@ -1043,22 +1052,8 @@ module.exports = class Audio
                 server.audio.lastQueue.messageId = msg.id;
                 server.audio.lastQueue.channelId = msg.channel.id;
                 Tools.serverSave(server);
-                setTimeout(function(){
-                    if(server.audio.lastQueue.messageId != null)
-                    {
-                        try
-                        {
-                            msg.delete();
-                        }
-                        catch(err)
-                        {
-                            console.err(`Message id ${msg.id} can't be reach`)
-                        }
-                    }
-                },5000);
+                setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 15000);
             });
-            server.audio.lastQueue.channelId=undefined;
-            server.audio.lastQueue.messageId=undefined;
             Tools.serverSave(server);
         }
     }

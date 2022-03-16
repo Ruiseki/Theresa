@@ -11,10 +11,14 @@ module.exports = class tools
     {
         if(command === 'logerror') this.logError(message);
         else if(command === 'log') this.log(message);
-        else if(command === 'clearlogs') this.clearLogs(message);
 
         else return false;
         return true;
+    }
+
+    static reboot()
+    {
+        shell.exec('pm2 restart main.js');
     }
 
     static getRandomInt(max)
@@ -231,10 +235,9 @@ module.exports = class tools
     
     static clearLogs(message)
     {
-        message.delete();
         if(message.author.id !== '606684737611759628') return;
         FS.writeFileSync(`c:/users/ruiseki/.pm2/logs/main-error.log`,'');
-        FS.writeFileSync(`c:/users/ruiseki/main-out.log`,'');
+        FS.writeFileSync(`c:/users/ruiseki/.pm2/logs/main-out.log`,'');
     }
 
     static logError(message)
