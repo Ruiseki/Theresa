@@ -39,7 +39,7 @@ var clientActivity = [
     `t!help`,
     `t!help`,
     `t!a [music title]`,
-    `Version : 0.3.1`
+    `Version : BETA 0.3.1`
 ];
 
 Audio.init(servers, client);

@@ -517,10 +517,15 @@ module.exports = class Audio
         }
         else if(args[0] == 'clear' || args[0] == 'c')
         {
-            server.audio.currentPlayingSong = null;
             server.audio.queue.splice(0,server.audio.queue.length);
-            if(server.audio.loop) server.audio.loop = false;
-            if(server.audio.queueLoop) server.audio.queueLoop = false;
+            server.audio.currentPlayingSong = null;
+            server.audio.loop = false;
+            server.audio.queueLoop = false;
+            server.audio.isPlaying = false;
+            server.audio.pause = false;
+            server.audio.restart = false;
+            server.audio.arret = false;
+            server.audio.leave = false;
             if(server.audio.Engine) server.audio.Engine.stop();
             let text = '**Done ✅**';
             Tools.simpleEmbed(server,message,text,undefined,false,true,1000);
@@ -846,6 +851,8 @@ module.exports = class Audio
                             });
                         }
                     });
+                    
+                    if(server.audio.currentPlayingSong == null) server.audio.currentPlayingSong = 0;
 
                     if(!server.audio.isPlaying) this.runAudioEngine(servers, server, server.global.guild);
                     else this.queueDisplay(server, 16, true);

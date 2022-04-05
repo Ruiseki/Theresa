@@ -91,7 +91,7 @@ module.exports = class About
         else if(command === 'moveuser' || command === 'm') this.moveAllUser(servers[message.guild.id], message, args); // --> help
         
         // else if(command === 'rec' || command == 'recall') this.recallPing(servers[message.guildId], message, args);
-        else if(command === 'trackv' || command == 'tv') this.trackingVoice(servers[message.guildId], message, args); // --> help
+        else if(command === 'trackvoive' || command == 'tv') this.trackingVoice(servers[message.guildId], message, args); // --> help
         
         else if(command === 'cleardm') this.clearDM(servers[message.guildId], message); // --> help
         else if(command === 'invitelink') this.inviteLink(servers[message.guildId] ,message); // --> help
@@ -317,7 +317,7 @@ module.exports = class About
                 {
                     server.tracking.voice[index].isActivated = true;
                 }
-                Tools.simpleEmbed(server, message, '**✅ Done**', undefined, false, true, 2000);
+                Tools.simpleEmbed(server, message, '**✅ Alert enable**', undefined, false, true, 2000);
             }
         }
         else if(args[0] == 'd' || args[0] == 'disable')
@@ -326,7 +326,7 @@ module.exports = class About
             else
             {
                 server.tracking.voice[index].isActivated = false;
-                Tools.simpleEmbed(server, message, '**✅ Done**', undefined, false, true, 2000)
+                Tools.simpleEmbed(server, message, '**✅ Alert disabled**', undefined, false, true, 2000)
             }
         }
         else if(args[0] == 's' || args[0] == 'status')
@@ -365,8 +365,9 @@ module.exports = class About
                     else text += `***${member.nickname}***\n`;
                 });
 
-                Tools.simpleEmbed(server, message, text, undefined, false, true, 60000);
+                Tools.simpleEmbed(server, message, text);
             }
+            else Tools.simpleEmbed(server, message, '**❎ Profile unknown\nEnable with `t!trackvoice enable` to create your profile**', undefined, false, true, 60000);
         }
         else if(args[0] == 'a' || args[0] == 'add')
         {
@@ -429,6 +430,9 @@ module.exports = class About
                     {
                         server.tracking.voice[index].usersAdded.push(targetUserId);
                         server.tracking.voice[index].inChannel.push(targetChannel.id);
+
+                        // faire le message de retour
+                        // Tools.simpleEmbed(server, message, '**✅ Added user **', undefined, false, true, 2000);
                     }
                     else
                     {
