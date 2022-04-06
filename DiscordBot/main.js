@@ -192,9 +192,10 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
         Tools.serverSave(servers[newState.guild.id]);
     }
 
-    if(newState.channel != null && oldState.channel != newState.channel) // voice tracking DM code here
+    if(newState.channel != null && oldState.channel != newState.channel) // voice tracking
     {
-        for(voiceTrackingElement of servers[newState.guild.id].tracking.voice)
+        
+        /* for(voiceTrackingElement of servers[newState.guild.id].tracking.voice)
         {
             voiceTrackingElement.usersAdded.forEach((userId, index) => {
                 if(userId == newState.id && newState.channel.id == voiceTrackingElement.inChannel[index])
@@ -230,7 +231,7 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
                     }
                 }
             });
-        }
+        } */
     }
 });
 
