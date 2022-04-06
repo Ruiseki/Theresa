@@ -434,11 +434,29 @@ module.exports = class About
             
             if(!isRemoving)
             {
+                let targetUserIndex = server.tracking.voice[index].usersAndChannels.findIndex(value => {
+                    if(value.userId == targetUserId) return value;
+                });
+
+                if(targetUserIndex == -1)
+                {
+                    let newUsersAndChannelsObject = {
+                        "userId": targetUserId,
+                        "channelsIds": []
+                    };
+                    server.tracking.voice[index].usersAndChannels.push(newUsersAndChannelsObject);
+                    targetUserIndex = server.tracking.voice[index].usersAndChannels.length - 1
+                }
+
                 if(targetChannel != 'all')
                 {
-                    
+                    let targetChannelIndex = server.tracking.voice[index].usersAndChannels[targetUserIndex].channelsIds.findIndex(value => {
+                        if(value == targetChannel.id) return value;
+                    });
+
+                    if(targetChannelIndex == -1) server.tracking.voice[index].usersAndChannels[targetUserIndex].channelsIds.push(targetChannel.id)
                 }
-                else if(targetChannel == 'all')
+                else if(targetChannel == 'all') ;
             }
         }
         else if(args[0] == 'aut' || args[0] == 'authorize')
