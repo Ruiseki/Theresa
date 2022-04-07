@@ -317,7 +317,7 @@ module.exports = class About
                         {
                             userId: message.author.id,
                             isActivated: true,
-                            authorizedUsers:[],
+                            allowedUsers:[],
                             usersAndChannels:[]
                         }
                     );
@@ -348,31 +348,44 @@ module.exports = class About
                 else text += '**❎ Service is OFF**';
                 text += '\n\n';
 
-                let arrayOfChannel = [];
-                server.tracking.voice[index].inChannel.forEach(channel => { // get all added channel
-                    if(!Tools.isElementPresentInArray(arrayOfChannel, channel)) arrayOfChannel.push(channel);
+                let voice = server.tracking.voice;
+                let arrayOfObject = [];
+
+                let authorIndex = voice.findIndex(value => {
+                    if(value.userId == message.author.id) return value;
                 });
 
-                arrayOfChannel.forEach(channelId => { // find all corresponding user
-                    let channel = server.global.guild.channels.cache.get(channelId);
-                    text += `**${channel.name}**\n`;
-                    
-                    server.tracking.voice[index].usersAdded.forEach((userId, i) => {
-                        if(server.tracking.voice[index].inChannel[i] == channelId)
+                voice[authorIndex].usersAndChannels.forEach(userAndChannel => {
+                    userAndChannel.channelsId.forEach(channelId => {
+                        let index = -1;
+                        arrayOfObject.forEach((channelObject, i) => { // selecting the index
+                            if(channelObject.id == channelId) index = i;
+                        });
+
+                        if(index == -1)
                         {
-                            let member = server.global.guild.members.cache.get(userId);
-                            if(member.nickname == null) text += `***${member.user.username}***\n`;
-                            else text += `***${member.nickname}***\n`;
+                            arrayOfObject.push({
+                                "id":channelId,
+                                "usersId":[]
+                            });
+                            index = arrayOfObject.length - 1;
                         }
+
+                        arrayOfObject[index].usersId.push(userAndChannel.userId);
                     });
                 });
 
-                text += '\nYou have autorized :\n';
-                server.tracking.voice[index].authorizedUsers.forEach(userId => {
-                    let member = server.global.guild.members.cache.get(userId);
-                    if(member.nickname == null) text += `***${member.user.username}***\n`;
-                    else text += `***${member.nickname}***\n`;
-                });
+                for(let object of arrayOfObject)
+                {
+                    let channel = server.global.guild.channels.cache.get(object.id);
+                    text += `**${channel.name}**\n`;
+                    for(let userId of object.usersId)
+                    {
+                        let member = server.global.guild.members.cache.get(userId);
+                        text += `${member.user.username}\n`;
+                    }
+                    text += '\n';
+                }
 
                 Tools.simpleEmbed(server, message, text);
             }
@@ -396,11 +409,9 @@ module.exports = class About
             }
             else
             {
-                var targetUserId;
-                if(args[1] == 'all') targetUserId == 'all';
-                else targetUserId = Tools.findUserId(args[1], server.global.guild);
+                var targetUserId = Tools.findUserId(args[1], server.global.guild);
 
-                if(targetUserId == undefined || (targetUserId == 'all' && !isRemoving))
+                if(targetUserId == undefined)
                 {
                     Tools.simpleEmbed(server, message, '**❌ Unknown user**', undefined, false, true, 10000);
                     return;
@@ -413,20 +424,14 @@ module.exports = class About
             }
 
             var targetChannel;
-            if(!args[2] && !isRemoving) // the the targeted channel (can be all the channels of the guild)
+            if(!args[2] && !isRemoving) // the the targeted channel (can be nothing is removing)
             {
                 // short help page
                 return;
             }
             else
             {
-                if(args[2] == 'all')
-                {
-                    // targetChannel = 'all'
-                    Tools.simpleEmbed(server, message, '🖥 Work in progress 🖥', undefined, false, true, 10000);
-                    return;
-                }
-                else if(targetChannel != undefined)
+                if(targetChannel == undefined && !isRemoving)
                 {
                     targetChannel = Tools.findChannel(args[2], message);
                     if(targetChannel == undefined)
@@ -435,7 +440,6 @@ module.exports = class About
                         return;
                     }
                 }
-
             }
 
             let voice = server.tracking.voice[index],
@@ -456,36 +460,33 @@ module.exports = class About
                     targetUserIndex = voice.usersAndChannels.length - 1;
                 }
 
-                if(targetChannel != 'all')
+                let targetChannelIndex = voice.usersAndChannels[targetUserIndex].channelsId.findIndex(value => {
+                    if(value == targetChannel.id) return value;
+                });
+
+                if(targetChannelIndex == -1) voice.usersAndChannels[targetUserIndex].channelsId.push(targetChannel.id);
+                else
                 {
-                    let targetChannelIndex = voice.usersAndChannels[targetUserIndex].channelsId.findIndex(value => {
-                        if(value == targetChannel.id) return value;
-                    });
-
-                    if(targetChannelIndex == -1) voice.usersAndChannels[targetUserIndex].channelsId.push(targetChannel.id);
-                    else
-                    {
-                        Tools.simpleEmbed(server, message, '**❗ Channel already added for this user**', undefined, false, true, 10000);
-                        return;
-                    }
-                    
-                    let targetMember = server.global.guild.members.cache.get(targetUserId);
-                    let authorMember = server.global.guild.members.cache.get(message.author.id);
-
-                    if(voice.authorizedUsers.indexOf(targetUserId) == -1 && voice.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now())
-                    {
-                        targetMember.user.send({
-                            embeds:[{
-                                color:'#000000',
-                                description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice authorize ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
-                                title:`Authorization request from **${authorMember.user.username}**`
-                            }]
-                        });
-                        voice.usersAndChannels[targetUserIndex].lastDM = Date.now();
-                    }
-
-                    Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message, '**❗ Channel already added for this user**', undefined, false, true, 10000);
+                    return;
                 }
+                
+                let targetMember = server.global.guild.members.cache.get(targetUserId);
+                let authorMember = server.global.guild.members.cache.get(message.author.id);
+
+                if(voice.allowedUsers.indexOf(targetUserId) == -1 && voice.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now())
+                {
+                    /* targetMember.user.send({
+                        embeds:[{
+                            color:'#000000',
+                            description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice allow ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
+                            title:`Authorization request from **${authorMember.user.username}**`
+                        }]
+                    }); */
+                    voice.usersAndChannels[targetUserIndex].lastDM = Date.now();
+                }
+
+                Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
                 // CHECK THE PERMISSIONS OF THE USER /!\
                 /* else if(targetChannel == 'all')
                 {
@@ -497,23 +498,23 @@ module.exports = class About
             }
             else
             {
-                if(targetUserId != 'all' && targetUserIndex == -1)
+                if(targetUserIndex == -1)
                 {
-                    Tools.simpleEmbed(server, message, '**❌ Can\'t find this user in your list. Try `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    Tools.simpleEmbed(server, message, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
                     return;
                 }
 
                 let targetMember = server.global.guild.members.cache.get(targetUserId);
 
-                if(targetChannel == undefined && targetUserId != 'all')
+                if(targetChannel == undefined)
                 {
                     voice.usersAndChannels.splice(targetUserIndex, 1);
                     Tools.simpleEmbed(server, message, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
                 }
-                else if(targetChannel != 'all' && targetUserId != 'all')
+                else
                 {
                     let targetChannelIndex = voice.usersAndChannels[targetUserIndex].channelsId.indexOf(targetChannel.id);
-                    if(targetChannelIndex == -1) Tools.simpleEmbed(server, message, '**❌ Can\'t find the channel for this user in your list. Try `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    if(targetChannelIndex == -1) Tools.simpleEmbed(server, message, '**❌ Can\'t find the channel for this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
                     else
                     {
                         voice.usersAndChannels[targetUserIndex].channelsId.splice(targetChannelIndex, 1);
@@ -522,7 +523,7 @@ module.exports = class About
                 }
             }
         }
-        else if(args[0] == 'aut' || args[0] == 'authorize')
+        else if(args[0] == 'al' || args[0] == 'allow')
         {
             let targetUserId = Tools.findUserId(args[1], server.global.guild);
             if(targetUserId == undefined)
@@ -534,11 +535,16 @@ module.exports = class About
             {
                 /* if(targetUserId == message.author.id)
                 {
-                    Tools.simpleEmbed(server, message, '**❌ You can\'t authorize yourself !**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
                     return;
                 }
-                else  */if(!Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUserId)) server.tracking.voice[index].authorizedUsers.push(targetUserId);
-                else /* already added */;
+                else  */if(!Tools.isElementPresentInArray(server.tracking.voice[index].allowedUsers, targetUserId))
+                {
+                    let targetMember = server.global.guild.members.cache.get(targetUserId);
+                    server.tracking.voice[index].allowedUsers.push(targetUserId);
+                    Tools.simpleEmbed(server, message, `**✅ Added ${targetMember.user.username}**`, undefined, false, true, 10000);
+                }
+                else Tools.simpleEmbed(server, message, '**❗ User already added !**', undefined, false, true, 10000);;
             }
         }
         else if(args[0] == 'rev' || args[0] == 'revoke')
@@ -546,18 +552,19 @@ module.exports = class About
             let targetUserId = Tools.findUserId(args[1], server.global.guild);
             if(targetUserId == undefined)
             {
-                // user not found
+                Tools.simpleEmbed(server, message, '**❌ The user doesn\'t exist**', undefined, false, true, 10000);
                 return;
             }
             else
             {
-                if(Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUserId))
+                let targetUserIndex = server.tracking.voice[index].allowedUsers.indexOf(targetUserId);
+                if(targetUserIndex != -1)
                 {
-                    server.tracking.voice[index].authorizedUsers.forEach((element, i) => {
-                        if(element == targetUserId) server.tracking.voice[index].authorizedUsers.splice(i, 1);
-                    });
+                    let targetMember = server.global.guild.members.cache.get(targetUserId);
+                    server.tracking.voice[index].allowedUsers.splice(targetUserIndex, 1);
+                    Tools.simpleEmbed(server, message, `**✅ Revoked ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
-                else /* already added */;
+                else Tools.simpleEmbed(server, message, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 10000);
             }
         }
 
@@ -660,7 +667,7 @@ module.exports = class About
                     /*
                     userId,                 // the id of the user who had activate the service
                     isActivated: true,      // if the service is turn off. When turn off, user dont lose his parameters
-                    authorizedUsers:[],     // accepted user. Not everyone can track you
+                    allowedUsers:[],        // accepted user. Not everyone can track you
                     usersAndChannels:
                     [           
                         {           
