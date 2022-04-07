@@ -405,39 +405,46 @@ module.exports = class About
                     Tools.simpleEmbed(server, message, '**❌ Unknown user**', undefined, false, true, 10000);
                     return;
                 }
-                else if(targetUserId == message.author.id)
+                /* else if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
                     return;
-                }
+                } */
             }
 
-            if(!args[2]) // the the targeted channel (can be all the channels of the guild)
+            var targetChannel;
+            if(!args[2] && !isRemoving) // the the targeted channel (can be all the channels of the guild)
             {
                 // short help page
                 return;
             }
             else
             {
-                var targetChannel;
-                if(args[2] == 'all') targetChannel = 'all'
-                else targetChannel = Tools.findChannel(args[2], message);
-
-                if(targetChannel == undefined)
+                if(args[2] == 'all')
                 {
-                    Tools.simpleEmbed(server, message, '**❌ Unknown voice channel**', undefined, false, true, 10000)
+                    // targetChannel = 'all'
+                    Tools.simpleEmbed(server, message, '🖥 Work in progress 🖥', undefined, false, true, 10000);
                     return;
                 }
+                else if(targetChannel != undefined)
+                {
+                    targetChannel = Tools.findChannel(args[2], message);
+                    if(targetChannel == undefined)
+                    {
+                        Tools.simpleEmbed(server, message, '**❌ Unknown voice channel**', undefined, false, true, 10000)
+                        return;
+                    }
+                }
+
             }
 
-            let voice = server.tracking.voice[index];
+            let voice = server.tracking.voice[index],
+            targetUserIndex = voice.usersAndChannels.findIndex(value => {
+                if(value.userId == targetUserId) return value;
+            });
 
             if(!isRemoving)
             {
-                let targetUserIndex = voice.usersAndChannels.findIndex(value => {
-                    if(value.userId == targetUserId) return value;
-                });
-
                 if(targetUserIndex == -1)
                 {
                     let newUsersAndChannelsObject = {
@@ -456,12 +463,17 @@ module.exports = class About
                     });
 
                     if(targetChannelIndex == -1) voice.usersAndChannels[targetUserIndex].channelsId.push(targetChannel.id);
-                    else Tools.simpleEmbed(server, message, '**❗ Channel already added for this user**', undefined, false, true, 10000);
+                    else
+                    {
+                        Tools.simpleEmbed(server, message, '**❗ Channel already added for this user**', undefined, false, true, 10000);
+                        return;
+                    }
+                    
+                    let targetMember = server.global.guild.members.cache.get(targetUserId);
+                    let authorMember = server.global.guild.members.cache.get(message.author.id);
 
                     if(voice.authorizedUsers.indexOf(targetUserId) == -1 && voice.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now())
                     {
-                        let targetMember = server.global.guild.members.cache.get(targetUserId);
-                        let authorMember = server.global.guild.members.cache.get(message.author.id);
                         targetMember.user.send({
                             embeds:[{
                                 color:'#000000',
@@ -471,6 +483,8 @@ module.exports = class About
                         });
                         voice.usersAndChannels[targetUserIndex].lastDM = Date.now();
                     }
+
+                    Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
                 }
                 // CHECK THE PERMISSIONS OF THE USER /!\
                 /* else if(targetChannel == 'all')
@@ -483,7 +497,29 @@ module.exports = class About
             }
             else
             {
+                if(targetUserId != 'all' && targetUserIndex == -1)
+                {
+                    Tools.simpleEmbed(server, message, '**❌ Can\'t find this user in your list. Try `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    return;
+                }
 
+                let targetMember = server.global.guild.members.cache.get(targetUserId);
+
+                if(targetChannel == undefined && targetUserId != 'all')
+                {
+                    voice.usersAndChannels.splice(targetUserIndex, 1);
+                    Tools.simpleEmbed(server, message, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
+                }
+                else if(targetChannel != 'all' && targetUserId != 'all')
+                {
+                    let targetChannelIndex = voice.usersAndChannels[targetUserIndex].channelsId.indexOf(targetChannel.id);
+                    if(targetChannelIndex == -1) Tools.simpleEmbed(server, message, '**❌ Can\'t find the channel for this user in your list. Try `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    else
+                    {
+                        voice.usersAndChannels[targetUserIndex].channelsId.splice(targetChannelIndex, 1);
+                        Tools.simpleEmbed(server, message, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.username}**`);
+                    }
+                }
             }
         }
         else if(args[0] == 'aut' || args[0] == 'authorize')
@@ -496,12 +532,12 @@ module.exports = class About
             }
             else
             {
-                if(targetUserId == message.author.id)
+                /* if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t authorize yourself !**', undefined, false, true, 10000);
                     return;
                 }
-                else if(!Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUserId)) server.tracking.voice[index].authorizedUsers.push(targetUserId);
+                else  */if(!Tools.isElementPresentInArray(server.tracking.voice[index].authorizedUsers, targetUserId)) server.tracking.voice[index].authorizedUsers.push(targetUserId);
                 else /* already added */;
             }
         }
