@@ -11,7 +11,7 @@ const { timeStamp } = require('console');
 
 // local music
 var musicDirectory=[];
-musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split(/ +/);
+musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split("|");
 
 // button
 var previousBtn = new Discord.MessageButton()
