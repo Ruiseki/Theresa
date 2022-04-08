@@ -62,7 +62,7 @@ module.exports = class About
                 {
                     try
                     {
-                    
+
                     }
                     catch(err)
                     {
@@ -387,6 +387,14 @@ module.exports = class About
                     text += '\n';
                 }
 
+                text += '**👍 You have allowed : \n**';
+
+                for(let allowedUserId of voice[authorIndex].allowedUsers)
+                {
+                    let allowedMember = server.global.guild.members.cache.get(allowedUserId);
+                    text += `${allowedMember.user.username}\n`
+                }
+
                 Tools.simpleEmbed(server, message, text);
             }
             else Tools.simpleEmbed(server, message, '**❎ Profile unknown\nEnable with `t!trackvoice enable` to create your profile**', undefined, false, true, 60000);
@@ -476,13 +484,16 @@ module.exports = class About
 
                 if(voice.allowedUsers.indexOf(targetUserId) == -1 && voice.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now())
                 {
-                    /* targetMember.user.send({
+                    targetMember.user.send({
                         embeds:[{
                             color:'#000000',
                             description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice allow ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
-                            title:`Authorization request from **${authorMember.user.username}**`
+                            title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
+                            thumbnail:{
+                                url: targetMember.user.avatarURL()
+                            }
                         }]
-                    }); */
+                    });
                     voice.usersAndChannels[targetUserIndex].lastDM = Date.now();
                 }
 
@@ -542,9 +553,9 @@ module.exports = class About
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     server.tracking.voice[index].allowedUsers.push(targetUserId);
-                    Tools.simpleEmbed(server, message, `**✅ Added ${targetMember.user.username}**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message, `**✅ Allowed ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
-                else Tools.simpleEmbed(server, message, '**❗ User already added !**', undefined, false, true, 10000);;
+                else Tools.simpleEmbed(server, message, '**❗ User already allowed !**', undefined, false, true, 10000);;
             }
         }
         else if(args[0] == 'rev' || args[0] == 'revoke')
