@@ -194,44 +194,44 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
 
     if(newState.channel != null && oldState.channel != newState.channel) // voice tracking
     {
-        
-        /* for(voiceTrackingElement of servers[newState.guild.id].tracking.voice)
-        {
-            voiceTrackingElement.usersAdded.forEach((userId, index) => {
-                if(userId == newState.id && newState.channel.id == voiceTrackingElement.inChannel[index])
+        servers[newState.guild.id].tracking.voice.forEach(userProfile => {
+            userProfile.usersAndChannels.forEach(userAndChannel => {
+                if(userAndChannel.userId == newState.id)
                 {
-                    for(element of servers[newState.guild.id].tracking.voice)
-                    {
-                        if(element.userId != userId) continue;
-                        else
+                    userAndChannel.channelsId.forEach(channelId => {
+                        if(newState.channel.id == channelId)
                         {
-                            if(Tools.isElementPresentInArray(element.authorizedUsers, voiceTrackingElement.userId))
+                            let trackedUserIndex = servers[newState.guild.id].tracking.voice.findIndex(value => {
+                                if(value.userId == userAndChannel.userId) return value;
+                            });
+
+                            if(trackedUserIndex == -1) return;
+
+                            for(let allowedUserId of servers[newState.guild.id].tracking.voice[trackedUserIndex].allowedUsers)
                             {
-                                let mainUser = client.users.cache.get(voiceTrackingElement.userId);
-                                let targetUser = client.users.cache.get(userId);
-                                let targetChannel = client.channels.cache.get(voiceTrackingElement.inChannel[index]);
-
-                                let membersIdInChannel = [];
-                                newState.member.voice.channel?.members.each(member => {
-                                    membersIdInChannel.push(member.user.id);
-                                });
-
-                                if(!Tools.isElementPresentInArray(membersIdInChannel, mainUser.id))
+                                if(allowedUserId == userProfile.userId)
                                 {
-                                    mainUser.send({embeds:[
-                                        {
+                                    let trackedMember = newState.guild.members.cache.get(userAndChannel.userId),
+                                    masterMember = newState.guild.members.cache.get(userProfile.userId),
+                                    trackedChannel = newState.guild.channels.cache.get(channelId);
+                                    masterMember.user.send({
+                                        embeds:[{
                                             color: '#000000',
-                                            title: 'Voice tracking notification 🔍',
-                                            description: `***${targetUser.username}*** is in a voice channel !\n\nChannel : **${targetChannel.name}**\nServer : **${targetChannel.guild.name}**`
-                                        }
-                                    ]});
+                                            title: '🔊🔎 Voice tracking notification 🔔',
+                                            description: `**${trackedMember.user.username}** is in a voice channel !\n\nChannel : **${trackedChannel.name}**\nServer : **${trackedChannel.guild.name}**`,
+                                            thumbnail:{
+                                                url: newState.guild.iconURL()
+                                            }
+                                        }]
+                                    });
                                 }
                             }
+
                         }
-                    }
+                    });
                 }
             });
-        } */
+        });
     }
 });
 
