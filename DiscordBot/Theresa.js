@@ -424,11 +424,11 @@ module.exports = class About
                     Tools.simpleEmbed(server, message, '**❌ Unknown user**', undefined, false, true, 10000);
                     return;
                 }
-                /* else if(targetUserId == message.author.id)
+                else if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
                     return;
-                } */
+                }
             }
 
             var targetChannel;
@@ -482,30 +482,29 @@ module.exports = class About
                 let targetMember = server.global.guild.members.cache.get(targetUserId);
                 let authorMember = server.global.guild.members.cache.get(message.author.id);
 
-                if(voice.allowedUsers.indexOf(targetUserId) == -1 && voice.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now())
+                let targetIndex = server.tracking.voice.findIndex(value => {
+                    if(value.userId == targetMember.user.id) return value;
+                });
+
+                if(targetIndex != -1 && server.tracking.voice[targetIndex].allowedUsers.indexOf(authorMember.user.id) == -1 && voice.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now())
                 {
-                    targetMember.user.send({
-                        embeds:[{
-                            color:'#000000',
-                            description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice allow ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
-                            title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
-                            thumbnail:{
-                                url: targetMember.user.avatarURL()
-                            }
-                        }]
-                    });
-                    voice.usersAndChannels[targetUserIndex].lastDM = Date.now();
+                    if(!targetMember.user.bot)
+                    {
+                        targetMember.user.send({
+                            embeds:[{
+                                color:'#000000',
+                                description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice allow ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
+                                title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
+                                thumbnail:{
+                                    url: targetMember.user.avatarURL()
+                                }
+                            }]
+                        });
+                        voice.usersAndChannels[targetUserIndex].lastDM = Date.now();
+                    }
                 }
 
                 Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
-                // CHECK THE PERMISSIONS OF THE USER /!\
-                /* else if(targetChannel == 'all')
-                {
-                    voice.usersAndChannels[targetUserIndex].channelsIds = [];
-                    server.global.guild.channels.cache.each(channel => {
-                        if(channel.type == 'GUILD_VOICE') voice.usersAndChannels[targetUserIndex].channelsIds.push(channel.id);
-                    });
-                } */
             }
             else
             {
@@ -544,12 +543,12 @@ module.exports = class About
             }
             else
             {
-                /* if(targetUserId == message.author.id)
+                if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
                     return;
                 }
-                else  */if(!Tools.isElementPresentInArray(server.tracking.voice[index].allowedUsers, targetUserId))
+                else if(!Tools.isElementPresentInArray(server.tracking.voice[index].allowedUsers, targetUserId))
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     server.tracking.voice[index].allowedUsers.push(targetUserId);

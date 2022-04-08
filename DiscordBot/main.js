@@ -194,26 +194,29 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
 
     if(newState.channel != null && oldState.channel != newState.channel) // voice tracking
     {
-        servers[newState.guild.id].tracking.voice.forEach(userProfile => {
-            userProfile.usersAndChannels.forEach(userAndChannel => {
-                if(userAndChannel.userId == newState.id)
+        servers[newState.guild.id].tracking.voice.forEach(userProfile => {      // for each user profile...
+            userProfile.usersAndChannels.forEach(userAndChannel => {            // in each usersAndChannels object (that containt the tracked user id and all the channels for this user)
+                if(userAndChannel.userId == newState.id)    // user found !
                 {
                     userAndChannel.channelsId.forEach(channelId => {
-                        if(newState.channel.id == channelId)
+                        if(newState.channel.id == channelId)    // channel found !
                         {
-                            let trackedUserIndex = servers[newState.guild.id].tracking.voice.findIndex(value => {
+                            let trackedUserIndex = servers[newState.guild.id].tracking.voice.findIndex(value => {   // searching the index of the tracked user to check if he has allowed the master user
                                 if(value.userId == userAndChannel.userId) return value;
                             });
 
-                            if(trackedUserIndex == -1) return;
+                            if(trackedUserIndex == -1) return;  // checking if the tracked user have a profile
 
                             for(let allowedUserId of servers[newState.guild.id].tracking.voice[trackedUserIndex].allowedUsers)
                             {
-                                if(allowedUserId == userProfile.userId)
+                                if(allowedUserId == userProfile.userId)     // allowed !
                                 {
                                     let trackedMember = newState.guild.members.cache.get(userAndChannel.userId),
                                     masterMember = newState.guild.members.cache.get(userProfile.userId),
                                     trackedChannel = newState.guild.channels.cache.get(channelId);
+
+                                    if(masterMember.voice.channel.id == trackedMember.voice.channel.id) return; // final check, dont DM if the tracked user is in the same channel as the master user
+
                                     masterMember.user.send({
                                         embeds:[{
                                             color: '#000000',
