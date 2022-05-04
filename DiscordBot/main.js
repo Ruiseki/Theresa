@@ -28,9 +28,10 @@ var client = new Discord.Client({ intents: [ // The bot and what he can do
 const prefix = 't!'; // All orders are going to have to start with this
 
 var servers = []; // Structure for all server. Watch at Theresa.objectGenerator()
+
 servers[0] = {
     prefix
-}
+};
 
 var changeStatus = true;
 
@@ -39,7 +40,7 @@ var clientActivity = [
     `t!help`,
     `t!help`,
     `t!a [music title]`,
-    `Version : BETA 0.3.1`
+    `Version : BETA 0.4.0`
 ];
 
 Audio.init(servers, client);
@@ -53,7 +54,7 @@ client.once('ready', () => {
     Theresa.boot(client,servers, Audio);
 
     console.log(`### Online`);
-})
+});
 
 client.on('guildCreate',(guild) => { // creating folder for storing many informations about user, channel and voiceChannel
     Theresa.createServerFile(guild);
@@ -244,28 +245,6 @@ client.on('guildMemberSpeaking',(member,speaking) => { // will be executed when 
     else {}
 });
 
-/* client.on('interactionCreate', i => {
-    if(!i.isButton()) return;
-    
-    if(i.customId == 'nextBtn')
-    {
-        Audio.queueMgr(servers, i.message, 'queue', ['>']);
-    }
-    else if(i.customId == 'previousBtn')
-    {
-        Audio.queueMgr(servers, i.message, 'queue', ['<']);
-    }
-    else if(i.customId == 'stopBtn')
-    {
-        Audio.queueMgr(servers, i.message, 'queue', ['clear']);
-    }
-    else if(i.customId == 'pausePlayBtn')
-    {
-        if(!servers[i.guild.id].audio.pause) Audio.engineMgr(servers, i.message, 'p', ['pause']);
-        else Audio.engineMgr(servers, i.message, 'p', ['play']);
-    }
-}); */
-
 setInterval(function() { // each 10sec, change the activity of the bot (playing at : [message] in discord)
     if(changeStatus)
     {
@@ -287,22 +266,14 @@ setInterval(function() { // each minutes,
     }
 },60000);
 
-
-// Need to replace Node Fetch : doesnt work with this version of NodeJS
-/* try // log the bot if internet is available
-{
-    fetch('https://www.google.com')
-    .then(() => {
+require('dns').resolve('www.google.com', function(err) {
+    if(err)
+    {
+        console.log("Connection status : BAD");
+    }
+    else
+    {
+        console.log("Connection status : OK");
         client.login(process.env.key);
-        console.log('### Login : OK');
-    });
-}
-catch(error)
-{
-    console.log(`### Login : BAD`);
-    console.error(error);
-} */
-
-client.login(process.env.key);
-
-console.log('### Login : OK');
+    }
+});

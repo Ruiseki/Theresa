@@ -7,11 +7,10 @@ const ytdl = require('ytdl-core');
 const Theresa = require('./Theresa.js');
 const yts = require('yt-search');
 const Tools = require('./tools.js');
-const { timeStamp } = require('console');
 
 // local music
 var musicDirectory=[];
-musicDirectory = FS.readFileSync('./audio/musicDirectory.tlist','utf-8').split("|");
+musicDirectory = require('./audio/musicDirectory.json');
 
 // button
 var previousBtn = new Discord.MessageButton()
