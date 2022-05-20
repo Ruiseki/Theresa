@@ -1,8 +1,9 @@
-const Voice = require('@discordjs/voice');
-const Discord = require('discord.js');
-const FS = require('fs');
-
-const Tools = require('./tools.js');
+const   Voice = require('@discordjs/voice'),
+        Discord = require('discord.js'),
+        FS = require('fs'),
+        Tools = require('./tools.js'),
+        shell = require('shelljs'),
+        ytdl = require('ytdl-core');
 
 module.exports = class About
 {
@@ -52,7 +53,7 @@ module.exports = class About
 
             else if(command === 'clearlogs') Tools.clearLogs(message);
             
-            else if(message.author.id == 606684737611759628)
+            else if(message.author.id == '606684737611759628')
             {
                 if(command === 'save') Tools.serverSave(servers[message.guild.id]);
                 else if(command === 'devreport') this.DevReport(message);
@@ -62,7 +63,11 @@ module.exports = class About
                 {
                     try
                     {
-
+                        console.log('Premier test');
+                        servers[message.guildId].audio.Engine = Voice.createAudioPlayer();
+                        let ressource = Voice.createAudioResource(ytdl('https://www.youtube.com/watch?v=2cZtYGrgFCs'));
+                        servers[message.guildId].audio.Engine.play(ressource);
+                        servers[message.guildId].global.voiceConnection.subscribe(servers[message.guildId].audio.Engine);
                     }
                     catch(err)
                     {
@@ -592,10 +597,10 @@ module.exports = class About
         this.checkTheresaFile();
         client.guilds.cache.each(guild =>
         {
-            console.log(`### Loading Server : ${guild.name}`);
+            console.log(`######\tLoading Server : ${guild.name}`);
             if(!this.checkServerFile(guild))
             {
-                console.log(`    ❗ Server save doesn't exist ! Reseting all data and creating a saving file`);
+                console.log(`\t❗ Server save doesn't exist ! Reseting all data and creating a saving file`);
                 this.resetAllDataOfAGuild(servers, guild);
             }
             else
@@ -605,19 +610,17 @@ module.exports = class About
             servers[guild.id] = JSON.parse(FS.readFileSync(`./Servers/${guild.id}/${guild.id}.json`, "utf-8"));
             servers[guild.id].global.guild = guild;
             
-            
-
             //check admin
             let index = servers[guild.id].global.adminList.findIndex(value => {
                 if(value == guild.ownerId) return value;
             });
-
+            
             if(index == -1)
             {
-                console.log(`    ❗ Guild owner is not in the admin list. Adding...`);
+                console.log(`\t❗ Guild owner is not in the admin list. Adding...`);
                 servers[guild.id].global.adminList.push(guild.ownerId);
             }
-
+            
             //voiceChannel reconnection
             if(servers[guild.id].global.lastVoiceChannelId != null)
             {
@@ -625,14 +628,14 @@ module.exports = class About
                 try
                 {
                     this.joinVoice(servers[guild.id], channel);
-                    console.log(`    ✅ Joining the voice channel ${channel.name}`);
+                    console.log(`\t✅ Joining the voice channel ${channel.name}`);
                 }
                 catch(err)
                 {
-                    console.error(`    ❌ Can't rejoin the voice channel ${channel.name}`);
+                    console.error(`\t❌ Can't rejoin the voice channel ${channel.name}`);
                 }
             }
-
+            
             //rejoining Ruiseki in voice channel
             if(servers[guild.id].global.lastVoiceChannelId == null)
             {
@@ -643,25 +646,25 @@ module.exports = class About
                             if(member.id == '606684737611759628')
                             {
                                 this.joinVoice(servers[guild.id], channel);
-                                console.log(`    ✅ Joining Ruiseki in the voice channel ${channel.name}`);
+                                console.log(`\t✅ Joining Ruiseki in the voice channel ${channel.name}`);
                             }
                         });
                     }
                 });
             }
-
+            
             //Audio
             Audio.clearMessagesTemps(servers[guild.id], guild);
             if(servers[guild.id].audio.isPlaying) Audio.runAudioEngine(servers, servers[guild.id], guild);
             
             Tools.serverSave(servers[guild.id]);
-            console.log(`    Loading completed ###`);
+            console.log(`\tLoading completed`);
         });
     }
 
     static objectGenerator(servers,guildId)
     {
-        servers[guildId]=
+        servers[guildId] =
         {
             global:{
                 guild:null,

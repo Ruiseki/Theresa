@@ -1,6 +1,7 @@
 require('dotenv').config();
 const Discord = require('discord.js'),  // Discord libraries
     FS = require('fs');
+const { connect } = require('http2');
 
 const Audio = require('./audio.js'),
     Tools = require('./tools.js'),
@@ -30,8 +31,16 @@ const prefix = 't!'; // All orders are going to have to start with this
 var servers = []; // Structure for all server. Watch at Theresa.objectGenerator()
 
 servers[0] = {
-    prefix
+    prefix,
+    isConnected:null,
+    previousNetworkState:null,
+    login:false
 };
+
+networkCheck().then(networkState => {
+    servers[0].isConnected = networkState;
+    servers[0].previousNetworkState = networkState;
+});
 
 var changeStatus = true;
 
@@ -43,17 +52,17 @@ var clientActivity = [
     `Version : BETA 0.4.0`
 ];
 
-Audio.init(servers, client);
+Audio.globalInit(servers, client);
 
 client.once('ready', () => {
-    console.log(`### Powering...`);
+    console.log(`######\tPowering...`);
 
     // Restoring data
     // Restart some services
     // Check folder
     Theresa.boot(client,servers, Audio);
 
-    console.log(`### Online`);
+    console.log(`######\tOnline`);
 });
 
 client.on('guildCreate',(guild) => { // creating folder for storing many informations about user, channel and voiceChannel
@@ -245,19 +254,24 @@ client.on('guildMemberSpeaking',(member,speaking) => { // will be executed when 
     else {}
 });
 
-setInterval(function() { // each 10sec, change the activity of the bot (playing at : [message] in discord)
-    if(changeStatus)
-    {
-        client.user.setActivity(clientActivity[selectedActivity]);
-        selectedActivity++;
-        if(selectedActivity == clientActivity.length) selectedActivity = 0;
-    }
+// status
+setInterval(function() { // each 10 sec
+
+    if(servers[0].isConnected && servers[0].login && changeStatus) // change the activity of the bot (playing at : [message] in discord)
+        {
+            client.user.setActivity(clientActivity[selectedActivity]);
+            selectedActivity++;
+            if(selectedActivity == clientActivity.length) selectedActivity = 0;
+        }
+
 }, 10000);
 
-setInterval(function() { // each minutes,
-    // check the last update, and download data
-    // check the date of the last backup
-
+//backup
+setInterval(function() {
+                        // each minutes,
+                        // check the last update, and download data
+                        // check the date of the last backup
+    
     if(Date.now() >= Number.parseInt(FS.readFileSync('./Servers Backup/lastBackup.ttime', 'utf-8')) + 1000 * 60 * 60 * 24) // 24h
     {
         Tools.serversBackup(servers, client);
@@ -266,14 +280,51 @@ setInterval(function() { // each minutes,
     }
 },60000);
 
-require('dns').resolve('www.google.com', function(err) {
-    if(err)
-    {
-        console.log("Connection status : BAD");
-    }
-    else
-    {
-        console.log("Connection status : OK");
-        client.login(process.env.key);
-    }
-});
+// connection management
+setInterval(function() {
+    networkCheck().then(connectionState => {
+
+        /* console.log(`connection state : ${connectionState}`);
+        console.log(`theresa's connection : ${servers[0].isConnected}`);
+        console.log(`theresa's last state : ${servers[0].previousNetworkState}\n\n`); */
+    
+        // login
+        if(servers[0].isConnected && !servers[0].login)
+        {
+            console.log("######\tLogin ...");
+            client.login(process.env.key);
+            servers[0].login = true;
+        }
+    });
+}, 2000);
+
+async function networkCheck()
+{
+    // console.log("checking ...");
+    return new Promise(result => {
+        // console.log("asking the dns ...");
+        require('dns').resolve('www.google.com', function(err) {
+            // console.log("dns response ...");
+            if(err)
+            {
+                if(servers[0].previousNetworkState == null || servers[0].previousNetworkState == true)
+                {
+                    servers[0].isConnected = false;
+                    servers[0].previousNetworkState = false;
+                    console.log("❌📶 Network not available.");
+                }
+                result(false);
+            }
+            else
+            {
+                if(servers[0].previousNetworkState == null || servers[0].previousNetworkState == false)
+                {
+                    servers[0].isConnected = true;
+                    servers[0].previousNetworkState = true;
+                    console.log("✅📶 Network available");
+                }
+                result(true);
+            }
+        });
+    });
+}

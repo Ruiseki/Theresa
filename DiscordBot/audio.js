@@ -9,8 +9,7 @@ const yts = require('yt-search');
 const Tools = require('./tools.js');
 
 // local music
-var musicDirectory=[];
-musicDirectory = require('./audio/musicDirectory.json');
+var musicDirectory = require('./audio/musicDirectory.json');
 
 // button
 var previousBtn = new Discord.MessageButton()
@@ -48,13 +47,13 @@ var previousBtn = new Discord.MessageButton()
 
 module.exports = class Audio
 {
-    static init(servers, client)
+    static globalInit(servers, client)
     {
         client.on('interactionCreate', i => {
             if(!i.isButton()) return;
             
-            if(i.customId == 'nextBtn') Audio.queueMgr(servers, i.message, 'queue', ['>']);
-            else if(i.customId == 'previousBtn') Audio.queueMgr(servers, i.message, 'queue', ['<']);
+            if(i.customId == 'nextBtn') Audio.queueMgr(servers, i.message, 'queue', ['skip']);
+            else if(i.customId == 'previousBtn') Audio.queueMgr(servers, i.message, 'queue', ['previous']);
             else if(i.customId == 'stopBtn') Audio.queueMgr(servers, i.message, 'queue', ['clear']);
             else if(i.customId == 'pausePlayBtn')
             {
@@ -62,7 +61,6 @@ module.exports = class Audio
                 else Audio.engineMgr(servers, i.message, 'p', ['play']);
                 Audio.queueDisplay(servers[i.guildId], 16, true);
             }
-
             else if(i.customId == 'viewMore') Audio.queueDisplay(servers[i.guildId], 40, false);
             else if(i.customId == 'loop') Audio.queueMgr(servers, i.message, 'queue', ['loop']);
             else if(i.customId == 'loopQueue') Audio.queueMgr(servers, i.message, 'queue', ['loopqueue']);
@@ -351,32 +349,38 @@ module.exports = class Audio
 
     static async runAudioEngine(servers, server, guild)
     {
-        console.log(`Audio Engine is running. File (queue) : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
-
+        server.audio.Engine = Voice.createAudioPlayer();
+        server.global.voiceConnection.subscribe(server.audio.Engine);
+        
         this.queueDisplay(server,16,true);
         server.audio.isPlaying = true;
-
+        
         let voiceChannel = guild.channels.cache.get(servers[guild.id].global.lastVoiceChannelId)
         Theresa.joinVoice(server, voiceChannel);
-
+        
         if(server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // local file
         {
-            server.audio.Engine = Voice.createAudioPlayer();
-            server.audio.Engine.play(Voice.createAudioResource(server.audio.queue[server.audio.currentPlayingSong].url.substring(7)));
-            server.global.voiceConnection.subscribe(server.audio.Engine);
+            server.audio.Engine.play(Voice.createAudioResource(FS.createReadStream(server.audio.queue[server.audio.currentPlayingSong].url.substring(7))));
         }
         else // youtube
         {
-            server.audio.Engine = Voice.createAudioPlayer();
             server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong].url,{filter:'audioonly',quality:'highest',highWaterMark:1 << 25})));
-            server.global.voiceConnection.subscribe(server.audio.Engine);
         }
+
         Tools.serverSave(servers[guild.id]);
+
+        console.log(`######\t-> ${server.global.guild.name}`);
+        console.log(`\t🎵 Audio Engine loaded\n\tSong : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
+
+        server.audio.Engine.on('error', error => {
+            console.log(error.message);
+        });
 
         server.audio.Engine.on('idle', oldEngineStatut =>
         {
+            console.log(`######\t-> ${server.global.guild.name}\n\tAudio Engine in Idle`);
             server.audio.isPlaying = false;
-            if(server.audio.restart)
+            if(server.audio.restart) // restart (for ghost update)
             {
                 server.audio.restart = false;
                 server.audio.isPlaying = true;
@@ -384,25 +388,25 @@ module.exports = class Audio
                 Tools.serverSave(server);
                 Tools.reboot();
             }
-            else if(server.audio.arret) return;
-            else if(server.audio.loop)
+            else if(server.audio.arret) return; // stop
+            else if(server.audio.loop) // loop
             {
                 this.runAudioEngine(servers, server, guild);
             }
-            else if(server.audio.queueLoop)
+            else if(server.audio.queueLoop) // queue loop
             {
                 if(!server.audio.queue[server.audio.currentPlayingSong+1]) server.audio.currentPlayingSong = 0;
                 else server.audio.currentPlayingSong++;
                 this.runAudioEngine(servers, server, guild);
             }
-            else
+            else // normal execution. Play the next song or stop.
             {
                 server.audio.currentPlayingSong++;
-                if(server.audio.queue[server.audio.currentPlayingSong])
+                if(server.audio.queue[server.audio.currentPlayingSong]) // next song -> true
                 {
                     this.runAudioEngine(servers, server, guild);
                 }
-                else
+                else // next song -> false
                 {
                     if(server.audio.lastQueue.messageId != null)
                     {
@@ -413,9 +417,10 @@ module.exports = class Audio
                     }
                     server.audio.queue = [];
                     server.audio.currentPlayingSong = 0;
-                    console.log('Audio Engine Off.');
+                    console.log(`\tAudio Engine Standby`);
                 }
             }
+
             Tools.serverSave(server);
         });
     }
@@ -424,7 +429,6 @@ module.exports = class Audio
     {
         let server = servers[message.guild.id]
 
-        this.log(message,command,args);
         if(server.audio.Engine == null) return;
         else if(!args[0]) ;
         else if(args[0] == 'stop' || args[0] == 's')
@@ -497,7 +501,9 @@ module.exports = class Audio
 
     static async queueMgr(servers,message,command,args)
     {
-        let server = servers[message.guild.id]
+        let server = servers[message.guild.id];
+        console.log(`######\t-> ${server.global.guild.name}`);
+        console.log(`\tQueue Manager`);
         /*
             Command exemple :
             t!a queue
@@ -508,7 +514,6 @@ module.exports = class Audio
             ...
 
         */
-        this.log(message,command,args)
         if(!args[0])
         {
             if(!server.audio.queue[0]) return;
@@ -516,6 +521,7 @@ module.exports = class Audio
         }
         else if(args[0] == 'clear' || args[0] == 'c')
         {
+            console.log('\t\tClear');
             server.audio.queue.splice(0,server.audio.queue.length);
             server.audio.currentPlayingSong = null;
             server.audio.loop = false;
@@ -541,6 +547,7 @@ module.exports = class Audio
         }
         else if(args[0] == 'delete' || args[0] == 'd' || args[0] == 'remove' || args[0] == 'r')
         {
+            console.log('\tDelete');
             if(!args[1]) this.error(server,message,1,'No argument(s) detected');
             else if(args.length == 2)
             {
@@ -609,29 +616,21 @@ module.exports = class Audio
         }
         else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
-            if(!server.audio.Engine);   
-            else if(server.audio.currentPlayingSong+1 > server.audio.queue.length) this.error(server,message,3,'Queue Manager -> skip error');
-            else server.audio.Engine.stop();
+            console.log('\t\tNext');
+            server.audio.Engine.stop();
         }
         else if(args[0] == 'previous' || args[0] == '<')
         {
-            if(server.audio.currentPlayingSong == 0) this.error(server,message,3,'There is nothing befor');
-            else
+            console.log('\t\tPrevious');
+            if(server.audio.currentPlayingSong > 0)
             {
-                if(server.audio.Engine)
-                {
-                    server.audio.currentPlayingSong -= 2;
-                    server.audio.Engine.stop();
-                }
-                else
-                {
-                    server.audio.currentPlayingSong--;
-                    this.runAudioEngine(servers, server, message.guild);
-                }
+                server.audio.currentPlayingSong -= 2;
+                server.audio.Engine.stop();
             }
         }
         else if(args[0] == 'go')
         {
+            console.log('\tGo');
             if(args[1])
             {
                 if(Number.isNaN(args[1])) this.error(server,message,0,'Expected value : integer');
@@ -650,6 +649,7 @@ module.exports = class Audio
         }
         else if(args[0] == 'loop' || args[0] == 'l')
         {
+            console.log('\tLoop');
             if(!server.audio.queue[0])
             { 
                 this.error(server,message,3,'There is no queue');
@@ -672,6 +672,7 @@ module.exports = class Audio
         }
         else if(args[0] == 'loopqueue' || args[0] == 'lq')
         {
+            console.log('\tLoop queue');
             if(!server.audio.queue[0])
             { 
                 this.error(server,message,3,'There is no queue');
@@ -689,12 +690,13 @@ module.exports = class Audio
                     Tools.simpleEmbed(server,message,'**Loop queue On 🔁**',undefined,false,true,1000);
                 }
 
-                this.queueDisplay(server,16,true);
+                this.queueDisplay(server, 16, true);
             }
         }
         else if(args[0] == 'move' || args[0] == 'm') this.error(server,message,3,'Work in progress');
         else if(args[0] == 'swap' || args[0] == 'sw')
         {
+            console.log('\tSwap');
             if(args.length == 1)
             {
                 this.error(server,message,1,'Please precise the 1st arguments');
@@ -712,16 +714,15 @@ module.exports = class Audio
             if(args[1] == null || args[2] == null) this.error(server,message, 0, 'The argument must be a queue selector or an number between 0 and the size of the queue.')
             else if(args[1] == args[2]) this.error(server,message, 0, 'The arguments can\'t have the same value');
             
+            let temp = server.audio.queue[args[1]];
+            server.audio.queue[args[1]] = server.audio.queue[args[2]];
+            server.audio.queue[args[2]] = temp;
+
             if(args[1] == server.audio.currentPlayingSong || args[2] == server.audio.currentPlayingSong) 
             {
                 server.audio.Engine.stop();
             }
-
-
-
-            let temp = server.audio.queue[args[1]];
-            server.audio.queue[args[1]] = server.audio.queue[args[2]];
-            server.audio.queue[args[2]] = temp;
+            else this.queueDisplay(server, 16, true);
         }
         else if(args[0] == 'shuffle' || args[0] == 'sh') this.error(server,message,3,'Work in progress');
         else if(args[0] == 'current' || args[0] == 'ct') this.error(server,message,3,'Work in progress');
@@ -737,8 +738,7 @@ module.exports = class Audio
             t!a m find ka
         */
         
-        let server = servers[message.guild.id]
-        this.log(message,command,args);
+        let server = servers[message.guild.id];
         if(!args[0]) this.error(server,message,1,'Please precise your intention(s).');
         else if(args[0] == 'find' || args[0] == 'f')
         {
@@ -825,7 +825,7 @@ module.exports = class Audio
             {
                 this.runAudioEngine(servers, server, message.guild);
             }
-            else this.queueDisplay(server, message, 16, true)
+            else this.queueDisplay(server, 16, true)
         }
         else if(args[0] == 'folder' || args[0] == 'fd')
         {
@@ -1030,12 +1030,13 @@ module.exports = class Audio
         }
 
         // --------------------------------------------------------------------------------
+        // delete the old queue
 
-        if(server.audio.lastQueue.channelId != null) // delete the old queue
+        if(server.audio.lastQueue.channelId != null)
         {
             let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
             channelOfTheLastQueue.messages.fetch(server.audio.lastQueue.messageId)
-            .then(m => m.delete());
+            .then(queueMessage => queueMessage.delete());
         }
 
         // --------------------------------------------------------------------------------
@@ -1061,156 +1062,6 @@ module.exports = class Audio
                 setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 15000);
             });
             Tools.serverSave(server);
-        }
-    }
-
-    static async download(servers,message,command,args)
-    {
-        let server = servers[message.guild.id]
-        this.log(message,command,args);
-
-        if(!args[0]) // Download from the current song
-        {
-            if(!server.audio.queue[0])
-            {
-                this.error(server,message,3,'There is not queue');
-                return;
-            }
-
-            if(message.author.id == '606684737611759628') // If it's from the server (from Ruiseki)
-            {
-                let videoTitle = await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong]);
-                
-                videoTitle = videoTitle.split(/\//);
-                videoTitle = videoTitle.join(" ");
-                videoTitle = videoTitle.split(/\\/);
-                videoTitle = videoTitle.join(" ");
-
-                if(server.audio.isPlaying && !server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // YouTube
-                {
-                    let filePath = `/Users/ruiseki/Music/Wait/${videoTitle}.mp3`;
-                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
-                    .pipe(FS.createWriteStream(filePath));
-                }
-                else if(!server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) message.author.send(message,3,'You already have this goshujin-sama~'); // Local
-            }
-            else // If it's a user request
-            {
-                if(server.audio.isPlaying && !server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // YouTube
-                {
-                    message.author.send('Downloading...')
-                    .then(msg => {
-                        setTimeout(function(){
-                            try
-                            {
-                                msg.delete();
-                            }
-                            catch(err)
-                            {
-                                console.err(`Message id ${msg.id} can't be reach`)
-                            }
-                        },120000);
-                    });
-                    let filePath = `./audio/${await YouTubeMgr.searchToTitle(server.audio.queue[server.audio.currentPlayingSong])}.mp3`;
-                    ytdl(`https://www.youtube.com/watch?v=${server.audio.queue[server.audio.currentPlayingSong]}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:1024})
-                    .pipe(FS.createWriteStream(filePath))
-                    .on('finish', () => {
-                        message.author.send('Uploading...')
-                        .then(msg => {
-                            setTimeout(function(){
-                                try
-                                {
-                                    msg.delete();
-                                }
-                                catch(err)
-                                {
-                                    console.err(`Message id ${msg.id} can't be reach`)
-                                }
-                            },120000);
-                        });
-                        message.author.send({
-                            content: 'Uploading complete !',
-                            files: [{
-                                attachment: filePath,
-                                name: this.getNameFromPath(filePath,true)
-                            }]
-                        })
-                        .then(msg => {
-                            setTimeout(function(){
-                                msg.delete();
-                                FS.unlinkSync(filePath);
-                            },120000);
-                        });
-                    });
-                }
-                else if(server.audio.queue[server.audio.currentPlayingSong].startsWith('[LOCAL]')) // Local
-                {
-                    let filePath = server.audio.queue[server.audio.currentPlayingSong].substring(7);
-                    message.author.send('Uploading...')
-                    .then(msg => {
-                        setTimeout(function(){
-                            msg.delete();
-                        },120000);
-                    });
-                    message.author.send({
-                        content: 'Uploading complete !',
-                        files: [{
-                            attachment: filePath,
-                            name: this.getNameFromPath(filePath,true)
-                        }]
-                    })
-                    .then(msg => {
-                        setTimeout(function(){
-                            msg.delete();
-                        },120000);
-                    });
-                }
-            }
-        }
-        else // Download from argument
-        {
-            let videoID = await YouTubeMgr.searchToID(args.join(" ")),
-            videoTitle = await YouTubeMgr.searchToTitle(videoID);
-
-            videoTitle = videoTitle.split(/\//);
-            videoTitle = videoTitle.join(" ");
-            videoTitle = videoTitle.split(/\\/);
-            videoTitle = videoTitle.join(" ");
-
-            console.log(`Downloading -> ${videoTitle}`);
-            
-            message.author.send('Downloading...')
-            .then(msg => {
-                setTimeout(function(){
-                    msg.delete();
-                },120000);
-            });
-
-            let filePath = `./audio/${videoTitle}.mp3`;
-            ytdl(`https://www.youtube.com/watch?v=${videoID}`,{filter:'audioonly',quality:'highestaudio',highWaterMark:512})
-            .pipe(FS.createWriteStream(filePath))
-            .on('finish', () => {
-                console.log("Download complete. Uploading");
-                message.author.send('Uploading...') 
-                .then(msg => {
-                    setTimeout(function(){
-                        msg.delete();
-                    },120000);
-                });
-                message.author.send({
-                    content: `**Music Title :** *${videoTitle}\nhttps://www.youtube.com/watch?v=${videoID}*`,
-                    files: [{
-                        attachment: filePath,
-                        name: this.getNameFromPath(filePath,true)
-                    }]
-                })
-                .then(msg => {
-                    setTimeout(function(){
-                        msg.delete();
-                        FS.unlinkSync(filePath);
-                    },120000);
-                });
-            });
         }
     }
     
@@ -1289,11 +1140,6 @@ module.exports = class Audio
                 });
             });
         server.global.messageTemp = [];
-    }
-
-    static log(message,command,args)
-    {
-        console.log(`In "Audio" -> ${command} <- executed by ${message.author.username}. Argument : ${args}`);
     }
 
     static error(server,message,type,text)
