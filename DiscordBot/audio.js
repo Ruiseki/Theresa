@@ -267,64 +267,63 @@ module.exports = class Audio
         {
             if(array.length > 1)
             {
-                let text = '**Multiple files found**\n\n';
-                for(let i = 0; i < array.length; i++)
+                let text = '**⚠ Warning** : other similar file\n\n';
+                for(let i = 0; i < array.length-1; i++)
                 {
-                    if(i == array.length - 1) text += this.getNameFromPath(array[i],false);
+                    if(i == array.length - 2    ) text += this.getNameFromPath(array[i],false);
                     else text += this.getNameFromPath(array[i],false)+'\n';
                 }
                 Tools.simpleEmbed(server,message,text,undefined,false,true,10000);
-                return;
+
+                array[0] = array.pop();
+            }
+
+            let tags = NodeID3.read(array[0]),
+            title, artist, thumbnail;
+            if(tags.title === undefined) title = this.getNameFromPath(array[0],false);
+            else title = tags.title;
+            if(tags.artist === undefined) artist = '<unknown>';
+            else artist = tags.artist;
+            let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
+            
+            if(tags.image != undefined)
+            {
+                thumbnail = tags.image.imageBuffer;
+                Tools.simpleEmbed(server,message,text,thumbnail,true,true,30000);
             }
             else
             {
-                let tags = NodeID3.read(array[0]),
-                title, artist, thumbnail;
-                if(tags.title === undefined) title = this.getNameFromPath(array[0],false);
-                else title = tags.title;
-                if(tags.artist === undefined) artist = '<unknown>';
-                else artist = tags.artist;
-                let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
-                
-                if(tags.image != undefined)
+                thumbnail = undefined;
+                Tools.simpleEmbed(server,message,text,undefined,false,true,30000);
+            }
+            
+            if(queuePos == server.audio.queue.length+1)
+            {
+                server.audio.queue.push({
+                    title,
+                    url: `[LOCAL]${array[0]}`,
+                    artist,
+                });
+            }
+            else
+            {
+                if(server.audio.currentPlayingSong == queuePos-1)
                 {
-                    thumbnail = tags.image.imageBuffer;
-                    Tools.simpleEmbed(server,message,text,thumbnail,true,true,30000);
-                }
-                else
-                {
-                    thumbnail = undefined;
-                    Tools.simpleEmbed(server,message,text,undefined,false,true,30000);
-                }
-                
-                if(queuePos == server.audio.queue.length+1)
-                {
-                    server.audio.queue.push({
+                    server.audio.queue[server.audio.currentPlayingSong] = {
                         title,
                         url: `[LOCAL]${array[0]}`,
                         artist,
-                    });
+                    };
                 }
                 else
                 {
-                    if(server.audio.currentPlayingSong == queuePos-1)
-                    {
-                        server.audio.queue[server.audio.currentPlayingSong] = {
-                            title,
-                            url: `[LOCAL]${array[0]}`,
-                            artist,
-                        };
-                    }
-                    else
-                    {
-                        if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
-                        server.audio.queue = Tools.addIntoArray({
-                            title,
-                            url: `[LOCAL]${array[0]}`,
-                            artist,
-                            thumbnail
-                        }, queuePos-1, server.audio.queue);
-                    }
+                    if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
+                    server.audio.queue = Tools.addIntoArray({
+                        title,
+                        url: `[LOCAL]${array[0]}`,
+                        artist,
+                        thumbnail
+                    }, queuePos-1, server.audio.queue);
                 }
             }
         }
@@ -783,21 +782,23 @@ module.exports = class Audio
         }
         else if(args[0] == 'localshuffle' || args[0] == 'ls')
         {
+            /* console.log('######\tRandomizer algorithm start');
+            let t0 = Date.now(); // timer */
+
             let shuffledMusic = [];
             if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
             for(let path of musicDirectory)
             {
-                let musics = FS.readdirSync(path);
-                for(let music of musics)
-                {
-                    if(music.substring(music.length-4) == '.mp3' || music.substring(music.length-4) == '.wav')
+                FS.readdirSync(path).forEach(music => {
+                    let extension = music.split('.').pop();
+                    if(extension == 'mp3' || extension == 'wav' || extension == 'flac')
                     {
-                        let tags = NodeID3.read(this.getPathOfFile(music, musicDirectory)[0]);
+                        let tags = NodeID3.read(path + music);
                         if(tags.title != undefined)
                         {
                             music = {
                                 title: tags.title,
-                                url: '[LOCAL]'+this.getPathOfFile(music,musicDirectory),
+                                url: '[LOCAL]' + path + music,
                                 artist: tags.artist,
                             };
                         }
@@ -805,15 +806,16 @@ module.exports = class Audio
                         {
                             music = {
                                 title: music.substring(0, music.length-4),
-                                url: '[LOCAL]'+this.getPathOfFile(music,musicDirectory),
+                                url: '[LOCAL]' + path + music,
                                 artist: tags.artist,
                             };
                         }
                         shuffledMusic.push(music);
                     }
-                }
+                });
             }
-            let indiceAlea;
+
+            let indiceAlea; // shuffle
             for(let i=shuffledMusic.length;i>0;i--)
             {
                 indiceAlea = Tools.getRandomInt(shuffledMusic.length-1);
@@ -821,11 +823,14 @@ module.exports = class Audio
                 shuffledMusic.splice(indiceAlea,1);
             }
 
-            if(!server.audio.isPlaying && !server.audio.pause)
+            if(!server.audio.isPlaying && !server.audio.pause) // playing or adding to the queue
             {
                 this.runAudioEngine(servers, server, message.guild);
             }
             else this.queueDisplay(server, 16, true)
+
+            /* let totalTime = Date.now() - t0; // timer end
+            console.log(`######\tAlgorithm complete.\n\t${totalTime} ms`); */
         }
         else if(args[0] == 'folder' || args[0] == 'fd')
         {
@@ -1098,7 +1103,7 @@ module.exports = class Audio
         /*
             Will give the path of "targetName" in "directory".
             Return an array of all file that commence by this name.
-            Return -1 if doesn't exist.
+            Return undefined if doesn't exist.
         */
         let array=[];
         for(let path of directory)
