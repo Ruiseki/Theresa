@@ -723,7 +723,25 @@ module.exports = class Audio
             }
             else this.queueDisplay(server, 16, true);
         }
-        else if(args[0] == 'shuffle' || args[0] == 'sh') this.error(server,message,3,'Work in progress');
+        else if(args[0] == 'shuffle' || args[0] == 'sh')
+        {
+            let shuffledMusic = server.audio.queue;
+            server.audio.queue = [];
+            let indiceAlea;;
+            for(let i = shuffledMusic.length; i > 0; i--)
+            {
+                indiceAlea = Tools.getRandomInt(shuffledMusic.length - 1);
+                server.audio.queue.push(shuffledMusic[indiceAlea]);
+                shuffledMusic.splice(indiceAlea, 1);
+            }
+
+            if(server.audio.isPlaying)
+            {
+                server.audio.currentPlayingSong -= 1;
+                server.audio.Engine.stop();
+            }
+            else this.runAudioEngine(servers, server, guild);
+        }
         else if(args[0] == 'current' || args[0] == 'ct') this.error(server,message,3,'Work in progress');
 
         Tools.serverSave(server);
@@ -816,18 +834,18 @@ module.exports = class Audio
             }
 
             let indiceAlea; // shuffle
-            for(let i=shuffledMusic.length;i>0;i--)
+            for(let i = shuffledMusic.length; i > 0; i--)
             {
-                indiceAlea = Tools.getRandomInt(shuffledMusic.length-1);
+                indiceAlea = Tools.getRandomInt(shuffledMusic.length - 1);
                 server.audio.queue.push(shuffledMusic[indiceAlea]);
-                shuffledMusic.splice(indiceAlea,1);
+                shuffledMusic.splice(indiceAlea, 1);
             }
 
             if(!server.audio.isPlaying && !server.audio.pause) // playing or adding to the queue
             {
                 this.runAudioEngine(servers, server, message.guild);
             }
-            else this.queueDisplay(server, 16, true)
+            else this.queueDisplay(server, 16, true);
 
             /* let totalTime = Date.now() - t0; // timer end
             console.log(`######\tAlgorithm complete.\n\t${totalTime} ms`); */
