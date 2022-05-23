@@ -123,7 +123,7 @@ module.exports = class Audio
                             this.error(server,message,3,'There is no current song');
                             return;
                         }
-                        if(server.audio.currentPlayingSong) queuePos = server.audio.currentPlayingSong+1;
+                        if(server.audio.currentPlayingSong) queuePos = server.audio.currentPlayingSong + 1;
                         else queuePos = 1;
                     }
                     else if(args[0].substring(2) == 'after' || args[0].substring(2) == 'aft')
@@ -149,7 +149,7 @@ module.exports = class Audio
 
         // Adding music
         let array = this.getPathOfFile(music,musicDirectory);
-        
+
         if(array == undefined) // YouTube
         {
             let list, video;
@@ -243,12 +243,27 @@ module.exports = class Audio
                 }, 30000)
             });
 
-            if(list == undefined) server.audio.queue.splice(queuePos, 0, {
-                title: video.title,
-                videoId: video.videoId,
-                url: video.url,
-                thumbnail: video.thumbnail
-            });
+            if(list == undefined)
+            {
+                if(server.audio.currentPlayingSong == queuePos - 1)
+                {
+                    server.audio.queue[queuePos - 1] = {
+                        title: video.title,
+                        videoId: video.videoId,
+                        url: video.url,
+                        thumbnail: video.thumbnail
+                    };
+                }
+                else
+                {
+                    server.audio.queue.splice(queuePos - 1, 0, {
+                    title: video.title,
+                    videoId: video.videoId,
+                    url: video.url,
+                    thumbnail: video.thumbnail
+                    });
+                }
+            }
             else
             {
                 let videos = [];
@@ -260,7 +275,8 @@ module.exports = class Audio
                         thumbnail: video.thumbnail
                     });
                 });
-                server.audio.queue.splice(queuePos, 0, ...videos);
+                if(server.audio.currentPlayingSong == queuePos - 1) server.audio.queue.splice(queuePos - 1, 1, ...videos);
+                else server.audio.queue.splice(queuePos - 1, 0, ...videos);
             }
         }
         else // Local
@@ -307,7 +323,7 @@ module.exports = class Audio
             }
             else
             {
-                if(server.audio.currentPlayingSong == queuePos-1)
+                if(server.audio.currentPlayingSong == queuePos - 1) // current
                 {
                     server.audio.queue[server.audio.currentPlayingSong] = {
                         title,
@@ -318,12 +334,12 @@ module.exports = class Audio
                 else
                 {
                     if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
-                    server.audio.queue = Tools.addIntoArray({
+                    server.audio.queue.splice(queuePos - 1, 0, {
                         title,
                         url: `[LOCAL]${array[0]}`,
                         artist,
                         thumbnail
-                    }, queuePos-1, server.audio.queue);
+                    });
                 }
             }
         }
@@ -335,13 +351,14 @@ module.exports = class Audio
         }
         else if(queuePos - 1 == server.audio.currentPlayingSong && server.audio.isPlaying) // with the option "current"
         {
-            this.runAudioEngine(servers, server, message.guild);
+            server.audio.currentPlayingSong--;
+            server.audio.Engine.stop();
         }
         else if(!server.audio.isPlaying && !server.audio.pause) // when the queue is complete and not reset
         {
             this.runAudioEngine(servers, server, message.guild);
         }
-        else this.queueDisplay(server, 16,true); // when the engine the playing something
+        else this.queueDisplay(server, 16, true); // when the engine the playing something
 
         Tools.serverSave(server);
     }
@@ -351,7 +368,7 @@ module.exports = class Audio
         server.audio.Engine = Voice.createAudioPlayer();
         server.global.voiceConnection.subscribe(server.audio.Engine);
         
-        this.queueDisplay(server,16,true);
+        this.queueDisplay(server, 16, true);
         server.audio.isPlaying = true;
         
         let voiceChannel = guild.channels.cache.get(servers[guild.id].global.lastVoiceChannelId)
@@ -561,7 +578,7 @@ module.exports = class Audio
                 if(args[1] <= server.audio.currentPlayingSong)
                 {
                     server.audio.currentPlayingSong--;
-                    this.queueDisplay(server,16,true);
+                    this.queueDisplay(server,16, true);
                 }
                 if(args[1] == server.audio.currentPlayingSong) server.audio.Engine.stop();
             }
@@ -586,7 +603,7 @@ module.exports = class Audio
                     else if(server.audio.currentPlayingSong > args[2])
                     {
                         server.audio.currentPlayingSong -= args[2] - args[1] + 1;
-                        this.queueDisplay(server,16,true);
+                        this.queueDisplay(server,16, true);
                     }
                 }
             }
@@ -606,12 +623,12 @@ module.exports = class Audio
                     if(args[i] == server.audio.currentPlayingSong && server.audio.isPlaying) needStop = true;
                 }
                 if(needStop) server.audio.Engine.stop();
-                queueDisplay(server,16,true);
+                queueDisplay(server,16, true);
             }
 
             let text = `**Done ✅**`;
             Tools.simpleEmbed(server,message,text,undefined,false,true,1000);
-            this.queueDisplay(server,16,true);
+            this.queueDisplay(server,16, true);
         }
         else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
@@ -666,7 +683,7 @@ module.exports = class Audio
                     Tools.simpleEmbed(server,message,'**Loop On 🔂**',undefined,false,true,1000);
                 }
 
-                this.queueDisplay(server,16,true);
+                this.queueDisplay(server,16, true);
             }
         }
         else if(args[0] == 'loopqueue' || args[0] == 'lq')
@@ -915,31 +932,22 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // calculating the index of the first music to be displayed
 
-
-        let startAt;
+        let startAt, afterCurrent = Number.parseInt(nbrOfMusicDisplayed / 4);
         if(server.audio.queue.length <= nbrOfMusicDisplayed) startAt = 0;
         else
         {
-            if(server.audio.currentPlayingSong <= nbrOfMusicDisplayed/2) startAt = 0;
-            else startAt = server.audio.currentPlayingSong - nbrOfMusicDisplayed/2;
+            if(server.audio.currentPlayingSong < afterCurrent) startAt = 0;
+            else startAt = server.audio.currentPlayingSong - afterCurrent;
         }
 
         // --------------------------------------------------------------------------------
         // building the text of the queue
 
-        for(let i=startAt; i < server.audio.queue.length; i++)
+        for(let i = startAt; i < server.audio.queue.length; i++)
         {
-            if(i == server.audio.currentPlayingSong)
+            if(i == server.audio.currentPlayingSong) // current song
             {
-                if(server.audio.queue[i].url.startsWith('[LOCAL]'))
-                {
-                    text += `:arrow_right:  **${server.audio.queue[i].title}**  :arrow_left:\n`;
-                }
-                else
-                {
-                    // YouTube
-                    text += `:arrow_right:  **${server.audio.queue[i].title}**  :arrow_left:\n`;
-                }
+                text += `:arrow_right:  **${server.audio.queue[i].title}**  :arrow_left:\n`;
             }
             else
             {
@@ -1082,7 +1090,7 @@ module.exports = class Audio
                 server.audio.lastQueue.messageId = msg.id;
                 server.audio.lastQueue.channelId = msg.channel.id;
                 Tools.serverSave(server);
-                setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 15000);
+                setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 120000);
             });
             Tools.serverSave(server);
         }
