@@ -937,6 +937,7 @@ module.exports = class Audio
         else
         {
             if(server.audio.currentPlayingSong < afterCurrent) startAt = 0;
+            else if(server.audio.queue.length - (server.audio.currentPlayingSong - afterCurrent) < nbrOfMusicDisplayed) startAt = server.audio.queue.length - 1 - nbrOfMusicDisplayed;
             else startAt = server.audio.currentPlayingSong - afterCurrent;
         }
 
