@@ -971,100 +971,47 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // Embed generator
 
-        if(server.audio.queue[server.audio.currentPlayingSong] && server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]'))
+        let firstRow = new Discord.MessageActionRow()
+            .addComponents(
+                previousBtn,
+                stopBtn,
+                pausePlayBtn,
+                nextBtn
+            );
+        let secondRow = new Discord.MessageActionRow()
+            .addComponents(
+                viewMore,
+                loop,
+                loopQueue,
+                replay
+            );
+
+        let messageOption = {
+            embeds: [
+                {
+                    color: '#000000',
+                    title: 'Music Queue  :notes:',
+                    description: text,
+                    thumbnail: {
+                        url: 'attachment://file.jpg'
+                    }
+                }
+            ],
+            files: [],
+            components: [firstRow, secondRow]
+        };
+
+        if(server.audio.queue[server.audio.currentPlayingSong] && server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // Local
         {
             let tags = NodeID3.read(server.audio.queue[server.audio.currentPlayingSong].url.substring(7));
-            var messageOption;
 
-            if(tags.image != undefined)
-            {
-                let embed = new Discord.MessageEmbed()
-                .setColor('#000000')
-                .setTitle('Music Queue  :notes:')
-                .setDescription(text)
-                .setThumbnail('attachment://file.jpg');
-
-                let firstRow = new Discord.MessageActionRow()
-                .addComponents(
-                    previousBtn,
-                    stopBtn,
-                    pausePlayBtn,
-                    nextBtn
-                );
-                let secondRow = new Discord.MessageActionRow()
-                .addComponents(
-                    viewMore,
-                    loop,
-                    loopQueue,
-                    replay
-                );
-
-                messageOption = {
-                    embeds: [embed],
-                    files: [tags.image.imageBuffer],
-                    components: [firstRow, secondRow]
-                };
-            }
-            else
-            {
-                let embed = new Discord.MessageEmbed()
-                .setColor('#000000')
-                .setTitle('Music Queue  :notes:')
-                .setDescription(text);
-
-                let firstRow = new Discord.MessageActionRow()
-                .addComponents(
-                    previousBtn,
-                    stopBtn,
-                    pausePlayBtn,
-                    nextBtn
-                );
-                let secondRow = new Discord.MessageActionRow()
-                .addComponents(
-                    viewMore,
-                    loop,
-                    loopQueue,
-                    replay
-                );
-
-                messageOption = {
-                    embeds: [embed],
-                    components: [firstRow, secondRow]
-                };
-            }
+            if(tags.image != undefined) messageOption.files[0] = tags.image.imageBuffer;
+            else messageOption.files[0] = FS.readFileSync('./audio/noThumbnail.png');
         }
-        else
-        {
-            let embed = new Discord.MessageEmbed()
-            .setColor('#000000')
-            .setTitle('Music Queue  :notes:')
-            .setDescription(text)
-            .setThumbnail(server.audio.queue[server.audio.currentPlayingSong].thumbnail);
-            // .setThumbnail(`https://img.youtube.com/vi/${server.audio.queue[server.audio.currentPlayingSong].videoId}/sddefault.jpg`);
-
-            let firstRow = new Discord.MessageActionRow()
-                .addComponents(
-                    previousBtn,
-                    stopBtn,
-                    pausePlayBtn,
-                    nextBtn
-                );
-                let secondRow = new Discord.MessageActionRow()
-                .addComponents(
-                    viewMore,
-                    loop,
-                    loopQueue,
-                    replay
-                );
-
-                messageOption = {
-                    embeds: [embed],
-                    components: [firstRow, secondRow]
-                };
-        }
+        else messageOption.embeds[0].thumbnail.url = server.audio.queue[server.audio.currentPlayingSong].thumbnail; // YouTube
 
         // --------------------------------------------------------------------------------
-        // checking if the last message is the queue message
+        // checking if the last message is the queue message and in the correct channel
 
         let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId), willEditQueueMessage = false;
         if(channelOfTheLastQueue)
@@ -1075,6 +1022,9 @@ module.exports = class Audio
                     if(msg.id == server.audio.lastQueue.messageId) willEditQueueMessage = true;
                 });
             }).then(() => {
+
+                if(server.audio.lastQueue.channelId != server.audio.lastMusicTextchannelId) willEditQueueMessage = false;
+
                 if(willEditQueueMessage)
                 {
                     // --------------------------------------------------------------------------------
@@ -1082,7 +1032,6 @@ module.exports = class Audio
         
                     let lastQueueMessage = channelOfTheLastQueue.messages.cache.get(server.audio.lastQueue.messageId);
                     lastQueueMessage.edit(messageOption);
-                    console.log('\t\tQueue editing test completed !');
                 }
                 else
                 {
