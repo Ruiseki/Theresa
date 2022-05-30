@@ -65,6 +65,8 @@ module.exports = class Audio
             else if(i.customId == 'loop') Audio.queueMgr(servers, i.message, 'queue', ['loop']);
             else if(i.customId == 'loopQueue') Audio.queueMgr(servers, i.message, 'queue', ['loopqueue']);
             else if(i.customId == 'replay') Audio.engineMgr(servers, i.message, 'player', ['replay']);
+
+            i.deferUpdate();
         });
     }
 
@@ -1062,38 +1064,90 @@ module.exports = class Audio
         }
 
         // --------------------------------------------------------------------------------
-        // delete the old queue
+        // checking if the last message is the queue message
 
-        if(server.audio.lastQueue.channelId != null)
+        let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId), willEditQueueMessage = false;
+        if(channelOfTheLastQueue)
         {
-            let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
-            channelOfTheLastQueue.messages.fetch(server.audio.lastQueue.messageId)
-            .then(queueMessage => queueMessage.delete());
-        }
-
-        // --------------------------------------------------------------------------------
-
-        let chn = server.global.guild.channels.cache.get(server.audio.lastMusicTextchannelId); // last music channel
-
-        if(isKeep)
-        {
-            chn.send(messageOption)
-            .then(m => {
-                server.audio.lastQueue.messageId = m.id;
-                server.audio.lastQueue.channelId = m.channel.id;
-                Tools.serverSave(server);
-            })
+            channelOfTheLastQueue.messages.fetch({limit:1})
+            .then(messages => {
+                messages.forEach(msg => {
+                    if(msg.id == server.audio.lastQueue.messageId) willEditQueueMessage = true;
+                });
+            }).then(() => {
+                if(willEditQueueMessage)
+                {
+                    // --------------------------------------------------------------------------------
+                    // editing the old queue
+        
+                    let lastQueueMessage = channelOfTheLastQueue.messages.cache.get(server.audio.lastQueue.messageId);
+                    lastQueueMessage.edit(messageOption);
+                    console.log('\t\tQueue editing test completed !');
+                }
+                else
+                {
+                    // --------------------------------------------------------------------------------
+                    // deleting the old queue ...
+            
+                    if(server.audio.lastQueue.channelId != null)
+                    {
+                        let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
+                        channelOfTheLastQueue.messages.fetch(server.audio.lastQueue.messageId)
+                        .then(queueMessage => queueMessage.delete());
+                    }
+                    
+                    // --------------------------------------------------------------------------------
+                    // ... and resend it
+        
+                    let chn = server.global.guild.channels.cache.get(server.audio.lastMusicTextchannelId); // last music channel
+            
+                    if(isKeep)
+                    {
+                        chn.send(messageOption)
+                        .then(m => {
+                            server.audio.lastQueue.messageId = m.id;
+                            server.audio.lastQueue.channelId = m.channel.id;
+                            Tools.serverSave(server);
+                        });
+                    }
+                    else
+                    {
+                        chn.send(messageOption)
+                        .then(msg => {
+                            server.audio.lastQueue.messageId = msg.id;
+                            server.audio.lastQueue.channelId = msg.channel.id;
+                            Tools.serverSave(server);
+                            setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 120000);
+                        });
+                        Tools.serverSave(server);
+                    }
+                }
+            });
         }
         else
         {
-            chn.send(messageOption)
-            .then(msg => {
-                server.audio.lastQueue.messageId = msg.id;
-                server.audio.lastQueue.channelId = msg.channel.id;
+            let chn = server.global.guild.channels.cache.get(server.audio.lastMusicTextchannelId); // last music channel
+            
+            if(isKeep)
+            {
+                chn.send(messageOption)
+                .then(m => {
+                    server.audio.lastQueue.messageId = m.id;
+                    server.audio.lastQueue.channelId = m.channel.id;
+                    Tools.serverSave(server);
+                });
+            }
+            else
+            {
+                chn.send(messageOption)
+                .then(msg => {
+                    server.audio.lastQueue.messageId = msg.id;
+                    server.audio.lastQueue.channelId = msg.channel.id;
+                    Tools.serverSave(server);
+                    setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 120000);
+                });
                 Tools.serverSave(server);
-                setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 120000);
-            });
-            Tools.serverSave(server);
+            }
         }
     }
     

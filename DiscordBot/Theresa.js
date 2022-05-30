@@ -63,11 +63,7 @@ module.exports = class About
                 {
                     try
                     {
-                        console.log('Premier test');
-                        servers[message.guildId].audio.Engine = Voice.createAudioPlayer();
-                        let ressource = Voice.createAudioResource(ytdl('https://www.youtube.com/watch?v=2cZtYGrgFCs'));
-                        servers[message.guildId].audio.Engine.play(ressource);
-                        servers[message.guildId].global.voiceConnection.subscribe(servers[message.guildId].audio.Engine);
+                        
                     }
                     catch(err)
                     {
