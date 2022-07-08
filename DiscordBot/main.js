@@ -32,9 +32,10 @@ var servers = []; // Structure for all server. Watch at Theresa.objectGenerator(
 servers[0] = {
     client,
     prefix : 't!', // All orders are going to have to start with this
-    isConnected:null,
-    previousNetworkState:null,
-    login:false,
+    isConnected: null,
+    connecting: false,
+    previousNetworkState: null,
+    login: false,
     button: {
         audio: {
             previousBtn :  new Discord.MessageButton().setCustomId('previousBtn').setLabel('⏮').setStyle('SECONDARY'),
@@ -72,6 +73,7 @@ var clientActivity = [
 
 client.once('ready', () => {
     console.log(`######\tPowering...`);
+    servers[0].connecting = false;
     servers[0].login = true;
 
     Theresa.boot(client, servers, Audio);
@@ -330,8 +332,9 @@ setInterval(function() {
         console.log(`theresa's last state : ${servers[0].previousNetworkState}\n\n`); */
     
         // login
-        if(servers[0].isConnected && !servers[0].login)
+        if(servers[0].isConnected && !servers[0].login && !servers[0].connecting)
         {
+            servers[0].connecting = true;
             console.log("######\tLogin ...");
             client.login(process.env.key);
         }

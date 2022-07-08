@@ -4,7 +4,6 @@ const   Voice = require('@discordjs/voice'),
         Tools = require('./tools.js'),
         shell = require('shelljs'),
         ytdl = require('ytdl-core');
-const { isGeneratorFunction } = require('util/types');
 
 module.exports = class About
 {
@@ -282,7 +281,7 @@ module.exports = class About
         }
     }
     
-    static trackingVoice(server, message, args)
+    static async trackingVoice(server, message, args)
     {
         let user = this.userProfileCheck(server, message.author.id);
 
@@ -310,7 +309,7 @@ module.exports = class About
         }
         else if(args[0] == 's' || args[0] == 'status')
         {
-            let text = `*Voice tracking status for __**${message.author.username}**__*\n\n`;
+            let text = `**${message.author.username}, here is your voice tracking status**\n\n`;
 
             if(user.voiceTracking.isActivated) text += '**✅ Service is ON**';
             else text += '**❎ Service is OFF**';
@@ -358,7 +357,24 @@ module.exports = class About
                 text += `${allowedMember.user.username}\n`
             }
 
-            Tools.simpleEmbed(server, message, text);
+            if(user.voiceTracking.statusMessageId != null)
+            {
+                let channel = await message.author.createDM();
+                channel.messages.cache.get(user.voiceTracking.statusMessageId).delete();
+            }
+
+            message.author.send({
+                embeds: [
+                    {
+                        color: '#000000',
+                        description: text
+                    }
+                ]
+            }).then(msg => {
+                user.voiceTracking.statusMessageId = msg.id
+                msg.pin();
+                Tools.serverSave(server);
+            });
         }
         else if(args[0] == 'a' || args[0] == 'add' || args[0] == 'r' || args[0] == 'remove')
         {
@@ -380,11 +396,11 @@ module.exports = class About
                     Tools.simpleEmbed(server, message, '**❌ Unknown user**', undefined, false, true, 10000);
                     return;
                 }
-                else if(targetUserId == message.author.id)
+                /* else if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
                     return;
-                }
+                } */
             }
 
             var targetChannel;
@@ -503,12 +519,12 @@ module.exports = class About
             }
             else
             {
-                if(targetUserId == message.author.id)
+                /* if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
                     return;
                 }
-                else if(!Tools.isElementPresentInArray(user.voiceTracking.allowedUsers, targetUserId))
+                else  */if(!Tools.isElementPresentInArray(user.voiceTracking.allowedUsers, targetUserId))
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     user.voiceTracking.allowedUsers.push(targetUserId);
@@ -552,6 +568,7 @@ module.exports = class About
             server.users.push({
                 userId,
                 voiceTracking: {
+                    statusMessageId: null,
                     isActivated: false,
                     allowedUsers: [],
                     usersAndChannels: []
@@ -674,6 +691,7 @@ module.exports = class About
                 {
                     userId,                     // the id of the user who had activate the service
                     voiceTracking: {
+                        statusMessageId,
                         isActivated,            // if the voice tracking service is activated
                         allowedUsers:[],        // accepted user. Not everyone can track you
                         usersAndChannel: [
