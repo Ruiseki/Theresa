@@ -47,30 +47,7 @@ var previousBtn = new Discord.MessageButton()
 
 module.exports = class Audio
 {
-    static globalInit(servers, client)
-    {
-        client.on('interactionCreate', i => {
-            if(!i.isButton()) return;
-            
-            if(i.customId == 'nextBtn') Audio.queueMgr(servers, i.message, 'queue', ['skip']);
-            else if(i.customId == 'previousBtn') Audio.queueMgr(servers, i.message, 'queue', ['previous']);
-            else if(i.customId == 'stopBtn') Audio.queueMgr(servers, i.message, 'queue', ['clear']);
-            else if(i.customId == 'pausePlayBtn')
-            {
-                if(!servers[i.guild.id].audio.pause) Audio.engineMgr(servers, i.message, 'player', ['pause']);
-                else Audio.engineMgr(servers, i.message, 'p', ['play']);
-                Audio.queueDisplay(servers[i.guildId], 16, true);
-            }
-            else if(i.customId == 'viewMore') Audio.queueDisplay(servers[i.guildId], 40, false);
-            else if(i.customId == 'loop') Audio.queueMgr(servers, i.message, 'queue', ['loop']);
-            else if(i.customId == 'loopQueue') Audio.queueMgr(servers, i.message, 'queue', ['loopqueue']);
-            else if(i.customId == 'replay') Audio.engineMgr(servers, i.message, 'player', ['replay']);
-
-            i.deferUpdate();
-        });
-    }
-
-    static cmd(servers,prefix,command,args,message)
+    static cmd(servers, prefix, command, args, message)
     {
         message.delete();
         servers[message.guild.id].audio.lastMusicTextchannelId = message.channel.id;
@@ -86,7 +63,7 @@ module.exports = class Audio
         }
     }
 
-    static async audioMaster(servers,message,command,args)
+    static async audioMaster(servers, message, command, args)
     {
         let server = servers[message.guild.id]
         /*
@@ -567,7 +544,7 @@ module.exports = class Audio
         {
             console.log('\tDelete');
             if(!args[1]) this.error(server,message,1,'No argument(s) detected');
-            else if(args.length == 2)
+            else if(args.length == 2) // single
             {
                 args[1] = this.QueueSelectorConverter(server, args[1]);
                 if(args[1] == null)
@@ -584,7 +561,7 @@ module.exports = class Audio
                 }
                 if(args[1] == server.audio.currentPlayingSong) server.audio.Engine.stop();
             }
-            else if(args.length == 3)
+            else if(args.length == 3) // range
             {
                 args[1] = this.QueueSelectorConverter(server, args[1]);
                 args[2] = this.QueueSelectorConverter(server, args[2]);
@@ -609,7 +586,7 @@ module.exports = class Audio
                     }
                 }
             }
-            else
+            else // multiple
             {
                 let needStop = false
                 for(let i = 1; i < args.length; i++)
@@ -629,8 +606,8 @@ module.exports = class Audio
             }
 
             let text = `**Done ✅**`;
-            Tools.simpleEmbed(server,message,text,undefined,false,true,1000);
-            this.queueDisplay(server,16, true);
+            Tools.simpleEmbed(server, message, text, undefined, false, true, 1000);
+            this.queueDisplay(server, 16, true);
         }
         else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
@@ -929,8 +906,14 @@ module.exports = class Audio
         text += '*Status :* ';
         if(server.audio.pause) text += '**Paused** ⏸';
         else text += '**Playing** ▶';
+        text += '\n';
+        
+        // --------------------------------------------------------------------------------
+        // number of song in the queue
+        
+        text += `*Numbers of song in the queue : **${server.audio.queue.length}***`;
         text += '\n\n';
-
+        
         // --------------------------------------------------------------------------------
         // calculating the index of the first music to be displayed
 
@@ -1103,9 +1086,9 @@ module.exports = class Audio
     static QueueSelectorConverter(server, arg)
     {
         if(arg == "c" || arg == "current") return server.audio.currentPlayingSong;
-        else if(arg == "a" || arg == "after") return server.audio.currentPlayingSong + 1;
-        else if(arg == "p" || arg == "previous") return server.audio.currentPlayingSong - 1;
-        else if(arg == "f" || arg == "final") return server.audio.queue.length - 1;
+        else if(arg == "a" || arg == "after" || arg == "next" || arg == "n") return server.audio.currentPlayingSong + 1;
+        else if(arg == "p" || arg == "previous" || arg == "befor" || arg == "b") return server.audio.currentPlayingSong - 1;
+        else if(arg == "f" || arg == "final" || arg == "end" || arg == "e") return server.audio.queue.length - 1;
         else
         {
             if(isNaN(Number.parseInt(arg))) return null;

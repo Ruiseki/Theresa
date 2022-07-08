@@ -4,6 +4,7 @@ const   Voice = require('@discordjs/voice'),
         Tools = require('./tools.js'),
         shell = require('shelljs'),
         ytdl = require('ytdl-core');
+const { isGeneratorFunction } = require('util/types');
 
 module.exports = class About
 {
@@ -47,7 +48,7 @@ module.exports = class About
 
             else if(command === 'admin') this.adminMgr(servers[message.guildId], message, args);
 
-            else if(command == 'reset') this.resetServerOption(servers[message.guildId], message, args);
+            else if(command == 'reset') this.reset(servers, message, args);
             
             else if(command === 'leaveserver') this.leaveServer(message);
 
@@ -94,7 +95,7 @@ module.exports = class About
         else if(command === 'moveuser' || command === 'm') this.moveAllUser(servers[message.guild.id], message, args); // --> help
         
         // else if(command === 'rec' || command == 'recall') this.recallPing(servers[message.guildId], message, args);
-        else if(command === 'trackvoive' || command == 'tv') this.trackingVoice(servers[message.guildId], message, args); // --> help
+        else if(command === 'trackvoice' || command == 'tv') this.trackingVoice(servers[message.guildId], message, args); // --> help
         
         else if(command === 'cleardm') this.clearDM(servers[message.guildId], message); // --> help
         else if(command === 'invitelink') this.inviteLink(servers[message.guildId] ,message); // --> help
@@ -116,11 +117,6 @@ module.exports = class About
         if(!FS.existsSync('./Servers Backup')) FS.mkdirSync('./Servers Backup');
         if(!FS.existsSync('./Servers Backup/lastBackup.ttime')) FS.writeFileSync('./Servers Backup/lastBackup.ttime', '0');
         if(!FS.existsSync('./audio')) FS.mkdirSync('./audio');
-        if(!FS.existsSync('./audio/buttonImg')) FS.mkdirSync('./audio/buttonImg');
-        // mettre les images en base de donnée et les ajouter
-
-        // if(!FS.existsSync('./audio/playslist')) FS.writeFileSync('./audio/playlist', '');
-        if(!FS.existsSync('./customServices')) FS.mkdirSync(''); 
     }
 
     static checkServerFile(guild) // check is file exist. If not create a file. Return false is the data is not present
@@ -143,22 +139,14 @@ module.exports = class About
         
     }
 
-    static decoReco(servers,message)
-    {
-        
-    }
-
     static leaveServer(message)
     {
 
     }
 
-    static resetServerOption(server, message, args)
+    static reset(servers, message, args)
     {
-        if(args[0] == 'voiceTracking')
-        {
-            server.tracking.voice = [];
-        }
+        if(args[0] == 'all') this.resetAllGuilds(servers);
     }
  
     static resetAllDataOfAGuild(servers, guild)
@@ -174,9 +162,22 @@ module.exports = class About
         Tools.serverSave(servers[guild.id]);
     }
 
+    static resetAllGuilds(servers)
+    {
+        servers[0].client.guilds.cache.each(guild => {
+            if(FS.existsSync(`./Servers/${guild.id}/${guild.id}.json`))
+            {
+                FS.rmSync(`./Servers/${guild.id}/${guild.id}.json`);
+                servers[guild.id] = undefined;
+                this.objectGenerator(servers, guild.id);
+                Tools.serverSave(servers[guild.id]);
+            }
+        });
+    }
+
     /*
        +----------------------------+
-       |  ACTION WITH / ON USERS    |
+       |      ACTION -> USERS       |
        +----------------------------+
     */
 
@@ -280,24 +281,10 @@ module.exports = class About
             if(!FS.existsSync(`./Servers/${id}/userOption`)) FS.mkdirSync(`./Servers/${id}/userOption`,'');
         }
     }
-
-    static specialChannelCreation(guild)
-    {
-        guild.channels.create(`Theresa'sTemporaryChannel`,{type : 'text'});
-        //  channel = guild.channels.cache.find()
-    }
     
     static trackingVoice(server, message, args)
     {
-        let isOn, index;
-
-        index = server.tracking.voice.findIndex(value => {
-            if(value.userId == message.author.id) return value;
-        });
-
-        if(index != -1 && server.tracking.voice[index].isActivated) isOn = true
-        else isOn = false;
-
+        let user = this.userProfileCheck(server, message.author.id);
 
         if(!args[0])
         {
@@ -305,113 +292,81 @@ module.exports = class About
         }
         else if(args[0] == 'e' || args[0] == 'enable')
         {
-            if(isOn) Tools.simpleEmbed(server, message, '**Already enable ℹ**', undefined, false, true, 2000)
+            if(user.voiceTracking.isActivated) Tools.simpleEmbed(server, message, '**Already enable ℹ**', undefined, false, true, 2000)
             else
             {
-                index = server.tracking.voice.findIndex(value => {
-                    if(value.userId == message.author.id) return value;
-                });
-
-                if(index == -1)
-                {
-                    server.tracking.voice.push(
-                        {
-                            userId: message.author.id,
-                            isActivated: true,
-                            allowedUsers:[],
-                            usersAndChannels:[]
-                        }
-                    );
-                }
-                else
-                {
-                    server.tracking.voice[index].isActivated = true;
-                }
+                user.voiceTracking.isActivated = true;
                 Tools.simpleEmbed(server, message, '**✅ Alert enable**', undefined, false, true, 2000);
             }
         }
         else if(args[0] == 'd' || args[0] == 'disable')
         {
-            if(!isOn) Tools.simpleEmbed(server, message, '**Already disable ℹ**', undefined, false, true, 2000)
+            if(!user.voiceTracking.isActivated) Tools.simpleEmbed(server, message, '**Already disable ℹ**', undefined, false, true, 2000)
             else
             {
-                server.tracking.voice[index].isActivated = false;
+                user.voiceTracking.isActivated = false;
                 Tools.simpleEmbed(server, message, '**✅ Alert disabled**', undefined, false, true, 2000)
             }
         }
         else if(args[0] == 's' || args[0] == 'status')
         {
-            if(index != -1)
-            {
-                let text = `*Voice tracking status for __**${message.author.username}**__*\n\n`;
+            let text = `*Voice tracking status for __**${message.author.username}**__*\n\n`;
 
-                if(server.tracking.voice[index].isActivated) text += '**✅ Service is ON**';
-                else text += '**❎ Service is OFF**';
-                text += '\n\n';
+            if(user.voiceTracking.isActivated) text += '**✅ Service is ON**';
+            else text += '**❎ Service is OFF**';
+            text += '\n\n';
 
-                let voice = server.tracking.voice;
-                let arrayOfObject = [];
+            let arrayOfObject = [];
 
-                let authorIndex = voice.findIndex(value => {
-                    if(value.userId == message.author.id) return value;
-                });
-
-                voice[authorIndex].usersAndChannels.forEach(userAndChannel => {
-                    userAndChannel.channelsId.forEach(channelId => {
-                        let index = -1;
-                        arrayOfObject.forEach((channelObject, i) => { // selecting the index
-                            if(channelObject.id == channelId) index = i;
-                        });
-
-                        if(index == -1)
-                        {
-                            arrayOfObject.push({
-                                "id":channelId,
-                                "usersId":[]
-                            });
-                            index = arrayOfObject.length - 1;
-                        }
-
-                        arrayOfObject[index].usersId.push(userAndChannel.userId);
+            user.voiceTracking.usersAndChannels.forEach(userAndChannel => {
+                userAndChannel.channelsId.forEach(channelId => {
+                    let index = -1;
+                    arrayOfObject.forEach((channelObject, i) => { // selecting the index
+                        if(channelObject.id == channelId) index = i;
                     });
-                });
 
-                for(let object of arrayOfObject)
-                {
-                    let channel = server.global.guild.channels.cache.get(object.id);
-                    text += `**${channel.name}**\n`;
-                    for(let userId of object.usersId)
+                    if(index == -1)
                     {
-                        let member = server.global.guild.members.cache.get(userId);
-                        text += `${member.user.username}\n`;
+                        arrayOfObject.push({
+                            "id":channelId,
+                            "usersId":[]
+                        });
+                        index = arrayOfObject.length - 1;
                     }
-                    text += '\n';
-                }
 
-                text += '**👍 You have allowed : \n**';
+                    arrayOfObject[index].usersId.push(userAndChannel.userId);
+                });
+            });
 
-                for(let allowedUserId of voice[authorIndex].allowedUsers)
+            for(let object of arrayOfObject)
+            {
+                let channel = server.global.guild.channels.cache.get(object.id);
+                text += `**${channel.name}**\n`;
+                for(let userId of object.usersId)
                 {
-                    let allowedMember = server.global.guild.members.cache.get(allowedUserId);
-                    text += `${allowedMember.user.username}\n`
+                    let member = server.global.guild.members.cache.get(userId);
+                    text += `${member.user.username}\n`;
                 }
-
-                Tools.simpleEmbed(server, message, text);
+                text += '\n';
             }
-            else Tools.simpleEmbed(server, message, '**❎ Profile unknown\nEnable with `t!trackvoice enable` to create your profile**', undefined, false, true, 60000);
+
+            text += '**👍 You have allowed : \n**';
+
+            for(let allowedUserId of user.voiceTracking.allowedUsers)
+            {
+                let allowedMember = server.global.guild.members.cache.get(allowedUserId);
+                text += `${allowedMember.user.username}\n`
+            }
+
+            Tools.simpleEmbed(server, message, text);
         }
         else if(args[0] == 'a' || args[0] == 'add' || args[0] == 'r' || args[0] == 'remove')
         {
             var isRemoving = false;
             if(args[0] == 'r' || args[0] == 'remove') isRemoving = true;
 
-            if(index == -1) // check if the user profil existe
-            {
-                Tools.simpleEmbed(server, message, '**❌ Please create your profile first with `t!trackvoice enable`**', undefined, false, true, 30000);
-                return;
-            }
-
-            if(!args[1]) // get the targeted user (can be all members of the guild if the user is removing users)
+            // get the targeted user (can be all members of the guild if the user is removing users)
+            if(!args[1])
             {
                 // short help page
                 return;
@@ -451,29 +406,31 @@ module.exports = class About
                 }
             }
 
-            let voice = server.tracking.voice[index],
-            targetUserIndex = voice.usersAndChannels.findIndex(value => {
+            let targetUserIndex = user.voiceTracking.usersAndChannels.findIndex(value => {
                 if(value.userId == targetUserId) return value;
             });
 
+            if(targetUserIndex == -1)
+            {
+                user.voiceTracking.usersAndChannels.push({
+                    "userId": targetUserId,
+                    "lastDM": 0,
+                    "channelsId": []
+                });
+                targetUserIndex = user.voiceTracking.usersAndChannels.length - 1;
+            }
+
+            let targetUser = user.voiceTracking.usersAndChannels[targetUserIndex];
+
             if(!isRemoving)
             {
-                if(targetUserIndex == -1)
-                {
-                    let newUsersAndChannelsObject = {
-                        "userId": targetUserId,
-                        "lastDM": 0,
-                        "channelsId": []
-                    };
-                    voice.usersAndChannels.push(newUsersAndChannelsObject);
-                    targetUserIndex = voice.usersAndChannels.length - 1;
-                }
-
-                let targetChannelIndex = voice.usersAndChannels[targetUserIndex].channelsId.findIndex(value => {
+                let targetChannelIndex = targetUser.channelsId.findIndex(value => {
                     if(value == targetChannel.id) return value;
                 });
 
-                if(targetChannelIndex == -1) voice.usersAndChannels[targetUserIndex].channelsId.push(targetChannel.id);
+                // Dernièrement : Remplacement des variable voice et index, et amélioration visuel (avec targetUser par exemple)
+
+                if(targetChannelIndex == -1) targetUser.channelsId.push(targetChannel.id);
                 else
                 {
                     Tools.simpleEmbed(server, message, '**❗ Channel already added for this user**', undefined, false, true, 10000);
@@ -482,27 +439,29 @@ module.exports = class About
                 
                 let targetMember = server.global.guild.members.cache.get(targetUserId);
                 let authorMember = server.global.guild.members.cache.get(message.author.id);
+                let targetProfile = this.userProfileCheck(server, targetMember.user.id);
 
-                let targetIndex = server.tracking.voice.findIndex(value => {
-                    if(value.userId == targetMember.user.id) return value;
-                });
-
-                if(targetIndex != -1 && server.tracking.voice[targetIndex].allowedUsers.indexOf(authorMember.user.id) == -1 && voice.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now())
+                if( targetProfile.voiceTracking.allowedUsers.indexOf(authorMember.user.id) == -1 &&
+                    user.voiceTracking.usersAndChannels[targetUserIndex].lastDM + 5 * 60 * 1000 <= Date.now()
+                    )
                 {
                     if(!targetMember.user.bot)
                     {
                         targetMember.user.send({
-                            embeds:[{
-                                color:'#000000',
-                                description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice allow ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
-                                title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
-                                thumbnail:{
-                                    url: targetMember.user.avatarURL()
+                            embeds: [
+                                {
+                                    color:'#000000',
+                                    description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice allow ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
+                                    title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
+                                    thumbnail: {
+                                        url: authorMember.user.avatarURL()
+                                    }
                                 }
-                            }]
+                            ]
                         });
-                        voice.usersAndChannels[targetUserIndex].lastDM = Date.now();
+                        user.voiceTracking.usersAndChannels[targetUserIndex].lastDM = Date.now();
                     }
+                    else if(targetProfile.voiceTracking.allowedUsers.indexOf(message.author.id) == -1) targetProfile.voiceTracking.allowedUsers.push(message.author.id);
                 }
 
                 Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
@@ -519,16 +478,16 @@ module.exports = class About
 
                 if(targetChannel == undefined)
                 {
-                    voice.usersAndChannels.splice(targetUserIndex, 1);
+                    user.voiceTracking.usersAndChannels.splice(targetUserIndex, 1);
                     Tools.simpleEmbed(server, message, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
                 }
                 else
                 {
-                    let targetChannelIndex = voice.usersAndChannels[targetUserIndex].channelsId.indexOf(targetChannel.id);
+                    let targetChannelIndex = user.voiceTracking.usersAndChannels[targetUserIndex].channelsId.indexOf(targetChannel.id);
                     if(targetChannelIndex == -1) Tools.simpleEmbed(server, message, '**❌ Can\'t find the channel for this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
                     else
                     {
-                        voice.usersAndChannels[targetUserIndex].channelsId.splice(targetChannelIndex, 1);
+                        user.voiceTracking.usersAndChannels[targetUserIndex].channelsId.splice(targetChannelIndex, 1);
                         Tools.simpleEmbed(server, message, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.username}**`);
                     }
                 }
@@ -549,10 +508,10 @@ module.exports = class About
                     Tools.simpleEmbed(server, message, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
                     return;
                 }
-                else if(!Tools.isElementPresentInArray(server.tracking.voice[index].allowedUsers, targetUserId))
+                else if(!Tools.isElementPresentInArray(user.voiceTracking.allowedUsers, targetUserId))
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
-                    server.tracking.voice[index].allowedUsers.push(targetUserId);
+                    user.voiceTracking.allowedUsers.push(targetUserId);
                     Tools.simpleEmbed(server, message, `**✅ Allowed ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
                 else Tools.simpleEmbed(server, message, '**❗ User already allowed !**', undefined, false, true, 10000);;
@@ -568,11 +527,11 @@ module.exports = class About
             }
             else
             {
-                let targetUserIndex = server.tracking.voice[index].allowedUsers.indexOf(targetUserId);
+                let targetUserIndex = user.voiceTracking.allowedUsers.indexOf(targetUserId);
                 if(targetUserIndex != -1)
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
-                    server.tracking.voice[index].allowedUsers.splice(targetUserIndex, 1);
+                    user.voiceTracking.allowedUsers.splice(targetUserIndex, 1);
                     Tools.simpleEmbed(server, message, `**✅ Revoked ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
                 else Tools.simpleEmbed(server, message, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 10000);
@@ -580,6 +539,27 @@ module.exports = class About
         }
 
         Tools.serverSave(server);
+    }
+
+    static userProfileCheck(server, userId)
+    {
+        let index = server.users.findIndex(value => {
+            if(value.userId == userId) return value;
+        });
+
+        if(index == -1)
+        {
+            server.users.push({
+                userId,
+                voiceTracking: {
+                    isActivated: false,
+                    allowedUsers: [],
+                    usersAndChannels: []
+                }
+            });
+            return server.users[server.users.length - 1];
+        }
+        else return server.users[index];
     }
 
     /*
@@ -654,66 +634,66 @@ module.exports = class About
             if(servers[guild.id].audio.isPlaying) Audio.runAudioEngine(servers, servers[guild.id], guild);
             
             Tools.serverSave(servers[guild.id]);
-            console.log(`\tLoading completed`);
         });
+        console.log(`######\tLoading completed !`);
     }
 
     static objectGenerator(servers,guildId)
     {
         servers[guildId] =
         {
-            global:{
-                guild:null,
+            global: {
+                guild: null,
                 guildId,
-                voiceConnection:null,
-                lastTextChannelId:null,
-                lastVoiceChannelId:null,
-                messageTemp:[],
-                adminList:[]
+                voiceConnection: null,
+                lastTextChannelId: null,
+                lastVoiceChannelId: null,
+                messageTemp: [],
+                adminList: []
             },
-            tracking:{
-                voice:[
-                    /*
-                    userId,                 // the id of the user who had activate the service
-                    isActivated: true,      // if the service is turn off. When turn off, user dont lose his parameters
-                    allowedUsers:[],        // accepted user. Not everyone can track you
-                    usersAndChannels:
-                    [           
-                        {           
-                            userId,         // id of a targeted user
-                            lastDM,         // time in ms from the last DM to the targeted user
-                            channelsId:[]   // list of the channel for this user
-                        }
-                    ]
-                    */
-                ],
-                ping:[],
-                status:[]
-            },
-            audio:{
-                Engine:null,
-                queue:[],
-                lastQueue:{
-                    messageId:null,
-                    channelId:null
+            audio: {
+                Engine: null,
+                queue: [],
+                lastQueue: {
+                    messageId: null,
+                    channelId: null
                 },
-                lastMusicTextchannelId:null,
-                currentPlayingSong:null,
-                isPlaying:false,
-                pause:false,
-                loop:false,
-                queueLoop:false,
-                leave:false,
-                arret:false,
-                restart:false,
-            }
+                lastMusicTextchannelId: null,
+                currentPlayingSong: null,
+                isPlaying:  false,
+                pause:      false,
+                loop:       false,
+                queueLoop:  false,
+                leave:      false,
+                arret:      false,
+                restart:    false,
+            },
+            users: [
+                /*
+                Shema of the user profile object
+                {
+                    userId,                     // the id of the user who had activate the service
+                    voiceTracking: {
+                        isActivated,            // if the voice tracking service is activated
+                        allowedUsers:[],        // accepted user. Not everyone can track you
+                        usersAndChannel: [
+                            {
+                                userId,         // id of a targeted user
+                                lastDM,         // time in ms from the last DM to the targeted user
+                                channelsId: []  // list of the channel for this user
+                            }
+                        ]
+                    }
+                }
+                */
+            ]
         };
     }
 
     static restartNextSong(server)
     {
         console.log('### Theresa will restart after this music ###');
-        server.audio.restart=true;
+        server.audio.restart = true;
     }
 
     static restart(server, message)
@@ -819,7 +799,6 @@ module.exports = class About
     static offline(server, message)
     {
         server.global.guild.client.user.setStatus('invisible');
-        //On peut pas mettre "offline"(parceque ça existe pas) donc on met "invisible"
     }
     
     static online(server, message)

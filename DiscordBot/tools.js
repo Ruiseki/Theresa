@@ -236,37 +236,7 @@ module.exports = class tools
     static clearLogs(message)
     {
         if(message.author.id !== '606684737611759628') return;
-        FS.writeFileSync(`c:/users/ruiseki/.pm2/logs/main-error.log`,'');
-        FS.writeFileSync(`c:/users/ruiseki/.pm2/logs/main-out.log`,'');
-    }
-
-    static logError(message)
-    {
-        message.delete();
-        console.log(`command -logerror detected. Executed by ${message.author.username}.`);
-        var log = FS.readFileSync(`../.pm2/logs/main-error.log`,'utf8').split(/\n/);
-        log.splice(0,log.length-15);
-        var Embed = new Discord.MessageEmbed()
-            .setColor('#000000')
-            .setTitle(`**:keyboard:  Logs from main-error  :keyboard:**`)
-            .attachFiles([`./Picture/Theresa.jpg`])
-            .setThumbnail(`attachment://Theresa.jpg`)
-            .setDescription(log);
-        message.channel.send(Embed);
-    }
-
-    static log(message)
-    {
-        message.delete();
-        console.log(`command -log detected. Executed by ${message.author.username}.`);
-        var log = FS.readFileSync(`../.pm2/logs/main-out.log`,'utf8').split(/\n/);
-        log.splice(0,log.length-15);
-        var Embed = new Discord.MessageEmbed()
-            .setColor('#000000')
-            .setTitle(`**:keyboard:  Logs from main-out  :keyboard:**`)
-            .attachFiles([`./Picture/Theresa.jpg`])
-            .setThumbnail(`attachment://Theresa.jpg`)
-            .setDescription(log);
-        message.channel.send(Embed);
+        FS.writeFileSync(`c:/users/ruiseki/.pm2/logs/main-error.log`, '');
+        FS.writeFileSync(`c:/users/ruiseki/.pm2/logs/main-out.log`, '');
     }
 }

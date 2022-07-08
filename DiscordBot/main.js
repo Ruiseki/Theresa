@@ -1,40 +1,58 @@
 require('dotenv').config();
-const Discord = require('discord.js'),  // Discord libraries
-    FS = require('fs');
-const { connect } = require('http2');
+const   Discord = require('discord.js'),  // Discord libraries
+        FS = require('fs');
 
 const Audio = require('./audio.js'),
     Tools = require('./tools.js'),
     RP = require('./rp.js'),
     Theresa = require('./Theresa.js'),
-    Help = require('./help.js'),
-    EliteDangerous = require('./customServices/veritasKingdom/eliteDangerous.js'),
-    CodingFactory = require('./customServices/codingFactory/coding.js');
+    Help = require('./help.js');
 
-var client = new Discord.Client({ intents: [ // The bot and what he can do
-    Discord.Intents.FLAGS.GUILDS,
-    Discord.Intents.FLAGS.GUILD_MEMBERS,
-    Discord.Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
-    Discord.Intents.FLAGS.GUILD_INVITES,
-    Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-    Discord.Intents.FLAGS.GUILD_PRESENCES,
-    Discord.Intents.FLAGS.GUILD_MESSAGES,
-    Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-    Discord.Intents.FLAGS.GUILD_MESSAGE_TYPING,
-    Discord.Intents.FLAGS.DIRECT_MESSAGES,
-    Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-    Discord.Intents.FLAGS.DIRECT_MESSAGE_TYPING
-]});
-
-const prefix = 't!'; // All orders are going to have to start with this
+var client = new Discord.Client( // The bot and what he can do
+    {
+        intents: [
+            Discord.Intents.FLAGS.GUILDS,
+            Discord.Intents.FLAGS.GUILD_MEMBERS,
+            Discord.Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
+            Discord.Intents.FLAGS.GUILD_INVITES,
+            Discord.Intents.FLAGS.GUILD_VOICE_STATES,
+            Discord.Intents.FLAGS.GUILD_PRESENCES,
+            Discord.Intents.FLAGS.GUILD_MESSAGES,
+            Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+            Discord.Intents.FLAGS.GUILD_MESSAGE_TYPING,
+            Discord.Intents.FLAGS.DIRECT_MESSAGES,
+            Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+            Discord.Intents.FLAGS.DIRECT_MESSAGE_TYPING
+        ]
+    }
+);
 
 var servers = []; // Structure for all server. Watch at Theresa.objectGenerator()
 
 servers[0] = {
-    prefix,
+    client,
+    prefix : 't!', // All orders are going to have to start with this
     isConnected:null,
     previousNetworkState:null,
-    login:false
+    login:false,
+    button: {
+        audio: {
+            previousBtn :  new Discord.MessageButton().setCustomId('previousBtn').setLabel('⏮').setStyle('SECONDARY'),
+            nextBtn :      new Discord.MessageButton().setCustomId('nextBtn').setLabel('⏭').setStyle('SECONDARY'),
+            pausePlayBtn : new Discord.MessageButton().setCustomId('pausePlayBtn').setLabel('⏯').setStyle('SECONDARY'),
+            stopBtn :      new Discord.MessageButton().setCustomId('stopBtn').setLabel('⏹').setStyle('SECONDARY'),
+            viewMore :     new Discord.MessageButton().setCustomId('viewMore').setLabel('🔎').setStyle('SECONDARY'),
+            loop :         new Discord.MessageButton().setCustomId('loop').setLabel('🔂').setStyle('SECONDARY'),
+            loopQueue :    new Discord.MessageButton().setCustomId('loopQueue').setLabel('🔁').setStyle('SECONDARY'),
+            replay :       new Discord.MessageButton().setCustomId('replay').setLabel('⏪').setStyle('SECONDARY')
+        },
+        help: {
+            main :         new Discord.MessageButton().setCustomId('main').setLabel('Main Page').setStyle('PRIMARY'),
+            audio :        new Discord.MessageButton().setCustomId('audio').setLabel('Audio 🎵').setStyle('PRIMARY'),
+            queueManager : new Discord.MessageButton().setCustomId('queueManager').setLabel('Queue Manager 🎼').setStyle('PRIMARY'),
+            debug :        new Discord.MessageButton().setCustomId('debug').setLabel('reload').setStyle('DANGER')
+        }
+    }
 };
 
 networkCheck().then(networkState => {
@@ -49,20 +67,16 @@ var clientActivity = [
     `t!help`,
     `t!help`,
     `t!a [music title]`,
-    `Version : BETA 0.4.0`
+    `Version : BETA 0.4.2`
 ];
-
-Audio.globalInit(servers, client);
 
 client.once('ready', () => {
     console.log(`######\tPowering...`);
+    servers[0].login = true;
 
-    // Restoring data
-    // Restart some services
-    // Check folder
-    Theresa.boot(client,servers, Audio);
+    Theresa.boot(client, servers, Audio);
 
-    console.log(`######\tOnline`);
+    console.log(`\n######\tONLINE`);
 });
 
 client.on('guildCreate',(guild) => { // creating folder for storing many informations about user, channel and voiceChannel
@@ -92,25 +106,21 @@ client.on('messageCreate', message => { // Will be executed when a message is em
         }
     }
 
-    if(message.content.toLocaleLowerCase() === 'theresa' || message.content.startsWith(`<@!${client.user.id}>`)) // if the message is "theresa" of @Theresa
+    if(message.content == `<@${client.user.id}>`) // if the message is @Theresa
     {
-        message.channel.send(`Ohayō *${message.author.username}*,`
-        +` I'm ready to serv you. Send **t!help** to view all my command !`);
+        Help.help(servers, message);
     }
     
 
-    /* 
-        ----- TEST AREA -----
-    */
+    //  ----- TEST AREA -----
     
     if(message.guild != null && message.guild.id == '889416369567834112') CodingFactory.checkWord(message);
 
-    /*
-        ---------------------
-    */
+    //  ---------------------
+    
 
     
-    if(!message.content.startsWith(prefix)) return; // if the message doesnt start with the prefix, exit. The reste of the code is for the commands
+    if(!message.content.startsWith(servers[0].prefix)) return; // if the message doesnt start with the prefix, exit. The reste of the code is for the commands
     
     
     /* ---------- BOT COMMAND STRUCTURE ---------- 
@@ -124,7 +134,7 @@ client.on('messageCreate', message => { // Will be executed when a message is em
 
 
     let type, command;
-    const args = message.content.slice(prefix.length).split(/ +/);  // delete the prefix and split all word of message
+    const args = message.content.slice(servers[0].prefix.length).split(/ +/);  // delete the prefix and split all word of message
     type = args.shift().toLocaleLowerCase();                        // the first word will be the TYPE
     if(args[0] != undefined) command = args.shift();                // The next word the COMMAND, and the reste the ARGUMENTS
 
@@ -153,36 +163,65 @@ client.on('messageCreate', message => { // Will be executed when a message is em
 
     if(type == 'a' || type == 'audio') // Class for music
     {
-        Audio.cmd(servers,prefix,command,args,message);
+        Audio.cmd(servers, servers[0].prefix, command, args, message);
         return;
     }
 
     else if(type == 'ed' || type == 'elite '|| type == 'elitedangerous') // Class for elite dangerous database on discord
     {
-        EliteDangerous.cmd(message,command,args);
+        EliteDangerous.cmd(message, command, args);
         return;
     }
 
     else if(type == 'c' || type == 'code' || type == 'coding')
     {
-        CodingFactory.cmd(servers[message.guild.id],message,command,args);
+        CodingFactory.cmd(servers[message.guild.id], message, command, args);
         return; 
+    }
+
+    // Help obsolete
+    else if((type == 'help' || type == 'h' || type == 'command' || type == 'commands') && message.author.id == '606684737611759628')
+    {
+        Help.help(servers, message);
+        return;
     }
 
     else // Main Class of the bot. Contains the admin manager, the joining or leaving command, voice tracking ...
     {
         Theresa.cmd(servers, message, type, command, args, Audio);
     }
-    
-    // ---------- TEST AREA ----------
 
-    //---------- ---------- ----------
-
-    // Help obsolete
-    // else if(Help.cmd(command,prefix,message,args)) return;
 });
 
-client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a user change his state in a voice channel (join, leave, mute, unmute...)
+client.on('interactionCreate', i => {
+    if( !i.isButton() ) return;
+
+    // ----- Audio -----
+    if(i.customId == 'nextBtn') Audio.queueMgr(          servers, i.message, 'queue', ['skip']);
+    else if(i.customId == 'previousBtn') Audio.queueMgr( servers, i.message, 'queue', ['previous']);
+    else if(i.customId == 'stopBtn') Audio.queueMgr(     servers, i.message, 'queue', ['clear']);
+    else if(i.customId == 'pausePlayBtn')
+    {
+        if(!servers[i.guild.id].audio.pause) Audio.engineMgr(servers, i.message, 'player', ['pause']);
+        else Audio.engineMgr(servers, i.message, 'p', ['play']);
+        Audio.queueDisplay(servers[i.guildId], 16, true);
+    }
+    else if(i.customId == 'viewMore') Audio.queueDisplay(   servers[i.guildId], 40, false);
+    else if(i.customId == 'loop') Audio.queueMgr(           servers, i.message, 'queue', ['loop']);
+    else if(i.customId == 'loopQueue') Audio.queueMgr(      servers, i.message, 'queue', ['loopqueue']);
+    else if(i.customId == 'replay') Audio.engineMgr(        servers, i.message, 'player', ['replay']);
+    // -----------------
+
+    // ----- Help ------
+    else if(i.customId == 'main') Help.help(servers, i.message)
+    else if(i.customId == 'audio') Help.audioMain(servers, i.message);
+    else if(i.customId == 'queueManager') Help.audioQueueManager(servers, i.message);
+    // -----------------
+
+    i.deferUpdate();
+});
+
+client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a user change his state in a voice channel (join, leave, mute, unmute...)
     
     //---------------------------------------------//
     // Theresa will join the voice channel of his creator and leave with him if she doing nothing
@@ -204,20 +243,20 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
 
     if(newState.channel != null && oldState.channel != newState.channel) // voice tracking
     {
-        servers[newState.guild.id].tracking.voice.forEach(userProfile => {      // for each user profile...
-            userProfile.usersAndChannels.forEach(userAndChannel => {            // in each usersAndChannels object (that containt the tracked user id and all the channels for this user)
+        servers[newState.guild.id].users.forEach(userProfile => {      // for each user profile...
+            userProfile.voiceTracking.usersAndChannels.forEach(userAndChannel => {            // in each usersAndChannels object (that containt the tracked user id and all the channels for this user)
                 if(userAndChannel.userId == newState.id)    // user found !
                 {
                     userAndChannel.channelsId.forEach(channelId => {
                         if(newState.channel.id == channelId)    // channel found !
                         {
-                            let trackedUserIndex = servers[newState.guild.id].tracking.voice.findIndex(value => {   // searching the index of the tracked user to check if he has allowed the master user
+                            let trackedUserIndex = servers[newState.guild.id].users.findIndex(value => {   // searching the index of the tracked user to check if he has allowed the master user
                                 if(value.userId == userAndChannel.userId) return value;
                             });
 
                             if(trackedUserIndex == -1) return;  // checking if the tracked user have a profile
 
-                            for(let allowedUserId of servers[newState.guild.id].tracking.voice[trackedUserIndex].allowedUsers)
+                            for(let allowedUserId of servers[newState.guild.id].users[trackedUserIndex].voiceTracking.allowedUsers)
                             {
                                 if(allowedUserId == userProfile.userId)     // allowed !
                                 {
@@ -225,7 +264,7 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
                                     masterMember = newState.guild.members.cache.get(userProfile.userId),
                                     trackedChannel = newState.guild.channels.cache.get(channelId);
 
-                                    if(masterMember.voice.channel.id == trackedMember.voice.channel.id) return; // final check, dont DM if the tracked user is in the same channel as the master user
+                                    if(masterMember.voice.channel != undefined && masterMember.voice.channel.id == trackedMember.voice.channel.id) return; // final check, dont DM if the tracked user is in the same channel as the master user
 
                                     masterMember.user.send({
                                         embeds:[{
@@ -237,6 +276,8 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
                                             }
                                         }]
                                     });
+
+                                    console.log(`######\tVoice Tracking\n\t\tDirect message send to ${masterMember.user.username} (${trackedMember.user.username} in ${trackedChannel.name} in ${trackedChannel.guild.name})`);
                                 }
                             }
 
@@ -248,7 +289,7 @@ client.on('voiceStateUpdate',(oldState,newState) => { // will be call when a use
     }
 });
 
-client.on('guildMemberSpeaking',(member,speaking) => { // will be executed when a member speak.
+client.on('guildMemberSpeaking',(member, speaking) => { // will be executed when a member speak.
     if(speaking.bitfield == 1) {}
     else if(speaking.bitfield == 0) {}
     else {}
@@ -293,7 +334,6 @@ setInterval(function() {
         {
             console.log("######\tLogin ...");
             client.login(process.env.key);
-            servers[0].login = true;
         }
     });
 }, 2000);
