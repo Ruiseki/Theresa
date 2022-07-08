@@ -94,7 +94,7 @@ module.exports = class About
         else if(command === 'moveuser' || command === 'm') this.moveAllUser(servers[message.guild.id], message, args); // --> help
         
         // else if(command === 'rec' || command == 'recall') this.recallPing(servers[message.guildId], message, args);
-        else if(command === 'trackvoice' || command == 'tv') this.trackingVoice(servers[message.guildId], message, args); // --> help
+        else if(command === 'trackvoice' || command == 'tv') this.trackingVoice(servers, servers[message.guildId], message, args); // --> help
         
         else if(command === 'cleardm') this.clearDM(servers[message.guildId], message); // --> help
         else if(command === 'invitelink') this.inviteLink(servers[message.guildId] ,message); // --> help
@@ -281,7 +281,7 @@ module.exports = class About
         }
     }
     
-    static async trackingVoice(server, message, args)
+    static async trackingVoice(servers, server, message, args)
     {
         let user = this.userProfileCheck(server, message.author.id);
 
@@ -463,21 +463,42 @@ module.exports = class About
                 {
                     if(!targetMember.user.bot)
                     {
+                        let row = new Discord.MessageActionRow()
+                        .addComponents(
+                            servers[0].button.voiceTracking.accept,
+                            servers[0].button.voiceTracking.refuse
+                        );
+
                         targetMember.user.send({
                             embeds: [
                                 {
                                     color:'#000000',
-                                    description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel. Type \`t!trackvoice allow ${authorMember.user.username}\` in the server **${message.guild.name}** to allow this user.`,
+                                    description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel.`,
                                     title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
                                     thumbnail: {
                                         url: authorMember.user.avatarURL()
                                     }
                                 }
-                            ]
+                            ],
+                            components: [row]
                         });
                         user.voiceTracking.usersAndChannels[targetUserIndex].lastDM = Date.now();
+
+                        message.client.on('interactionCreate', i => {
+                            if( !i.isButton() ) return;
+    
+                            if(i.customId == 'accept')
+                            {
+                                i.message.delete();
+                                targetProfile.voiceTracking.allowedUsers.push(message.author.id);
+                            }
+                            else if(i.customId == 'refuse') i.message.delete();
+
+                            Tools.serverSave(server);
+                        });
                     }
                     else if(targetProfile.voiceTracking.allowedUsers.indexOf(message.author.id) == -1) targetProfile.voiceTracking.allowedUsers.push(message.author.id);
+
                 }
 
                 Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
@@ -724,6 +745,9 @@ module.exports = class About
 
     static async clearDM(server, message)
     {
+        let user = this.userProfileCheck(server, message.author.id);
+        user.voiceTracking.statusMessageId = null;
+
         var DMchannel = await message.author.createDM();
         DMchannel.messages.fetch(
             {
@@ -735,6 +759,8 @@ module.exports = class About
             console.log(`${text.size} message(s) have been deleted`);
             text.forEach(m => m.delete());
         })
+
+        Tools.serverSave(server);
     }
     
     static clear(server, message, args)

@@ -52,6 +52,10 @@ servers[0] = {
             audio :        new Discord.MessageButton().setCustomId('audio').setLabel('Audio 🎵').setStyle('PRIMARY'),
             queueManager : new Discord.MessageButton().setCustomId('queueManager').setLabel('Queue Manager 🎼').setStyle('PRIMARY'),
             debug :        new Discord.MessageButton().setCustomId('debug').setLabel('reload').setStyle('DANGER')
+        },
+        voiceTracking: {
+            accept :       new Discord.MessageButton().setCustomId('accept').setLabel('Accept').setStyle('SUCCESS'),
+            refuse :       new Discord.MessageButton().setCustomId('refuse').setLabel('Refuse').setStyle('DANGER'),
         }
     }
 };
