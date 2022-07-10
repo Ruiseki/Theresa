@@ -11,40 +11,6 @@ const Tools = require('./tools.js');
 // local music
 var musicDirectory = require('./audio/musicDirectory.json');
 
-// button
-var previousBtn = new Discord.MessageButton()
-                    .setCustomId('previousBtn')
-                    .setLabel('⏮')
-                    .setStyle('SECONDARY'),
-    nextBtn = new Discord.MessageButton()
-                    .setCustomId('nextBtn')
-                    .setLabel('⏭')
-                    .setStyle('SECONDARY'),
-    pausePlayBtn = new Discord.MessageButton()
-                    .setCustomId('pausePlayBtn')
-                    .setLabel('⏯')
-                    .setStyle('SECONDARY'),
-    stopBtn = new Discord.MessageButton()
-                    .setCustomId('stopBtn')
-                    .setLabel('⏹')
-                    .setStyle('SECONDARY'),
-    viewMore = new Discord.MessageButton()
-                    .setCustomId('viewMore')
-                    .setLabel('🔎')
-                    .setStyle('SECONDARY'),
-    loop = new Discord.MessageButton()
-                    .setCustomId('loop')
-                    .setLabel('🔂')
-                    .setStyle('SECONDARY'),
-    loopQueue = new Discord.MessageButton()
-                    .setCustomId('loopQueue')
-                    .setLabel('🔁')
-                    .setStyle('SECONDARY'),
-    replay = new Discord.MessageButton()
-                    .setCustomId('replay')
-                    .setLabel('⏪')
-                    .setStyle('SECONDARY');
-
 module.exports = class Audio
 {
     static cmd(servers, prefix, command, args, message)
@@ -323,21 +289,21 @@ module.exports = class Audio
             }
         }
 
-        if(server.audio.queue.length == 1 && !server.audio.isPlaying) // play for the first time
+        if(server.audio.queue.length == 1 && server.audio.Engine._state.status != 'playing') // play for the first time
         {
             server.audio.currentPlayingSong = 0;
             this.runAudioEngine(servers, server, message.guild);
         }
-        else if(queuePos - 1 == server.audio.currentPlayingSong && server.audio.isPlaying) // with the option "current"
+        else if(queuePos - 1 == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') // with the option "current"
         {
             server.audio.currentPlayingSong--;
             server.audio.Engine.stop();
         }
-        else if(!server.audio.isPlaying && !server.audio.pause) // when the queue is complete and not reset
+        else if(server.audio.Engine._state.status != 'playing') // when the queue is complete and not reset
         {
             this.runAudioEngine(servers, server, message.guild);
         }
-        else this.queueDisplay(server, 16, true); // when the engine the playing something
+        else this.queueDisplay(servers, server, 16, true); // when the engine the playing something
 
         Tools.serverSave(server);
     }
@@ -347,8 +313,7 @@ module.exports = class Audio
         server.audio.Engine = Voice.createAudioPlayer();
         server.global.voiceConnection.subscribe(server.audio.Engine);
         
-        this.queueDisplay(server, 16, true);
-        server.audio.isPlaying = true;
+        this.queueDisplay(servers, server, 16, true);
         
         let voiceChannel = guild.channels.cache.get(servers[guild.id].global.lastVoiceChannelId)
         Theresa.joinVoice(server, voiceChannel);
@@ -374,11 +339,9 @@ module.exports = class Audio
         server.audio.Engine.on('idle', oldEngineStatut =>
         {
             console.log(`######\t-> ${server.global.guild.name}\n\tAudio Engine in Idle`);
-            server.audio.isPlaying = false;
             if(server.audio.restart) // restart (for ghost update)
             {
                 server.audio.restart = false;
-                server.audio.isPlaying = true;
                 server.audio.currentPlayingSong++;
                 Tools.serverSave(server);
                 Tools.reboot();
@@ -420,7 +383,7 @@ module.exports = class Audio
         });
     }
 
-    static engineMgr(servers,message,command,args)
+    static engineMgr(servers, message, command, args)
     {
         let server = servers[message.guild.id]
 
@@ -428,38 +391,36 @@ module.exports = class Audio
         else if(!args[0]) ;
         else if(args[0] == 'stop' || args[0] == 's')
         {
-            if(server.audio.isPlaying)
+            if(server.audio.Engine._state.status == 'playing')
             {
                 server.audio.arret = true;
                 server.audio.Engine.stop();
             }
             else
             {
-                this.error(server,message,3,`Audio Engine isn't playing.`);
+                this.error(server, message, 3, `Audio Engine isn't playing.`);
             }
         }
         else if(args[0] == 'pause' || args[0] == 'p')
         {
-            if(!server.audio.pause && server.audio.isPlaying)
+            if(server.audio.Engine._state.status == 'playing')
             {
                 server.audio.Engine.pause();
-                server.audio.pause = true;
             }
-            else if(!server.audio.isPlaying)
+            else if(server.audio.Engine._state.status == 'idle')
             {
-                this.error(server,message,3,`Audio Engine isn't playing.`);
+                this.error(server,  message, 3, `Audio Engine isn't playing.`);
             }
-            else if(server.audio.pause)
+            else if(server.audio.Engine._state.status == 'paused')
             {
-                this.error(server,message,3,`Audio Engine is in pause.`);
+                this.error(server, message, 3, `Audio Engine is in pause.`);
             }
         }
         else if(args[0] == 'play' || args[0] == 'pl')
         {
-            if(server.audio.pause && server.audio.isPlaying)
+            if(server.audio.Engine._state.status == 'paused')
             {
                 server.audio.Engine.unpause();
-                server.audio.pause = false;
             }
             else
             {
@@ -469,7 +430,7 @@ module.exports = class Audio
                     channel.messages.fetch(server.audio.lastQueue.messageId)
                     .then(m => m.delete());
                 }
-                this.error(server,message,3,`Audio Engine isn't playing.`);
+                this.error(server, message, 3, `Audio Engine isn't playing.`);
             }
         }
         else if(args[0] == 'replay' || args[0] == 'r')
@@ -488,7 +449,7 @@ module.exports = class Audio
                 }
                 else
                 {
-                    this.error(server,message,3,'There is no queue');
+                    this.error(server, message, 3, 'There is no queue');
                 }
             }
         }
@@ -512,7 +473,7 @@ module.exports = class Audio
         if(!args[0])
         {
             if(!server.audio.queue[0]) return;
-            else this.queueDisplay(server, 16, true);
+            else this.queueDisplay(servers, server, 16, true);
         }
         else if(args[0] == 'clear' || args[0] == 'c')
         {
@@ -521,8 +482,6 @@ module.exports = class Audio
             server.audio.currentPlayingSong = null;
             server.audio.loop = false;
             server.audio.queueLoop = false;
-            server.audio.isPlaying = false;
-            server.audio.pause = false;
             server.audio.restart = false;
             server.audio.arret = false;
             server.audio.leave = false;
@@ -557,7 +516,7 @@ module.exports = class Audio
                 if(args[1] <= server.audio.currentPlayingSong)
                 {
                     server.audio.currentPlayingSong--;
-                    this.queueDisplay(server,16, true);
+                    this.queueDisplay(servers, server,16, true);
                 }
                 if(args[1] == server.audio.currentPlayingSong) server.audio.Engine.stop();
             }
@@ -582,7 +541,7 @@ module.exports = class Audio
                     else if(server.audio.currentPlayingSong > args[2])
                     {
                         server.audio.currentPlayingSong -= args[2] - args[1] + 1;
-                        this.queueDisplay(server,16, true);
+                        this.queueDisplay(servers, server,16, true);
                     }
                 }
             }
@@ -599,15 +558,15 @@ module.exports = class Audio
                     }
                     server.audio.queue.splice(args[1],1);
                     if(args[i] <= server.audio.currentPlayingSong) server.audio.currentPlayingSong--;
-                    if(args[i] == server.audio.currentPlayingSong && server.audio.isPlaying) needStop = true;
+                    if(args[i] == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') needStop = true;
                 }
                 if(needStop) server.audio.Engine.stop();
-                queueDisplay(server,16, true);
+                queueDisplay(servers, server,16, true);
             }
 
             let text = `**Done ✅**`;
             Tools.simpleEmbed(server, message, text, undefined, false, true, 1000);
-            this.queueDisplay(server, 16, true);
+            this.queueDisplay(servers, server, 16, true);
         }
         else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
@@ -662,7 +621,7 @@ module.exports = class Audio
                     Tools.simpleEmbed(server,message,'**Loop On 🔂**',undefined,false,true,1000);
                 }
 
-                this.queueDisplay(server,16, true);
+                this.queueDisplay(servers, server,16, true);
             }
         }
         else if(args[0] == 'loopqueue' || args[0] == 'lq')
@@ -685,7 +644,7 @@ module.exports = class Audio
                     Tools.simpleEmbed(server,message,'**Loop queue On 🔁**',undefined,false,true,1000);
                 }
 
-                this.queueDisplay(server, 16, true);
+                this.queueDisplay(servers, server, 16, true);
             }
         }
         else if(args[0] == 'move' || args[0] == 'm') this.error(server,message,3,'Work in progress');
@@ -717,7 +676,7 @@ module.exports = class Audio
             {
                 server.audio.Engine.stop();
             }
-            else this.queueDisplay(server, 16, true);
+            else this.queueDisplay(servers, server, 16, true);
         }
         else if(args[0] == 'shuffle' || args[0] == 'sh')
         {
@@ -731,7 +690,7 @@ module.exports = class Audio
                 shuffledMusic.splice(indiceAlea, 1);
             }
 
-            if(server.audio.isPlaying)
+            if(server.audio.Engine._state.status == 'playing')
             {
                 server.audio.currentPlayingSong -= 1;
                 server.audio.Engine.stop();
@@ -837,11 +796,11 @@ module.exports = class Audio
                 shuffledMusic.splice(indiceAlea, 1);
             }
 
-            if(!server.audio.isPlaying && !server.audio.pause) // playing or adding to the queue
+            if(!server.audio.Engine._state.status == 'playing') // playing or adding to the queue
             {
                 this.runAudioEngine(servers, server, message.guild);
             }
-            else this.queueDisplay(server, 16, true);
+            else this.queueDisplay(servers, server, 16, true);
 
             /* let totalTime = Date.now() - t0; // timer end
             console.log(`######\tAlgorithm complete.\n\t${totalTime} ms`); */
@@ -872,14 +831,14 @@ module.exports = class Audio
                     
                     if(server.audio.currentPlayingSong == null) server.audio.currentPlayingSong = 0;
 
-                    if(!server.audio.isPlaying) this.runAudioEngine(servers, server, server.global.guild);
-                    else this.queueDisplay(server, 16, true);
+                    if(server.audio.Engine._state.status != 'playing') this.runAudioEngine(servers, server, server.global.guild);
+                    else this.queueDisplay(servers, server, 16, true);
                 }
             }
         }
     }
     
-    static async queueDisplay(server, nbrOfMusicDisplayed, isKeep)
+    static async queueDisplay(servers, server, nbrOfMusicDisplayed, isKeep)
     {
         let text;
 
@@ -904,7 +863,7 @@ module.exports = class Audio
         // playing status
 
         text += '*Status :* ';
-        if(server.audio.pause) text += '**Paused** ⏸';
+        if(server.audio.Engine._state.status == 'paused') text += '**Paused** ⏸';
         else text += '**Playing** ▶';
         text += '\n';
         
@@ -956,17 +915,17 @@ module.exports = class Audio
 
         let firstRow = new Discord.MessageActionRow()
             .addComponents(
-                previousBtn,
-                stopBtn,
-                pausePlayBtn,
-                nextBtn
+                servers[0].button.audio.previousBtn,
+                servers[0].button.audio.stopBtn,
+                servers[0].button.audio.pausePlayBtn,
+                servers[0].button.audio.nextBtn
             );
         let secondRow = new Discord.MessageActionRow()
             .addComponents(
-                viewMore,
-                loop,
-                loopQueue,
-                replay
+                servers[0].button.audio.viewMore,
+                servers[0].button.audio.loop,
+                servers[0].button.audio.loopQueue,
+                servers[0].button.audio.replay
             );
 
         let messageOption = {
@@ -1049,7 +1008,7 @@ module.exports = class Audio
                             server.audio.lastQueue.messageId = msg.id;
                             server.audio.lastQueue.channelId = msg.channel.id;
                             Tools.serverSave(server);
-                            setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 120000);
+                            setTimeout(function(){Audio.queueDisplay(servers, server, 16, true)}, 120000);
                         });
                         Tools.serverSave(server);
                     }
@@ -1076,7 +1035,7 @@ module.exports = class Audio
                     server.audio.lastQueue.messageId = msg.id;
                     server.audio.lastQueue.channelId = msg.channel.id;
                     Tools.serverSave(server);
-                    setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 120000);
+                    setTimeout(function(){Audio.queueDisplay(servers, server, 16, true)}, 120000);
                 });
                 Tools.serverSave(server);
             }

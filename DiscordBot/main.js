@@ -208,11 +208,11 @@ client.on('interactionCreate', i => {
     else if(i.customId == 'stopBtn') Audio.queueMgr(     servers, i.message, 'queue', ['clear']);
     else if(i.customId == 'pausePlayBtn')
     {
-        if(!servers[i.guild.id].audio.pause) Audio.engineMgr(servers, i.message, 'player', ['pause']);
-        else Audio.engineMgr(servers, i.message, 'p', ['play']);
-        Audio.queueDisplay(servers[i.guildId], 16, true);
+        if(servers[i.guild.id].audio.Engine._state.status == 'playing') Audio.engineMgr(servers, i.message, 'player', ['pause']);
+        else Audio.engineMgr(servers, i.message, 'player', ['play']);
+        Audio.queueDisplay(servers, servers[i.guildId], 16, true);
     }
-    else if(i.customId == 'viewMore') Audio.queueDisplay(   servers[i.guildId], 40, false);
+    else if(i.customId == 'viewMore') Audio.queueDisplay(   servers, servers[i.guildId], 40, false);
     else if(i.customId == 'loop') Audio.queueMgr(           servers, i.message, 'queue', ['loop']);
     else if(i.customId == 'loopQueue') Audio.queueMgr(      servers, i.message, 'queue', ['loopqueue']);
     else if(i.customId == 'replay') Audio.engineMgr(        servers, i.message, 'player', ['replay']);

@@ -63,7 +63,7 @@ module.exports = class About
                 {
                     try
                     {
-                        
+
                     }
                     catch(err)
                     {
@@ -698,8 +698,6 @@ module.exports = class About
                 },
                 lastMusicTextchannelId: null,
                 currentPlayingSong: null,
-                isPlaying:  false,
-                pause:      false,
                 loop:       false,
                 queueLoop:  false,
                 leave:      false,
