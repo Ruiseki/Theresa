@@ -72,7 +72,7 @@ var clientActivity = [
     `t!help`,
     `t!help`,
     `t!a [music title]`,
-    `Version : BETA 0.4.2`
+    `Version : BETA 0.4.4`
 ];
 
 client.once('ready', () => {
