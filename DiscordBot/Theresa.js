@@ -258,7 +258,7 @@ module.exports = class About
             return;
         }
 
-        if(destChannel.type != "GUILD_VOICE")
+        if(destChannel.type != "GuildVoice")
         {
             message.channel.send('[...]');
             return;
@@ -366,7 +366,7 @@ module.exports = class About
             message.author.send({
                 embeds: [
                     {
-                        color: '#000000',
+                        color: '000000',
                         description: text
                     }
                 ]
@@ -396,11 +396,11 @@ module.exports = class About
                     Tools.simpleEmbed(server, message, '**❌ Unknown user**', undefined, false, true, 10000);
                     return;
                 }
-                /* else if(targetUserId == message.author.id)
+                else if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
                     return;
-                } */
+                }
             }
 
             var targetChannel;
@@ -463,7 +463,7 @@ module.exports = class About
                 {
                     if(!targetMember.user.bot)
                     {
-                        let row = new Discord.MessageActionRow()
+                        let row = new Discord.ActionRowBuilder()
                         .addComponents(
                             servers[0].button.voiceTracking.accept,
                             servers[0].button.voiceTracking.refuse
@@ -472,7 +472,7 @@ module.exports = class About
                         targetMember.user.send({
                             embeds: [
                                 {
-                                    color:'#000000',
+                                    color:'000000',
                                     description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel.`,
                                     title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
                                     thumbnail: {
@@ -540,12 +540,12 @@ module.exports = class About
             }
             else
             {
-                /* if(targetUserId == message.author.id)
+                if(targetUserId == message.author.id)
                 {
                     Tools.simpleEmbed(server, message, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
                     return;
                 }
-                else  */if(!Tools.isElementPresentInArray(user.voiceTracking.allowedUsers, targetUserId))
+                else if(!Tools.isElementPresentInArray(user.voiceTracking.allowedUsers, targetUserId))
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     user.voiceTracking.allowedUsers.push(targetUserId);
@@ -654,7 +654,7 @@ module.exports = class About
             if(servers[guild.id].global.lastVoiceChannelId == null)
             {
                 servers[guild.id].global.guild.channels.cache.each(channel => {
-                    if(channel.isVoice())
+                    if(channel.isVoiceBased())
                     {
                         channel.members.each(member => {
                             if(member.id == '606684737611759628')
@@ -668,6 +668,8 @@ module.exports = class About
             }
             
             //Audio
+            servers[guild.id].audio.Engine = Voice.createAudioPlayer();
+            Audio.eventsListeners(servers, servers[guild.id]);
             Audio.clearMessagesTemps(servers[guild.id], guild);
             if(servers[guild.id].audio.isPlaying) Audio.runAudioEngine(servers, servers[guild.id], guild);
             
@@ -698,6 +700,8 @@ module.exports = class About
                 },
                 lastMusicTextchannelId: null,
                 currentPlayingSong: null,
+                isPlaying:  false,
+                pause:      false,
                 loop:       false,
                 queueLoop:  false,
                 leave:      false,
@@ -817,7 +821,7 @@ module.exports = class About
     static DevReport(message)
     {
         var embed = new Discord.MessageEmbed()
-        .setColor('#000000')
+        .setColor('000000')
         .setTitle('🗒  Theresa\'s Changelog  💻')
         .attachFiles(['./Picture/Theresa.jpg'])
         .setThumbnail('attachment://Theresa.jpg')

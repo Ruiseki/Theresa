@@ -11,18 +11,17 @@ const Audio = require('./audio.js'),
 var client = new Discord.Client( // The bot and what he can do
     {
         intents: [
-            Discord.Intents.FLAGS.GUILDS,
-            Discord.Intents.FLAGS.GUILD_MEMBERS,
-            Discord.Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
-            Discord.Intents.FLAGS.GUILD_INVITES,
-            Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-            Discord.Intents.FLAGS.GUILD_PRESENCES,
-            Discord.Intents.FLAGS.GUILD_MESSAGES,
-            Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-            Discord.Intents.FLAGS.GUILD_MESSAGE_TYPING,
-            Discord.Intents.FLAGS.DIRECT_MESSAGES,
-            Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-            Discord.Intents.FLAGS.DIRECT_MESSAGE_TYPING
+            Discord.GatewayIntentBits.Guilds,
+            Discord.GatewayIntentBits.GuildMembers,
+            Discord.GatewayIntentBits.GuildEmojisAndStickers,
+            Discord.GatewayIntentBits.GuildInvites,
+            Discord.GatewayIntentBits.GuildVoiceStates,
+            Discord.GatewayIntentBits.GuildPresences,
+            Discord.GatewayIntentBits.GuildMessages,
+            Discord.GatewayIntentBits.GuildMessageReactions,
+            Discord.GatewayIntentBits.DirectMessages,
+            Discord.GatewayIntentBits.DirectMessageReactions,
+            Discord.GatewayIntentBits.MessageContent
         ]
     }
 );
@@ -38,24 +37,24 @@ servers[0] = {
     login: false,
     button: {
         audio: {
-            previousBtn :  new Discord.MessageButton().setCustomId('previousBtn').setLabel('⏮').setStyle('SECONDARY'),
-            nextBtn :      new Discord.MessageButton().setCustomId('nextBtn').setLabel('⏭').setStyle('SECONDARY'),
-            pausePlayBtn : new Discord.MessageButton().setCustomId('pausePlayBtn').setLabel('⏯').setStyle('SECONDARY'),
-            stopBtn :      new Discord.MessageButton().setCustomId('stopBtn').setLabel('⏹').setStyle('SECONDARY'),
-            viewMore :     new Discord.MessageButton().setCustomId('viewMore').setLabel('🔎').setStyle('SECONDARY'),
-            loop :         new Discord.MessageButton().setCustomId('loop').setLabel('🔂').setStyle('SECONDARY'),
-            loopQueue :    new Discord.MessageButton().setCustomId('loopQueue').setLabel('🔁').setStyle('SECONDARY'),
-            replay :       new Discord.MessageButton().setCustomId('replay').setLabel('⏪').setStyle('SECONDARY')
+            previousBtn :  new Discord.ButtonBuilder().setCustomId('previousBtn').setLabel('⏮').setStyle('Secondary'),
+            nextBtn :      new Discord.ButtonBuilder().setCustomId('nextBtn').setLabel('⏭').setStyle('Secondary'),
+            pausePlayBtn : new Discord.ButtonBuilder().setCustomId('pausePlayBtn').setLabel('⏯').setStyle('Secondary'),
+            stopBtn :      new Discord.ButtonBuilder().setCustomId('stopBtn').setLabel('⏹').setStyle('Secondary'),
+            viewMore :     new Discord.ButtonBuilder().setCustomId('viewMore').setLabel('🔎').setStyle('Secondary'),
+            loop :         new Discord.ButtonBuilder().setCustomId('loop').setLabel('🔂').setStyle('Secondary'),
+            loopQueue :    new Discord.ButtonBuilder().setCustomId('loopQueue').setLabel('🔁').setStyle('Secondary'),
+            replay :       new Discord.ButtonBuilder().setCustomId('replay').setLabel('⏪').setStyle('Secondary')
         },
         help: {
-            main :         new Discord.MessageButton().setCustomId('main').setLabel('Main Page').setStyle('PRIMARY'),
-            audio :        new Discord.MessageButton().setCustomId('audio').setLabel('Audio 🎵').setStyle('PRIMARY'),
-            queueManager : new Discord.MessageButton().setCustomId('queueManager').setLabel('Queue Manager 🎼').setStyle('PRIMARY'),
-            debug :        new Discord.MessageButton().setCustomId('debug').setLabel('reload').setStyle('DANGER')
+            main :         new Discord.ButtonBuilder().setCustomId('main').setLabel('Main Page').setStyle('Primary'),
+            audio :        new Discord.ButtonBuilder().setCustomId('audio').setLabel('Audio 🎵').setStyle('Primary'),
+            queueManager : new Discord.ButtonBuilder().setCustomId('queueManager').setLabel('Queue Manager 🎼').setStyle('Primary'),
+            debug :        new Discord.ButtonBuilder().setCustomId('debug').setLabel('reload').setStyle('Danger')
         },
         voiceTracking: {
-            accept :       new Discord.MessageButton().setCustomId('accept').setLabel('Accept').setStyle('SUCCESS'),
-            refuse :       new Discord.MessageButton().setCustomId('refuse').setLabel('Refuse').setStyle('DANGER'),
+            accept :       new Discord.ButtonBuilder().setCustomId('accept').setLabel('Accept').setStyle('Success'),
+            refuse :       new Discord.ButtonBuilder().setCustomId('refuse').setLabel('Refuse').setStyle('Danger'),
         }
     }
 };
@@ -219,7 +218,7 @@ client.on('interactionCreate', i => {
     // -----------------
 
     // ----- Help ------
-    else if(i.customId == 'main') Help.help(servers, i.message)
+    else if(i.customId == 'main') Help.help(servers, i.message);
     else if(i.customId == 'audio') Help.audioMain(servers, i.message);
     else if(i.customId == 'queueManager') Help.audioQueueManager(servers, i.message);
     // -----------------
@@ -232,7 +231,7 @@ client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a us
     //---------------------------------------------//
     // Theresa will join the voice channel of his creator and leave with him if she doing nothing
     if(oldState.channel == null && newState.channel != null && newState.id == 606684737611759628 && newState.guild.me.voice.channel == null) Theresa.joinVoice(servers[newState.guild.id], newState.member.voice.channel)
-    if(oldState.channel != null && newState.channel == null && newState.id == 606684737611759628 && !servers[newState.guild.id].audio.isPlaying && !servers[newState.guild.id].audio.queue[0] && newState.guild.me.voice.channel != null) Theresa.leaveVoice(servers[oldState.guild.id], Audio);
+    if(oldState.channel != null && newState.channel == null && newState.id == 606684737611759628 && !servers[newState.guild.id].audio.Engine._state == 'playing' && !servers[newState.guild.id].audio.queue[0] && newState.guild.me.voice.channel != null) Theresa.leaveVoice(servers[oldState.guild.id], Audio);
     //---------------------------------------------//
 
     if(newState.channel != null && newState.id == client.user.id)
@@ -274,7 +273,7 @@ client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a us
 
                                     masterMember.user.send({
                                         embeds:[{
-                                            color: '#000000',
+                                            color: '000000',
                                             title: '🔊🔎 Voice tracking notification 🔔',
                                             description: `**${trackedMember.user.username}** is in a voice channel !\n\nChannel : **${trackedChannel.name}**\nServer : **${trackedChannel.guild.name}**`,
                                             thumbnail:{

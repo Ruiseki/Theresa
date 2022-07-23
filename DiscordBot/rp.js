@@ -110,7 +110,7 @@ module.exports = class RP
         var imgPath = this.getGifPath(command);
         var imgName = imgPath.split('/')
         var embed = new Discord.MessageEmbed()
-            .setColor(`#000000`)
+            .setColor(`000000`)
             .setTitle(title)
             .setImage(`attachment://${imgName[imgName.length-1]}`);
         message.channel.send({
@@ -123,7 +123,7 @@ module.exports = class RP
     {
         message.channel.send(`${targetName}-sama, ${message.author.username} is pinging you.`)
         var embed = new Discord.MessageEmbed()
-            .setColor('#000000')
+            .setColor('000000')
             .setTitle(title)
             .setDescription(text)
             .setImage(`attachment://file.gif`);

@@ -9,10 +9,10 @@
   "author": "Ruiseki",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/voice": "^0.10.0",
+    "@discordjs/voice": "^0.11.0",
     "csv-parser": "^3.0.0",
-    "discord.js": "^13.8.0",
-    "dotenv": "^8.6.0",
+    "discord.js": "^14.0.3",
+    "dotenv": "^16.0.1",
     "ffmpeg": "^0.0.4",
     "ffmpeg-static": "^4.3.0",
     "fs": "0.0.1-security",
@@ -21,10 +21,10 @@
     "libsodium-wrappers": "^0.7.9",
     "mysql": "^2.18.1",
     "node-fetch": "^2.6.1",
-    "node-id3": "^0.2.2",
+    "node-id3": "^0.2.3",
     "opusscript": "^0.0.7",
     "shelljs": "^0.8.5",
-    "youtube-sr": "^4.1.7",
+    "youtube-sr": "^4.2.0",
     "yt-search": "^2.10.3",
     "ytdl-core": "^4.11.0"
   }

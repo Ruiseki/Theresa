@@ -66,13 +66,17 @@ module.exports = class tools
     {
         if(needThumbnail)
         {
-            let embed = new Discord.MessageEmbed()
-            .setDescription(text)
-            .setColor('#000000')
-            .setThumbnail('attachment://file.jpg');
 
             let messageOption = {
-                    embeds: [embed],
+                    embeds: [
+                        {
+                            color: '000000',
+                            description: text,
+                            thumbnail: {
+                                url: 'attachment://file.jpg'
+                            }
+                        }
+                    ],
                     files: [image]
                 };
 
@@ -105,12 +109,13 @@ module.exports = class tools
         }
         else
         {
-            let embed = new Discord.MessageEmbed()
-            .setColor('#000000')
-            .setDescription(text);
-
             let messageOption = {
-                embeds: [embed]
+                embeds: [
+                    {
+                        color: '000000',
+                        description: text
+                    }
+                ]
             };
 
             if(willDelete)

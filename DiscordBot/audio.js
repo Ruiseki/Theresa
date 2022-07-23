@@ -29,6 +29,61 @@ module.exports = class Audio
         }
     }
 
+    static eventsListeners(servers, server)
+    {
+        server.audio.Engine.on('stateChange', (oldState, newState) => {
+            if(newState.status == 'idle')
+            {
+                console.log(`######\t-> ${server.global.guild.name}\n\tAudio Engine in Idle`);
+                if(server.audio.restart) // restart (for ghost update)
+                {
+                    server.audio.restart = false;
+                    server.audio.currentPlayingSong++;
+                    Tools.serverSave(server);
+                    Tools.reboot();
+                }
+                else if(server.audio.arret) return; // stop
+                else if(server.audio.loop) // loop
+                {
+                    this.runAudioEngine(servers, server, server.global.guild);
+                }
+                else if(server.audio.queueLoop) // queue loop
+                {
+                    if(!server.audio.queue[server.audio.currentPlayingSong+1]) server.audio.currentPlayingSong = 0;
+                    else server.audio.currentPlayingSong++;
+                    this.runAudioEngine(servers, server, server.global.guild);
+                }
+                else // normal execution. Play the next song or stop.
+                {
+                    server.audio.currentPlayingSong++;
+                    if(server.audio.queue[server.audio.currentPlayingSong]) // next song -> true
+                    {
+                        this.runAudioEngine(servers, server, server.global.guild);
+                    }
+                    else // next song -> false
+                    {
+                        if(server.audio.lastQueue.messageId != null)
+                        {
+                            let channel = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
+                            channel.messages.fetch(server.audio.lastQueue.messageId).then(msg => msg.delete());
+                            server.audio.lastQueue.messageId = null;
+                            server.audio.lastQueue.channelId = null;
+                        }
+                        server.audio.queue = [];
+                        server.audio.currentPlayingSong = 0;
+                        console.log(`\tAudio Engine Standby`);
+                    }
+                }
+            }
+            else if(newState.status == 'pause') server.audio.pause = true;
+            else if(oldState.status == 'pause') server.audio.pause = false;
+            else if(newState.status == 'playing') server.audio.isPlaying = true;
+            else if(oldState.status == 'playing') server.audio.isPlaying = false;
+
+            Tools.serverSave(server);
+        });
+    }
+
     static async audioMaster(servers, message, command, args)
     {
         let server = servers[message.guild.id]
@@ -63,7 +118,7 @@ module.exports = class Audio
                 {
                     if(args[0].substring(2) == 'current' || args[0].substring(2) == 'c')
                     {
-                        if(server.audio.Engine == null)
+                        if(server.audio.Engine._state.status == 'idle')
                         {
                             this.error(server,message,3,'There is no current song');
                             return;
@@ -139,7 +194,7 @@ module.exports = class Audio
                 console.log(video.title);
     
                 embed = {
-                    color: '#000000',
+                    color: '000000',
                     description: text,
                     thumbnail: {
                         url: video.thumbnail
@@ -151,7 +206,7 @@ module.exports = class Audio
                 let text = `**${list.title}**  :notes:\n*__${list.url}__*\n\n*Number of songs : ${list.videos.length}\nPosition : **${queuePos}***\n*requested by __${message.author.username}__ → ${message.content}*`;
                 console.log(`[LIST] ${list.title}`);
                 embed = {
-                    color: '#000000',
+                    color: '000000',
                     description: text,
                     thumbnail: {
                         url: list.thumbnail
@@ -310,9 +365,7 @@ module.exports = class Audio
 
     static async runAudioEngine(servers, server, guild)
     {
-        server.audio.Engine = Voice.createAudioPlayer();
         server.global.voiceConnection.subscribe(server.audio.Engine);
-        
         this.queueDisplay(servers, server, 16, true);
         
         let voiceChannel = guild.channels.cache.get(servers[guild.id].global.lastVoiceChannelId)
@@ -331,63 +384,13 @@ module.exports = class Audio
 
         console.log(`######\t-> ${server.global.guild.name}`);
         console.log(`\t🎵 Audio Engine loaded\n\tSong : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
-
-        server.audio.Engine.on('error', error => {
-            console.log(error.message);
-        });
-
-        server.audio.Engine.on('idle', oldEngineStatut =>
-        {
-            console.log(`######\t-> ${server.global.guild.name}\n\tAudio Engine in Idle`);
-            if(server.audio.restart) // restart (for ghost update)
-            {
-                server.audio.restart = false;
-                server.audio.currentPlayingSong++;
-                Tools.serverSave(server);
-                Tools.reboot();
-            }
-            else if(server.audio.arret) return; // stop
-            else if(server.audio.loop) // loop
-            {
-                this.runAudioEngine(servers, server, guild);
-            }
-            else if(server.audio.queueLoop) // queue loop
-            {
-                if(!server.audio.queue[server.audio.currentPlayingSong+1]) server.audio.currentPlayingSong = 0;
-                else server.audio.currentPlayingSong++;
-                this.runAudioEngine(servers, server, guild);
-            }
-            else // normal execution. Play the next song or stop.
-            {
-                server.audio.currentPlayingSong++;
-                if(server.audio.queue[server.audio.currentPlayingSong]) // next song -> true
-                {
-                    this.runAudioEngine(servers, server, guild);
-                }
-                else // next song -> false
-                {
-                    if(server.audio.lastQueue.messageId != null)
-                    {
-                        let channel = guild.channels.cache.get(server.audio.lastQueue.channelId);
-                        channel.messages.fetch(server.audio.lastQueue.messageId).then(msg => msg.delete());
-                        server.audio.lastQueue.messageId = null;
-                        server.audio.lastQueue.channelId = null;
-                    }
-                    server.audio.queue = [];
-                    server.audio.currentPlayingSong = 0;
-                    console.log(`\tAudio Engine Standby`);
-                }
-            }
-
-            Tools.serverSave(server);
-        });
     }
 
     static engineMgr(servers, message, command, args)
     {
         let server = servers[message.guild.id]
 
-        if(server.audio.Engine == null) return;
+        if(server.audio.Engine._state.status == 'idle') return;
         else if(!args[0]) ;
         else if(args[0] == 'stop' || args[0] == 's')
         {
@@ -702,7 +705,7 @@ module.exports = class Audio
         Tools.serverSave(server);
     }
 
-    static miscellaneous(servers,message,command,args)
+    static miscellaneous(servers, message, command, args)
     {
         /*
             Command exemple :
@@ -720,11 +723,15 @@ module.exports = class Audio
             {
                 let text = '';
                 for(let object of array) text += this.getNameFromPath(object,false)+'\n';
-                let embed = new Discord.MessageEmbed()
-                .setColor('#000000')
-                .setTitle('Found file(s) :')
-                .setDescription(text);
-                message.channel.send({embeds :[embed]}).then(msg => {
+                message.channel.send({
+                    embeds: [
+                        {
+                            color: '000000',
+                            title: 'Found file(s) :',
+                            description: text
+                        }
+                    ]
+                }).then(msg => {
                     server.global.messageTemp.push({
                         messageId: msg.id,
                         channelId: msg.channel.id
@@ -796,7 +803,7 @@ module.exports = class Audio
                 shuffledMusic.splice(indiceAlea, 1);
             }
 
-            if(!server.audio.Engine._state.status == 'playing') // playing or adding to the queue
+            if(server.audio.Engine._state.status != 'playing') // playing or adding to the queue
             {
                 this.runAudioEngine(servers, server, message.guild);
             }
@@ -913,14 +920,14 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // Embed generator
 
-        let firstRow = new Discord.MessageActionRow()
+        let firstRow = new Discord.ActionRowBuilder()
             .addComponents(
                 servers[0].button.audio.previousBtn,
                 servers[0].button.audio.stopBtn,
                 servers[0].button.audio.pausePlayBtn,
                 servers[0].button.audio.nextBtn
             );
-        let secondRow = new Discord.MessageActionRow()
+        let secondRow = new Discord.ActionRowBuilder()
             .addComponents(
                 servers[0].button.audio.viewMore,
                 servers[0].button.audio.loop,
@@ -931,7 +938,7 @@ module.exports = class Audio
         let messageOption = {
             embeds: [
                 {
-                    color: '#000000',
+                    color: '000000',
                     title: 'Music Queue  :notes:',
                     description: text,
                     thumbnail: {
@@ -1101,7 +1108,6 @@ module.exports = class Audio
     {
         server.global.messageTemp.forEach(element => // deleting other audio temporary message
             {
-                console.log(element);
                 let channel = guild.channels.cache.get(element.channelId);
                 channel.messages.fetch(element.messageId)
                 .then( m => {

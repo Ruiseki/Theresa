@@ -5,7 +5,7 @@ module.exports = class Help
     static help(servers, message)
     {
         let embed = {
-                color: '#000000',
+                color: '000000',
                 title: '❓  **__Help__**  ❓',
                 description: `**Welcome to the help page~ !**\n\nIn the following commands,
                     **[]** is for a **neededed** argument
@@ -28,7 +28,7 @@ module.exports = class Help
                     embed
                 ],
                 components: [
-                    new Discord.MessageActionRow().addComponents(
+                    new Discord.ActionRowBuilder().addComponents(
                         servers[0].button.help.audio
                     )
                 ]
@@ -43,7 +43,7 @@ module.exports = class Help
                         embed
                     ],
                     components: [
-                        new Discord.MessageActionRow().addComponents(
+                        new Discord.ActionRowBuilder().addComponents(
                             servers[0].button.help.audio
                         )
                     ]
@@ -58,7 +58,7 @@ module.exports = class Help
         message.edit({
             embeds: [
                 {
-                    color: '#000000',
+                    color: '000000',
                     title: '🎵 __**Quick Audio Help Page**__ 🎵',
                     description: `
                     \`${servers[0].prefix}audio | a\`
@@ -75,7 +75,7 @@ module.exports = class Help
                 }
             ],
             components: [
-                new Discord.MessageActionRow().addComponents(
+                new Discord.ActionRowBuilder().addComponents(
                     servers[0].button.help.queueManager,
                     servers[0].button.help.main
                 )
@@ -88,7 +88,7 @@ module.exports = class Help
         message.edit({
             embeds: [
                 {
-                    color: '#000000',
+                    color: '000000',
                     title: '🎵 __**Audio Queue Manager**__ 🎵',
                     description: `
                     🎼 \`${servers[0].prefix}audio queue | a q\`
@@ -149,7 +149,7 @@ module.exports = class Help
                 }
             ],
             components: [
-                new Discord.MessageActionRow().addComponents(
+                new Discord.ActionRowBuilder().addComponents(
                     servers[0].button.help.audio,
                     servers[0].button.help.main
                 )
