@@ -116,15 +116,6 @@ client.on('messageCreate', message => { // Will be executed when a message is em
         Help.help(servers, message);
     }
     
-
-    //  ----- TEST AREA -----
-    
-    if(message.guild != null && message.guild.id == '889416369567834112') CodingFactory.checkWord(message);
-
-    //  ---------------------
-    
-
-    
     if(!message.content.startsWith(servers[0].prefix)) return; // if the message doesnt start with the prefix, exit. The reste of the code is for the commands
     
     
@@ -178,12 +169,6 @@ client.on('messageCreate', message => { // Will be executed when a message is em
         return;
     }
 
-    else if(type == 'c' || type == 'code' || type == 'coding')
-    {
-        CodingFactory.cmd(servers[message.guild.id], message, command, args);
-        return; 
-    }
-
     // Help obsolete
     else if((type == 'help' || type == 'h' || type == 'command' || type == 'commands') && message.author.id == '606684737611759628')
     {
@@ -228,10 +213,25 @@ client.on('interactionCreate', i => {
 
 client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a user change his state in a voice channel (join, leave, mute, unmute...)
     
+    let theresaMember = newState.guild.members.cache.get(client.user.id);
+
     //---------------------------------------------//
     // Theresa will join the voice channel of his creator and leave with him if she doing nothing
-    if(oldState.channel == null && newState.channel != null && newState.id == 606684737611759628 && newState.guild.me.voice.channel == null) Theresa.joinVoice(servers[newState.guild.id], newState.member.voice.channel)
-    if(oldState.channel != null && newState.channel == null && newState.id == 606684737611759628 && !servers[newState.guild.id].audio.Engine._state == 'playing' && !servers[newState.guild.id].audio.queue[0] && newState.guild.me.voice.channel != null) Theresa.leaveVoice(servers[oldState.guild.id], Audio);
+    if(
+        oldState.channel == null &&
+        newState.channel != null &&
+        newState.id == '606684737611759628' &&
+        theresaMember.voice.channel == null
+        ) Theresa.joinVoice(servers[newState.guild.id], newState.member.voice.channel)
+
+    if(
+        oldState.channel != null &&
+        newState.channel == null &&
+        newState.id == '606684737611759628' &&
+        servers[newState.guild.id].audio.Engine._state.status != 'playing' &&
+        !servers[newState.guild.id].audio.queue[0] &&
+        theresaMember.voice.channel != null
+        ) Theresa.leaveVoice(servers[oldState.guild.id], Audio);
     //---------------------------------------------//
 
     if(newState.channel != null && newState.id == client.user.id)

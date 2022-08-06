@@ -35,6 +35,7 @@ module.exports = class Audio
             if(newState.status == 'idle')
             {
                 console.log(`######\t-> ${server.global.guild.name}\n\tAudio Engine in Idle`);
+                server.audio.playing = false;
                 if(server.audio.restart) // restart (for ghost update)
                 {
                     server.audio.restart = false;
@@ -77,10 +78,8 @@ module.exports = class Audio
             }
             else if(newState.status == 'pause') server.audio.pause = true;
             else if(oldState.status == 'pause') server.audio.pause = false;
-            else if(newState.status == 'playing') server.audio.isPlaying = true;
-            else if(oldState.status == 'playing') server.audio.isPlaying = false;
-
-            Tools.serverSave(server);
+            else if(newState.status == 'playing') server.audio.playing = true;
+            else if(oldState.status == 'playing') server.audio.playing = false;
         });
     }
 

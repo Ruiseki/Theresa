@@ -483,7 +483,6 @@ module.exports = class About
                             components: [row]
                         });
                         user.voiceTracking.usersAndChannels[targetUserIndex].lastDM = Date.now();
-
                         message.client.on('interactionCreate', i => {
                             if( !i.isButton() ) return;
     
@@ -498,7 +497,6 @@ module.exports = class About
                         });
                     }
                     else if(targetProfile.voiceTracking.allowedUsers.indexOf(message.author.id) == -1) targetProfile.voiceTracking.allowedUsers.push(message.author.id);
-
                 }
 
                 Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
@@ -623,7 +621,7 @@ module.exports = class About
             }
             servers[guild.id] = JSON.parse(FS.readFileSync(`./Servers/${guild.id}/${guild.id}.json`, "utf-8"));
             servers[guild.id].global.guild = guild;
-            
+
             //check admin
             let index = servers[guild.id].global.adminList.findIndex(value => {
                 if(value == guild.ownerId) return value;
@@ -671,7 +669,7 @@ module.exports = class About
             servers[guild.id].audio.Engine = Voice.createAudioPlayer();
             Audio.eventsListeners(servers, servers[guild.id]);
             Audio.clearMessagesTemps(servers[guild.id], guild);
-            if(servers[guild.id].audio.isPlaying) Audio.runAudioEngine(servers, servers[guild.id], guild);
+            if(servers[guild.id].audio.playing) Audio.runAudioEngine(servers, servers[guild.id], guild);
             
             Tools.serverSave(servers[guild.id]);
         });
@@ -700,7 +698,7 @@ module.exports = class About
                 },
                 lastMusicTextchannelId: null,
                 currentPlayingSong: null,
-                isPlaying:  false,
+                playing:  false,
                 pause:      false,
                 loop:       false,
                 queueLoop:  false,
@@ -820,21 +818,6 @@ module.exports = class About
 
     static DevReport(message)
     {
-        var embed = new Discord.MessageEmbed()
-        .setColor('000000')
-        .setTitle('🗒  Theresa\'s Changelog  💻')
-        .attachFiles(['./Picture/Theresa.jpg'])
-        .setThumbnail('attachment://Theresa.jpg')
-        .setDescription('*An allias for the __Coding Factory__ has just been created !\Now, there is the list of new available commands **(only in the server "L1 Alt Cergy - Coding Factory")** :*')
-        .addFields(
-            {name:`**New allias**`,value:`Write \`t!coding\` or \`t!c\` to access to the special commands of the Coding Factory`,inline:false},
-            {name:'\u200B',value:'\u200B'},
-            {name:`**New command**`,value:`*The new command is **groupe**. Execute this command to make random groupe !*`},
-            {name:`**Exemple : **`,value:`\`t!coding groupe\``}
-        );
-        message.channel.send({embeds :[embed]});
-        message.channel.send('@everyone');
-
         /*
         
         write news here
