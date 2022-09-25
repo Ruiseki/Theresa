@@ -37,26 +37,54 @@ servers[0] = {
     login: false,
     button: {
         audio: {
-            previousBtn :  new Discord.ButtonBuilder().setCustomId('previousBtn').setLabel('⏮').setStyle('Secondary'),
-            nextBtn :      new Discord.ButtonBuilder().setCustomId('nextBtn').setLabel('⏭').setStyle('Secondary'),
-            pausePlayBtn : new Discord.ButtonBuilder().setCustomId('pausePlayBtn').setLabel('⏯').setStyle('Secondary'),
-            stopBtn :      new Discord.ButtonBuilder().setCustomId('stopBtn').setLabel('⏹').setStyle('Secondary'),
-            viewMore :     new Discord.ButtonBuilder().setCustomId('viewMore').setLabel('🔎').setStyle('Secondary'),
-            loop :         new Discord.ButtonBuilder().setCustomId('loop').setLabel('🔂').setStyle('Secondary'),
-            loopQueue :    new Discord.ButtonBuilder().setCustomId('loopQueue').setLabel('🔁').setStyle('Secondary'),
-            replay :       new Discord.ButtonBuilder().setCustomId('replay').setLabel('⏪').setStyle('Secondary')
+            previousBtn :   new Discord.ButtonBuilder().setCustomId('previousBtn').setLabel('⏮').setStyle('Secondary'),
+            nextBtn :       new Discord.ButtonBuilder().setCustomId('nextBtn').setLabel('⏭').setStyle('Secondary'),
+            pausePlayBtn :  new Discord.ButtonBuilder().setCustomId('pausePlayBtn').setLabel('⏯').setStyle('Secondary'),
+            stopBtn :       new Discord.ButtonBuilder().setCustomId('stopBtn').setLabel('⏹').setStyle('Secondary'),
+            viewMore :      new Discord.ButtonBuilder().setCustomId('viewMore').setLabel('🔎').setStyle('Secondary'),
+            loop :          new Discord.ButtonBuilder().setCustomId('loop').setLabel('🔂').setStyle('Secondary'),
+            loopQueue :     new Discord.ButtonBuilder().setCustomId('loopQueue').setLabel('🔁').setStyle('Secondary'),
+            replay :        new Discord.ButtonBuilder().setCustomId('replay').setLabel('⏪').setStyle('Secondary')
         },
         help: {
-            main :         new Discord.ButtonBuilder().setCustomId('main').setLabel('Main Page').setStyle('Primary'),
-            audio :        new Discord.ButtonBuilder().setCustomId('audio').setLabel('Audio 🎵').setStyle('Primary'),
-            queueManager : new Discord.ButtonBuilder().setCustomId('queueManager').setLabel('Queue Manager 🎼').setStyle('Primary'),
-            debug :        new Discord.ButtonBuilder().setCustomId('debug').setLabel('reload').setStyle('Danger')
+            main :          new Discord.ButtonBuilder().setCustomId('main').setLabel('Main Page').setStyle('Primary'),
+            audio :         new Discord.ButtonBuilder().setCustomId('audio').setLabel('Audio 🎵').setStyle('Primary'),
+            queueManager :  new Discord.ButtonBuilder().setCustomId('queueManager').setLabel('Queue Manager 🎼').setStyle('Primary'),
+            debug :         new Discord.ButtonBuilder().setCustomId('debug').setLabel('reload').setStyle('Danger')
         },
         voiceTracking: {
-            accept :       new Discord.ButtonBuilder().setCustomId('accept').setLabel('Accept').setStyle('Success'),
-            refuse :       new Discord.ButtonBuilder().setCustomId('refuse').setLabel('Refuse').setStyle('Danger'),
+            accept :        new Discord.ButtonBuilder().setCustomId('accept').setLabel('Accept').setStyle('Success'),
+            refuse :        new Discord.ButtonBuilder().setCustomId('refuse').setLabel('Refuse').setStyle('Danger'),
         }
-    }
+    },
+    commands: [
+        {
+            name : 'play',
+            description : 'Play music in your voice channel',
+            options : [
+                {
+                    name : 'title',
+                    description : 'Enter the title of the music. I just need the begining if the song is local',
+                    type : 3,
+                    required : true
+                },
+                {
+                    name : 'queueselector',
+                    description : 'Place of your song in the queue',
+                    type : 3,
+                    required : false
+                }
+            ]
+        },
+        {
+            name : 'stop',
+            description : 'Stop playing and clear the queue',
+        },
+        {
+            name : 'queue',
+            description : 'Display or manage the music queue',
+        }
+    ]
 };
 
 networkCheck().then(networkState => {
@@ -80,6 +108,7 @@ client.once('ready', () => {
     servers[0].login = true;
 
     Theresa.boot(client, servers, Audio);
+    Theresa.initSlashCommand(servers, process.env.key);
 
     console.log(`\n######\tONLINE`);
 });
@@ -184,31 +213,69 @@ client.on('messageCreate', message => { // Will be executed when a message is em
 });
 
 client.on('interactionCreate', i => {
-    if( !i.isButton() ) return;
 
-    // ----- Audio -----
-    if(i.customId == 'nextBtn') Audio.queueMgr(          servers, i.message, 'queue', ['skip']);
-    else if(i.customId == 'previousBtn') Audio.queueMgr( servers, i.message, 'queue', ['previous']);
-    else if(i.customId == 'stopBtn') Audio.queueMgr(     servers, i.message, 'queue', ['clear']);
-    else if(i.customId == 'pausePlayBtn')
+    // ----- Slash Command -----
+    if(i.isCommand())
     {
-        if(servers[i.guild.id].audio.Engine._state.status == 'playing') Audio.engineMgr(servers, i.message, 'player', ['pause']);
-        else Audio.engineMgr(servers, i.message, 'player', ['play']);
-        Audio.queueDisplay(servers, servers[i.guildId], 16, true);
+        switch(i.commandName)
+        {
+            case 'play' :
+                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                Audio.audioMaster(servers, i.member, i.channel, i.options.data[0].value, [i.options.data[1]?.value]);
+                break;
+            
+            case 'stop' :
+                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                Audio.queueMgr(servers, i.channel, 'queue', ['clear']);
+                break;
+
+            case 'queue' :
+                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                Audio.queueMgr(servers, i.channel, 'queue', []);
+                break;
+        }
+        
+        i.reply(
+            {
+                embeds : [
+                    {
+                        color: '000000',
+                        description: '**Done ✅**',
+                    }
+                ],
+                ephemeral : true
+            }
+        )
     }
-    else if(i.customId == 'viewMore') Audio.queueDisplay(   servers, servers[i.guildId], 40, false);
-    else if(i.customId == 'loop') Audio.queueMgr(           servers, i.message, 'queue', ['loop']);
-    else if(i.customId == 'loopQueue') Audio.queueMgr(      servers, i.message, 'queue', ['loopqueue']);
-    else if(i.customId == 'replay') Audio.engineMgr(        servers, i.message, 'player', ['replay']);
-    // -----------------
+    // -------------------------
 
-    // ----- Help ------
-    else if(i.customId == 'main') Help.help(servers, i.message);
-    else if(i.customId == 'audio') Help.audioMain(servers, i.message);
-    else if(i.customId == 'queueManager') Help.audioQueueManager(servers, i.message);
-    // -----------------
 
-    i.deferUpdate();
+    if( i.isButton() )
+    {
+        // ----- Audio -----
+        if(i.customId == 'nextBtn') Audio.queueMgr(          servers, i.message.channel, 'queue', ['skip']);
+        else if(i.customId == 'previousBtn') Audio.queueMgr( servers, i.message.channel, 'queue', ['previous']);
+        else if(i.customId == 'stopBtn') Audio.queueMgr(     servers, i.message.channel, 'queue', ['clear']);
+        else if(i.customId == 'pausePlayBtn')
+        {
+            if(servers[i.guild.id].audio.Engine._state.status == 'playing') Audio.engineMgr(servers, i.message, 'player', ['pause']);
+            else Audio.engineMgr(servers, i.message, 'player', ['play']);
+            Audio.queueDisplay(servers, servers[i.guildId], 16, true);
+        }
+        else if(i.customId == 'viewMore') Audio.queueDisplay(   servers, servers[i.guildId], 40, false);
+        else if(i.customId == 'loop') Audio.queueMgr(           servers, i.message.channel, 'queue', ['loop']);
+        else if(i.customId == 'loopQueue') Audio.queueMgr(      servers, i.message.channel, 'queue', ['loopqueue']);
+        else if(i.customId == 'replay') Audio.engineMgr(        servers, i.message, 'player', ['replay']);
+        // -----------------
+    
+        // ----- Help ------
+        else if(i.customId == 'main') Help.help(servers, i.message);
+        else if(i.customId == 'audio') Help.audioMain(servers, i.message);
+        else if(i.customId == 'queueManager') Help.audioQueueManager(servers, i.message);
+        // -----------------
+    
+        i.deferUpdate();
+    }
 });
 
 client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a user change his state in a voice channel (join, leave, mute, unmute...)

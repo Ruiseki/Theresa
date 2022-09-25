@@ -46,23 +46,23 @@ module.exports = class tools
         return array;
     }
 
-    static insertArrayIntoArray(arrayToInsert,place,array)
+    static insertArrayIntoArray(arrayToInsert, place, array)
     {
-        array.splice(place,0,...arrayToInsert);
+        array.splice(place, 0, ...arrayToInsert);
         return array;
     }
 
-    static simpleEmbed(server,message,text)
+    static simpleEmbed(server, channel, text)
     {
-        this.simpleEmbed(server,message,text,undefined,false,false,undefined);
+        this.simpleEmbed(server, channel, text, undefined, false, false, undefined);
     }
 
-    static simpleEmbed(server,message,text,image,needThumbnail)
+    static simpleEmbed(server, channel, text, image, needThumbnail)
     {
-        this.simpleEmbed(server,message,text,image,needThumbnail,false,undefined);
+        this.simpleEmbed(server, channel, text, image, needThumbnail, false, undefined);
     }
     
-    static simpleEmbed(server,message,text,image,needThumbnail,willDelete,time)
+    static simpleEmbed(server, channel, text, image, needThumbnail, willDelete, time)
     {
         if(needThumbnail)
         {
@@ -82,7 +82,7 @@ module.exports = class tools
 
             if(willDelete)
             {
-                message.channel.send(messageOption).then(msg => {
+                channel.send(messageOption).then(msg => {
                     server.global.messageTemp.push(
                         {
                             messageId:msg.id,
@@ -105,7 +105,7 @@ module.exports = class tools
                     }, time)
                 });
             }
-            else message.channel.send(messageOption);
+            else channel.send(messageOption);
         }
         else
         {
@@ -120,7 +120,7 @@ module.exports = class tools
 
             if(willDelete)
             {
-                message.channel.send(messageOption).then(msg => {
+                channel.send(messageOption).then(msg => {
                     let object = {
                         messageId:msg.id,
                         channelId:msg.channel.id
@@ -142,7 +142,7 @@ module.exports = class tools
                     }, time)
                 });
             }
-            else message.channel.send(messageOption);
+            else channel.send(messageOption);
         }
     }
 

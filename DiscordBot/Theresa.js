@@ -1,5 +1,6 @@
 const   Voice = require('@discordjs/voice'),
         Discord = require('discord.js'),
+        { REST } = require('@discordjs/rest'),
         FS = require('fs'),
         Tools = require('./tools.js'),
         shell = require('shelljs'),
@@ -23,6 +24,16 @@ module.exports = class About
         {
             this.mainCommandMgr(servers, command, args, message, Audio);
         }
+    }
+
+    static async initSlashCommand(servers, token)
+    {
+        const rest = new REST({ version : '10'}).setToken(token);
+        
+        await rest.put(
+            Discord.Routes.applicationCommands(servers[0].client.user.id),
+            { body: servers[0].commands }
+        );
     }
 
     /*
@@ -100,7 +111,7 @@ module.exports = class About
         else if(command === 'invitelink') this.inviteLink(servers[message.guildId] ,message); // --> help
         else
         {
-            Tools.simpleEmbed(servers[message.guild.id],message,'**❌ Unknown command**',undefined,false,true,5000);
+            Tools.simpleEmbed(servers[message.guild.id],message.channel,'**❌ Unknown command**',undefined,false,true,5000);
         }
     }
 
@@ -200,11 +211,11 @@ module.exports = class About
             if(index == -1)
             {
                 server.global.adminList.push(targetUser.id);
-                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** was added to the admin list ✅`, undefined, false, true, 3000);
+                Tools.simpleEmbed(server, message.channel, `***${targetUser.user.username}*** was added to the admin list ✅`, undefined, false, true, 3000);
             }
             else
             {
-                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** is already admin`, undefined, false, true, 3000);
+                Tools.simpleEmbed(server, message.channel, `***${targetUser.user.username}*** is already admin`, undefined, false, true, 3000);
             }
         }
         else if(args[0] == 'remove' || args[0] == 'r')
@@ -221,16 +232,16 @@ module.exports = class About
 
             if(targetUser.id == server.global.guild.ownerId)
             {
-                Tools.simpleEmbed(server, message, `Server owner (***${targetUser.user.username}***) can't be deleted from the administrator list ❌`, undefined, false, true, 5000);
+                Tools.simpleEmbed(server, message.channel, `Server owner (***${targetUser.user.username}***) can't be deleted from the administrator list ❌`, undefined, false, true, 5000);
             }
             else if(index != -1)
             {
                 server.global.adminList.splice(index, 1);
-                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** was added to the administrator list ✅`, undefined, false, true, 3000);
+                Tools.simpleEmbed(server, message.channel, `***${targetUser.user.username}*** was added to the administrator list ✅`, undefined, false, true, 3000);
             }
             else
             {
-                Tools.simpleEmbed(server, message, `***${targetUser.user.username}*** is not an administrator ❌`, undefined, false, true, 3000);
+                Tools.simpleEmbed(server, message.channel, `***${targetUser.user.username}*** is not an administrator ❌`, undefined, false, true, 3000);
             }
         }
         else if(args[0] == 'view' || args[0] == 'v')
@@ -258,7 +269,7 @@ module.exports = class About
             return;
         }
 
-        if(destChannel.type != "GuildVoice")
+        if(destChannel.type != 2) // 2 = voice channel
         {
             message.channel.send('[...]');
             return;
@@ -291,20 +302,20 @@ module.exports = class About
         }
         else if(args[0] == 'e' || args[0] == 'enable')
         {
-            if(user.voiceTracking.isActivated) Tools.simpleEmbed(server, message, '**Already enable ℹ**', undefined, false, true, 2000)
+            if(user.voiceTracking.isActivated) Tools.simpleEmbed(server, message.channel, '**Already enable ℹ**', undefined, false, true, 2000)
             else
             {
                 user.voiceTracking.isActivated = true;
-                Tools.simpleEmbed(server, message, '**✅ Alert enable**', undefined, false, true, 2000);
+                Tools.simpleEmbed(server, message.channel, '**✅ Alert enable**', undefined, false, true, 2000);
             }
         }
         else if(args[0] == 'd' || args[0] == 'disable')
         {
-            if(!user.voiceTracking.isActivated) Tools.simpleEmbed(server, message, '**Already disable ℹ**', undefined, false, true, 2000)
+            if(!user.voiceTracking.isActivated) Tools.simpleEmbed(server, message.channel, '**Already disable ℹ**', undefined, false, true, 2000)
             else
             {
                 user.voiceTracking.isActivated = false;
-                Tools.simpleEmbed(server, message, '**✅ Alert disabled**', undefined, false, true, 2000)
+                Tools.simpleEmbed(server, message.channel, '**✅ Alert disabled**', undefined, false, true, 2000)
             }
         }
         else if(args[0] == 's' || args[0] == 'status')
@@ -393,12 +404,12 @@ module.exports = class About
 
                 if(targetUserId == undefined)
                 {
-                    Tools.simpleEmbed(server, message, '**❌ Unknown user**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message.channel, '**❌ Unknown user**', undefined, false, true, 10000);
                     return;
                 }
                 else if(targetUserId == message.author.id)
                 {
-                    Tools.simpleEmbed(server, message, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message.channel, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
                     return;
                 }
             }
@@ -416,7 +427,7 @@ module.exports = class About
                     targetChannel = Tools.findChannel(args[2], message);
                     if(targetChannel == undefined)
                     {
-                        Tools.simpleEmbed(server, message, '**❌ Unknown voice channel**', undefined, false, true, 10000)
+                        Tools.simpleEmbed(server, message.channel, '**❌ Unknown voice channel**', undefined, false, true, 10000)
                         return;
                     }
                 }
@@ -449,7 +460,7 @@ module.exports = class About
                 if(targetChannelIndex == -1) targetUser.channelsId.push(targetChannel.id);
                 else
                 {
-                    Tools.simpleEmbed(server, message, '**❗ Channel already added for this user**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message.channel, '**❗ Channel already added for this user**', undefined, false, true, 10000);
                     return;
                 }
                 
@@ -499,13 +510,13 @@ module.exports = class About
                     else if(targetProfile.voiceTracking.allowedUsers.indexOf(message.author.id) == -1) targetProfile.voiceTracking.allowedUsers.push(message.author.id);
                 }
 
-                Tools.simpleEmbed(server, message, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
+                Tools.simpleEmbed(server, message.channel, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
             }
             else
             {
                 if(targetUserIndex == -1)
                 {
-                    Tools.simpleEmbed(server, message, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    Tools.simpleEmbed(server, message.channel, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
                     return;
                 }
 
@@ -514,16 +525,16 @@ module.exports = class About
                 if(targetChannel == undefined)
                 {
                     user.voiceTracking.usersAndChannels.splice(targetUserIndex, 1);
-                    Tools.simpleEmbed(server, message, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message.channel, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
                 }
                 else
                 {
                     let targetChannelIndex = user.voiceTracking.usersAndChannels[targetUserIndex].channelsId.indexOf(targetChannel.id);
-                    if(targetChannelIndex == -1) Tools.simpleEmbed(server, message, '**❌ Can\'t find the channel for this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    if(targetChannelIndex == -1) Tools.simpleEmbed(server, message.channel, '**❌ Can\'t find the channel for this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
                     else
                     {
                         user.voiceTracking.usersAndChannels[targetUserIndex].channelsId.splice(targetChannelIndex, 1);
-                        Tools.simpleEmbed(server, message, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.username}**`);
+                        Tools.simpleEmbed(server, message.channel, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.username}**`);
                     }
                 }
             }
@@ -540,16 +551,16 @@ module.exports = class About
             {
                 if(targetUserId == message.author.id)
                 {
-                    Tools.simpleEmbed(server, message, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message.channel, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
                     return;
                 }
                 else if(!Tools.isElementPresentInArray(user.voiceTracking.allowedUsers, targetUserId))
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     user.voiceTracking.allowedUsers.push(targetUserId);
-                    Tools.simpleEmbed(server, message, `**✅ Allowed ${targetMember.user.username}**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message.channel, `**✅ Allowed ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
-                else Tools.simpleEmbed(server, message, '**❗ User already allowed !**', undefined, false, true, 10000);;
+                else Tools.simpleEmbed(server, message.channel, '**❗ User already allowed !**', undefined, false, true, 10000);;
             }
         }
         else if(args[0] == 'rev' || args[0] == 'revoke')
@@ -557,7 +568,7 @@ module.exports = class About
             let targetUserId = Tools.findUserId(args[1], server.global.guild);
             if(targetUserId == undefined)
             {
-                Tools.simpleEmbed(server, message, '**❌ The user doesn\'t exist**', undefined, false, true, 10000);
+                Tools.simpleEmbed(server, message.channel, '**❌ The user doesn\'t exist**', undefined, false, true, 10000);
                 return;
             }
             else
@@ -567,9 +578,9 @@ module.exports = class About
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     user.voiceTracking.allowedUsers.splice(targetUserIndex, 1);
-                    Tools.simpleEmbed(server, message, `**✅ Revoked ${targetMember.user.username}**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, message.channel, `**✅ Revoked ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
-                else Tools.simpleEmbed(server, message, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 10000);
+                else Tools.simpleEmbed(server, message.channel, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 10000);
             }
         }
 
