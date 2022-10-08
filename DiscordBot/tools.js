@@ -207,16 +207,19 @@ module.exports = class tools
         let voiceConnectionBackup = server.global.voiceConnection;
         let guildBackup = server.global.guild;
         let engineBackup = server.audio.Engine;
+        let resourceBackup = server.audio.resource;
 
         server.global.voiceConnection = null;
         server.global.guild = null;
         server.audio.Engine = null;
-
+        server.audio.resource = null;
+        
         FS.writeFileSync(`./Servers/${server.global.guildId}/${server.global.guildId}.json`, JSON.stringify(server));
-
+        
         server.global.voiceConnection = voiceConnectionBackup;
         server.global.guild = guildBackup;
         server.audio.Engine = engineBackup;
+        server.audio.resource = resourceBackup;
     }
 
     static serversBackup(servers, client)

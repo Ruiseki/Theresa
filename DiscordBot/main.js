@@ -4,7 +4,7 @@ const   Discord = require('discord.js'),  // Discord libraries
 
 const Audio = require('./audio.js'),
     Tools = require('./tools.js'),
-    RP = require('./rp.js'),
+    // RP = require('./rp.js'),
     Theresa = require('./Theresa.js'),
     Help = require('./help.js');
 
@@ -183,18 +183,11 @@ client.on('messageCreate', message => { // Will be executed when a message is em
         Audio.queue =>
         The methode do something with the argument "clear"
 
-
     */
 
     if(type == 'a' || type == 'audio') // Class for music
     {
         Audio.cmd(servers, servers[0].prefix, command, args, message);
-        return;
-    }
-
-    else if(type == 'ed' || type == 'elite '|| type == 'elitedangerous') // Class for elite dangerous database on discord
-    {
-        EliteDangerous.cmd(message, command, args);
         return;
     }
 
@@ -217,6 +210,8 @@ client.on('interactionCreate', i => {
     // ----- Slash Command -----
     if(i.isCommand())
     {
+        if(i.options.data[1]) i.options.data[1].value = `>>${i.options.data[1]?.value}`;
+
         switch(i.commandName)
         {
             case 'play' :
@@ -248,8 +243,9 @@ client.on('interactionCreate', i => {
         )
     }
     // -------------------------
-
-
+    
+    
+    // --------- Button --------
     if( i.isButton() )
     {
         // ----- Audio -----

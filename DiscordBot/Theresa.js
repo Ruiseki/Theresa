@@ -74,7 +74,7 @@ module.exports = class About
                 {
                     try
                     {
-
+                        
                     }
                     catch(err)
                     {
@@ -702,6 +702,7 @@ module.exports = class About
             },
             audio: {
                 Engine: null,
+                resource: null,
                 queue: [],
                 lastQueue: {
                     messageId: null,

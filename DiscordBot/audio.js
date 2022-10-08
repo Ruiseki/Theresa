@@ -89,53 +89,34 @@ module.exports = class Audio
         let server = servers[channel.guild.id]
         /*
         
-        complete commande exemple : t!a World is mine >>1
-        this command is special. They are no "command". The command variable contain the first word of the music.
-        This isn't arranged like this for the other commands.
-        
-        POV :
-
-        queuePos : user view
-        currentPlayingSong : array view
-        (user view = 1 is the first. array view = 0 is the first)
+            complete commande exemple : t!a World is mine >>1
+            this command is special. They are no "command". The command variable contain the first word of the music.
+            This isn't arranged like this for the other commands.
 
         */
 
-        let music = command,
-        queuePos = undefined;
+        let music = command, queuePos = undefined;
         
         if(!authorMember.voice.channel)
         {
             this.error(server, channel, 3, "Please connect yourselft in a voice channel first");
             return;
         }
-
+        
         if(args[0]) // check parameters
         {
             while(args[0])
             {
                 if(args[0].startsWith('>>'))
                 {
-                    if(args[0].substring(2) == 'current' || args[0].substring(2) == 'c')
+                    queuePos = this.QueueSelectorConverter(servers[channel.guildId], args[0].substring(2));
+                    
+                    if(queuePos == null || queuePos == undefined)
                     {
-                        if(server.audio.Engine._state.status == 'idle')
-                        {
-                            this.error(server, channel, 3, 'There is no current song');
-                            return;
-                        }
-                        if(server.audio.currentPlayingSong) queuePos = server.audio.currentPlayingSong + 1;
-                        else queuePos = 1;
-                    }
-                    else if(args[0].substring(2) == 'after' || args[0].substring(2) == 'aft')
-                    {
-                        if(server.audio.currentPlayingSong != null) queuePos = server.audio.currentPlayingSong+2;
-                    }
-                    else if(Number.isNaN(args[0].substring(2)))
-                    {
-                        this.error(server, channel, 0, 'Expected value : integer');
+                        this.error(server, channel, 0, 'Expected value : valid queueSelector (integer or key word that refer to an existing position in the queue)');
                         return;
                     }
-                    else queuePos = args[0].substring(2);
+
                     break;
                 }
                 else
@@ -144,8 +125,8 @@ module.exports = class Audio
                 }
             }
         }
-        if(server.audio.queue.length == 0) queuePos = 1;
-        else if(queuePos == undefined) queuePos = server.audio.queue.length+1;
+        if(server.audio.queue.length == 0) queuePos = 0;
+        else if(queuePos == undefined) queuePos = server.audio.queue.length;
 
         // Adding music
         let array = this.getPathOfFile(music, musicDirectory);
@@ -190,7 +171,7 @@ module.exports = class Audio
             let embed;
             if(list == undefined)
             {
-                let text = `**${video.title}**  :notes:\n*__${video.url}__*\n\n*Position : **${queuePos}***\n*requested by __${authorMember.user.username}__*`;
+                let text = `**${video.title}**  :notes:\n*__${video.url}__*\n\n*Position : **${queuePos + 1}***\n*requested by __${authorMember.user.username}__*`;
     
                 embed = {
                     color: '000000',
@@ -202,7 +183,7 @@ module.exports = class Audio
             }
             else
             {
-                let text = `**${list.title}**  :notes:\n*__${list.url}__*\n\n*Number of songs : ${list.videos.length}\nPosition : **${queuePos}***\n*requested by __${authorMember.user.username}__*`;
+                let text = `**${list.title}**  :notes:\n*__${list.url}__*\n\n*Number of songs : ${list.videos.length}\nPosition : **${queuePos + 1}***\n*requested by __${authorMember.user.username}__*`;
                 embed = {
                     color: '000000',
                     description: text,
@@ -243,9 +224,9 @@ module.exports = class Audio
 
             if(list == undefined)
             {
-                if(server.audio.currentPlayingSong == queuePos - 1)
+                if(server.audio.currentPlayingSong == queuePos)
                 {
-                    server.audio.queue[queuePos - 1] = {
+                    server.audio.queue[queuePos] = {
                         title: video.title,
                         videoId: video.videoId,
                         url: video.url,
@@ -254,7 +235,7 @@ module.exports = class Audio
                 }
                 else
                 {
-                    server.audio.queue.splice(queuePos - 1, 0, {
+                    server.audio.queue.splice(queuePos, 0, {
                     title: video.title,
                     videoId: video.videoId,
                     url: video.url,
@@ -273,8 +254,8 @@ module.exports = class Audio
                         thumbnail: video.thumbnail
                     });
                 });
-                if(server.audio.currentPlayingSong == queuePos - 1) server.audio.queue.splice(queuePos - 1, 1, ...videos);
-                else server.audio.queue.splice(queuePos - 1, 0, ...videos);
+                if(server.audio.currentPlayingSong == queuePos) server.audio.queue.splice(queuePos, 1, ...videos);
+                else server.audio.queue.splice(queuePos, 0, ...videos);
             }
         }
         else // Local
@@ -298,7 +279,7 @@ module.exports = class Audio
             else title = tags.title;
             if(tags.artist === undefined) artist = '<unknown>';
             else artist = tags.artist;
-            let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos}***\n*requested by __${authorMember.user.username}__*`;
+            let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos + 1}***\n*requested by __${authorMember.user.username}__*`;
             
             if(tags.image != undefined)
             {
@@ -311,7 +292,7 @@ module.exports = class Audio
                 Tools.simpleEmbed(server, channel, text, undefined, false, true, 30000);
             }
             
-            if(queuePos == server.audio.queue.length+1)
+            if(queuePos == server.audio.queue.length)
             {
                 server.audio.queue.push({
                     title,
@@ -321,7 +302,7 @@ module.exports = class Audio
             }
             else
             {
-                if(server.audio.currentPlayingSong == queuePos - 1) // current
+                if(server.audio.currentPlayingSong == queuePos) // current
                 {
                     server.audio.queue[server.audio.currentPlayingSong] = {
                         title,
@@ -332,11 +313,10 @@ module.exports = class Audio
                 else
                 {
                     if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
-                    server.audio.queue.splice(queuePos - 1, 0, {
+                    server.audio.queue.splice(queuePos + 1, 0, {
                         title,
                         url: `[LOCAL]${array[0]}`,
                         artist,
-                        thumbnail
                     });
                 }
             }
@@ -347,7 +327,7 @@ module.exports = class Audio
             server.audio.currentPlayingSong = 0;
             this.runAudioEngine(servers, server, channel.guild);
         }
-        else if(queuePos - 1 == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') // with the option "current"
+        else if(queuePos == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') // with the option "current"
         {
             server.audio.currentPlayingSong--;
             server.audio.Engine.stop();
@@ -371,11 +351,13 @@ module.exports = class Audio
         
         if(server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // local file
         {
-            server.audio.Engine.play(Voice.createAudioResource(FS.createReadStream(server.audio.queue[server.audio.currentPlayingSong].url.substring(7))));
+            server.audio.resource = Voice.createAudioResource(FS.createReadStream(server.audio.queue[server.audio.currentPlayingSong].url.substring(7)), {inlineVolume: true});
+            server.audio.Engine.play(server.audio.resource);
         }
         else // youtube
         {
-            server.audio.Engine.play(Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong].url,{filter:'audioonly',quality:'highest',highWaterMark:1 << 25})));
+            server.audio.resource = Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong].url,{filter:'audioonly',quality:'highest',highWaterMark:1 << 25}), {inlineVolume: true});
+            server.audio.Engine.play(server.audio.resource);
         }
 
         Tools.serverSave(servers[guild.id]);
@@ -517,7 +499,6 @@ module.exports = class Audio
                 if(args[1] <= server.audio.currentPlayingSong)
                 {
                     server.audio.currentPlayingSong--;
-                    this.queueDisplay(servers, server,16, true);
                 }
                 if(args[1] == server.audio.currentPlayingSong) server.audio.Engine.stop();
             }
@@ -542,7 +523,6 @@ module.exports = class Audio
                     else if(server.audio.currentPlayingSong > args[2])
                     {
                         server.audio.currentPlayingSong -= args[2] - args[1] + 1;
-                        this.queueDisplay(servers, server,16, true);
                     }
                 }
             }
@@ -562,7 +542,6 @@ module.exports = class Audio
                     if(args[i] == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') needStop = true;
                 }
                 if(needStop) server.audio.Engine.stop();
-                queueDisplay(servers, server,16, true);
             }
 
             let text = `**Done ✅**`;
