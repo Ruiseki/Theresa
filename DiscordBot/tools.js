@@ -146,7 +146,7 @@ module.exports = class tools
         }
     }
 
-    static findUserId(element,guild)
+    static findUserId(element, guild)
     {
         var id = undefined;
         if(element.startsWith('<@!')) return element.substring(3,element.length-1);
@@ -160,27 +160,27 @@ module.exports = class tools
         }
     }
 
-    static findChannel(element,message) // return a channel. The function accepte the Id, a channel ping or the name.
+    static findChannel(server, element) // return a channel. The function accepte the Id, a channel ping or the name.
     {
         var channel;
-        if(element.startsWith('<#'))
+        if( element.startsWith('<#') )
         {
-            channel=message.guild.channels.cache.get(element.substring(2,element.length-1));
+            channel = server.global.guild.channels.cache.get( element.substring(2, element.length - 1) );
             if(channel == undefined) return undefined;
-            else if(channel.type!='voice') return undefined;
+            else if(channel.type != 'voice') return undefined;
             return channel.id;
         }
-        else if(element.length==18 && !Number.isNaN(element))
+        else if( element.length == 18 && !Number.isNaN(element) )
         {
-            channel=message.guild.channels.cache.get(element);
-            if(channel==undefined) return undefined;
-            else if(channel.type!='voice') return undefined;
-            return channel.id;
+            channel = server.global.guild.channels.cache.get(element);
+            if(channel == undefined) return undefined;
+            else if(channel.type != 2) return undefined;
+            return channel;
         }
         else
         {
-            message.guild.channels.cache.each(chn => {
-                    if(chn.name.toLocaleLowerCase().startsWith(element.toLocaleLowerCase()))
+            server.global.guild.channels.cache.each(chn => {
+                    if(chn.name.toLocaleLowerCase().startsWith( element.toLocaleLowerCase() ))
                     {
                         channel = chn;
                     }

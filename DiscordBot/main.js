@@ -30,7 +30,7 @@ var servers = []; // Structure for all server. Watch at Theresa.objectGenerator(
 
 servers[0] = {
     client,
-    prefix : 't!', // All orders are going to have to start with this
+    prefix : 't!', // prefix for CLI utilisation
     isConnected: null,
     connecting: false,
     previousNetworkState: null,
@@ -60,7 +60,7 @@ servers[0] = {
     commands: [
         {
             name : 'play',
-            description : 'Play music in your voice channel',
+            description : '🎵 Play music in your voice channel',
             options : [
                 {
                     name : 'title',
@@ -78,18 +78,127 @@ servers[0] = {
         },
         {
             name : 'stop',
-            description : 'Stop playing and clear the queue',
+            description : '⏹️ Stop playing and clear the queue',
         },
         {
             name : 'queue',
             description : 'Display or manage the music queue',
+            options : [
+                {
+                    name : 'delete',
+                    description : '🚮 Delete element(s) in the queue',
+                    type : 1,
+                    options : [
+                        {
+                            name : 'elements',
+                            description : '1 number : single. 2 numbers : range. More than 2 : specific',
+                            type : 3,
+                            required : true
+                        }
+                    ]
+                },
+                {
+                    name : 'clear',
+                    description : '⏹️ Clear the queue. Same as /stop',
+                    type : 1
+                },
+                {
+                    name : 'display',
+                    description : 'Display the queue (and remove the older one)',
+                    type : 1
+                }
+            ]
+        },
+        {
+            name : 'voicetracking',
+            description : 'Recieve an alerte when a friend connect himself in a voice channel',
+            options : [
+                {
+                    name : 'enable',
+                    description : '🔔✅ Activate the service',
+                    type : 1
+                },
+                {
+                    name : 'disable',
+                    description : '🔔❌ Desactivate the service (your friend will not longer recieve notification)',
+                    type : 1
+                },
+                {
+                    name : 'status',
+                    description : '🔔 Display your settings and the allowed user (I will you a DM and pin the message)',
+                    type : 1
+                },
+                {
+                    name : 'add',
+                    description : '🔔➕ Link a user to channel, and recieve a notification when he is connected to it',
+                    type : 1,
+                    options : [
+                        {
+                            name : 'user',
+                            description : 'The user you want to track',
+                            type : 6,
+                            required : true
+                        },
+                        {
+                            name : 'channel',
+                            description : 'The channel you want to link to the user (a user can have multiple channel)',
+                            type : 7,
+                            required : true
+                        }
+                    ]
+                },
+                {
+                    name : 'remove',
+                    description : '🔔➖ Delete notification for a user and a channel, for a user or for a channel',
+                    type : 1,
+                    options : [
+                        {
+                            name : 'user',
+                            description : 'Fill this field only to delete the user and all his channel',
+                            type : 6,
+                            required : true
+                        },
+                        {
+                            name : 'channel',
+                            description : 'The channel where the user is linked to',
+                            type : 7
+                        }
+                    ]
+                },
+                {
+                    name : 'allow',
+                    description : '🔔✅ Allow an user to be notified when you are connected to a voice channel',
+                    type : 1,
+                    options : [
+                        {
+                            name : 'user',
+                            description : 'The user you want to allow',
+                            type : 6,
+                            required : true
+                        }
+                    ]
+                },
+                {
+                    name : 'revoke',
+                    description : '🔔❌ Revoke an autorization',
+                    type : 1,
+                    options : [
+                        {
+                            name : 'user',
+                            description : 'The user you want to revoke from your autorization list',
+                            type : 6,
+                            required : true
+                        }
+                    ]
+                },
+            ]
         }
     ]
 };
 
 networkCheck().then(networkState => {
     servers[0].isConnected = networkState;
-    servers[0].previousNetworkState = networkState;
+    servers[0].pnreviousNetworkState = networkState;
 });
 
 var changeStatus = true;
@@ -212,6 +321,7 @@ client.on('interactionCreate', i => {
     {
         if(i.options.data[1]) i.options.data[1].value = `>>${i.options.data[1]?.value}`;
 
+        let array = [];
         switch(i.commandName)
         {
             case 'play' :
@@ -221,12 +331,35 @@ client.on('interactionCreate', i => {
             
             case 'stop' :
                 servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
-                Audio.queueMgr(servers, i.channel, 'queue', ['clear']);
+                Audio.queueMgr(servers, i.channel, ['clear']);
                 break;
 
             case 'queue' :
                 servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
-                Audio.queueMgr(servers, i.channel, 'queue', []);
+                array.push(i.options.data[0].name);
+
+                if(array[0] == 'delete') i.options.data[0].options[0].value.split(/ +/).forEach(element => array.push(element));
+                else if(array[0] == 'display') array.pop();
+
+                Audio.queueMgr(servers, i.channel, array);
+                break;
+
+            case 'voicetracking' :
+                array.push(i.options.data[0].name)
+                
+                if(array[0] == 'add')
+                {
+                    array.push(i.options.data[0].options[0].value);
+                    array.push(i.options.data[0].options[1].value);
+                }
+                if(array[0] == 'remove')
+                {
+                    array.push(i.options.data[0].options[0].value);
+                    if(i.options.data[0].options[1]) array.push(i.options.data[0].options[1].value);
+                    else array.push(undefined);
+                }
+
+                Theresa.trackingVoice(servers, servers[i.guildId], i.channel, i.user, array);
                 break;
         }
         
@@ -249,19 +382,19 @@ client.on('interactionCreate', i => {
     if( i.isButton() )
     {
         // ----- Audio -----
-        if(i.customId == 'nextBtn') Audio.queueMgr(          servers, i.message.channel, 'queue', ['skip']);
-        else if(i.customId == 'previousBtn') Audio.queueMgr( servers, i.message.channel, 'queue', ['previous']);
-        else if(i.customId == 'stopBtn') Audio.queueMgr(     servers, i.message.channel, 'queue', ['clear']);
+        if(i.customId == 'nextBtn') Audio.engineMgr(          servers, i.message.channel, ['skip']);
+        else if(i.customId == 'previousBtn') Audio.engineMgr( servers, i.message.channel, ['previous']);
+        else if(i.customId == 'stopBtn') Audio.queueMgr(     servers, i.message.channel, ['clear']);
         else if(i.customId == 'pausePlayBtn')
         {
-            if(servers[i.guild.id].audio.Engine._state.status == 'playing') Audio.engineMgr(servers, i.message, 'player', ['pause']);
-            else Audio.engineMgr(servers, i.message, 'player', ['play']);
+            if(servers[i.guild.id].audio.Engine._state.status == 'playing') Audio.engineMgr(servers, i.message.channel, ['pause']);
+            else Audio.engineMgr(servers, i.message.channel, ['play']);
             Audio.queueDisplay(servers, servers[i.guildId], 16, true);
         }
         else if(i.customId == 'viewMore') Audio.queueDisplay(   servers, servers[i.guildId], 40, false);
-        else if(i.customId == 'loop') Audio.queueMgr(           servers, i.message.channel, 'queue', ['loop']);
-        else if(i.customId == 'loopQueue') Audio.queueMgr(      servers, i.message.channel, 'queue', ['loopqueue']);
-        else if(i.customId == 'replay') Audio.engineMgr(        servers, i.message, 'player', ['replay']);
+        else if(i.customId == 'loop') Audio.engineMgr(           servers, i.message.channel, ['loop']);
+        else if(i.customId == 'loopQueue') Audio.engineMgr(      servers, i.message.channel, ['loopqueue']);
+        else if(i.customId == 'replay') Audio.engineMgr(        servers, i.message.channel, ['replay']);
         // -----------------
     
         // ----- Help ------
@@ -309,24 +442,32 @@ client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a us
         Tools.serverSave(servers[newState.guild.id]);
     }
 
-    if(newState.channel != null && oldState.channel != newState.channel) // voice tracking
+    // voice tracking
+    if(newState.channel != null && oldState.channel != newState.channel)
     {
-        servers[newState.guild.id].users.forEach(userProfile => {      // for each user profile...
-            userProfile.voiceTracking.usersAndChannels.forEach(userAndChannel => {            // in each usersAndChannels object (that containt the tracked user id and all the channels for this user)
-                if(userAndChannel.userId == newState.id)    // user found !
+        // for each user profile...
+        servers[newState.guild.id].users.forEach(userProfile => {
+            // in each usersAndChannels object (that containt the tracked user id and all the channels for this user)
+            userProfile.voiceTracking.usersAndChannels.forEach(userAndChannel => {
+                // user found !
+                if(userAndChannel.userId == newState.id)
                 {
                     userAndChannel.channelsId.forEach(channelId => {
-                        if(newState.channel.id == channelId)    // channel found !
+                        // channel found !
+                        if(newState.channel.id == channelId)
                         {
-                            let trackedUserIndex = servers[newState.guild.id].users.findIndex(value => {   // searching the index of the tracked user to check if he has allowed the master user
+                            // searching the index of the tracked user to check if he has allowed the master user
+                            let trackedUserIndex = servers[newState.guild.id].users.findIndex(value => {
                                 if(value.userId == userAndChannel.userId) return value;
                             });
 
-                            if(trackedUserIndex == -1) return;  // checking if the tracked user have a profile
+                            // checking if the tracked user have a profile
+                            if(trackedUserIndex == -1) return;
 
                             for(let allowedUserId of servers[newState.guild.id].users[trackedUserIndex].voiceTracking.allowedUsers)
                             {
-                                if(allowedUserId == userProfile.userId)     // allowed !
+                                // allowed !
+                                if(allowedUserId == userProfile.userId)
                                 {
                                     let trackedMember = newState.guild.members.cache.get(userAndChannel.userId),
                                     masterMember = newState.guild.members.cache.get(userProfile.userId),

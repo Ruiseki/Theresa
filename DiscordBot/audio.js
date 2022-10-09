@@ -21,9 +21,9 @@ module.exports = class Audio
         if(command == undefined) ;
         else
         {
-            if(command == 'queue' || command == 'q') this.queueMgr(servers, message.channel, command, args);
-            else if(command == 'player' || command == 'p') this.engineMgr(servers, message, command, args);
-            else if(command == 'miscellaneous' || command == 'm') this.miscellaneous(servers, message, command, args);
+            if(command == 'queue' || command == 'q') this.queueMgr(servers, message.channel, args);
+            else if(command == 'player' || command == 'p') this.engineMgr(servers, message.channel, args);
+            else if(command == 'miscellaneous' || command == 'm') this.miscellaneous(servers, message, args);
             else if(command == 'playlist' || command == 'pl') this.playlist(servers, message, args);
             else if(command == 'download' || command == 'dl') this.download(servers, message, command, args);
             else this.audioMaster(servers, message.member, message.channel, command, args);
@@ -351,12 +351,26 @@ module.exports = class Audio
         
         if(server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // local file
         {
-            server.audio.resource = Voice.createAudioResource(FS.createReadStream(server.audio.queue[server.audio.currentPlayingSong].url.substring(7)), {inlineVolume: true});
+            server.audio.resource = Voice.createAudioResource(
+                FS.createReadStream(
+                    server.audio.queue[server.audio.currentPlayingSong].url.substring(7)
+                ), {
+                    inlineVolume: true
+                }
+            );
             server.audio.Engine.play(server.audio.resource);
         }
         else // youtube
         {
-            server.audio.resource = Voice.createAudioResource(ytdl(server.audio.queue[server.audio.currentPlayingSong].url,{filter:'audioonly',quality:'highest',highWaterMark:1 << 25}), {inlineVolume: true});
+            server.audio.resource = Voice.createAudioResource(
+                ytdl(server.audio.queue[server.audio.currentPlayingSong].url, {
+                    filter:'audioonly',
+                    quality:'highest',
+                    highWaterMark:1 << 25
+                }), { 
+                    inlineVolume: true
+                }
+            );
             server.audio.Engine.play(server.audio.resource);
         }
 
@@ -366,9 +380,9 @@ module.exports = class Audio
         console.log(`\t🎵 Audio Engine loaded\n\tSong : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
     }
 
-    static engineMgr(servers, message, command, args)
+    static engineMgr(servers, channel, args)
     {
-        let server = servers[message.guild.id]
+        let server = servers[channel.guildId]
 
         if(server.audio.Engine._state.status == 'idle') return;
         else if(!args[0]) ;
@@ -381,7 +395,7 @@ module.exports = class Audio
             }
             else
             {
-                this.error(server, message.channel, 3, `Audio Engine isn't playing.`);
+                this.error(server, channel, 3, `Audio Engine isn't playing.`);
             }
         }
         else if(args[0] == 'pause' || args[0] == 'p')
@@ -392,11 +406,11 @@ module.exports = class Audio
             }
             else if(server.audio.Engine._state.status == 'idle')
             {
-                this.error(server,  message, 3, `Audio Engine isn't playing.`);
+                this.error(server, channel, 3, `Audio Engine isn't playing.`);
             }
             else if(server.audio.Engine._state.status == 'paused')
             {
-                this.error(server, message.channel, 3, `Audio Engine is in pause.`);
+                this.error(server, channel, 3, `Audio Engine is in pause.`);
             }
         }
         else if(args[0] == 'play' || args[0] == 'pl')
@@ -409,11 +423,11 @@ module.exports = class Audio
             {
                 if(server.audio.lastQueue.channelId != null)
                 {
-                    let channel = message.guild.channels.cache.get(server.audio.lastQueue.channelId);
-                    channel.messages.fetch(server.audio.lastQueue.messageId)
+                    let lastQueueChannel = channel.guild.channels.cache.get(server.audio.lastQueue.channelId);
+                    lastQueueChannel.messages.fetch(server.audio.lastQueue.messageId)
                     .then(m => m.delete());
                 }
-                this.error(server, message.channel, 3, `Audio Engine isn't playing.`);
+                this.error(server, channel, 3, `Audio Engine isn't playing.`);
             }
         }
         else if(args[0] == 'replay' || args[0] == 'r')
@@ -432,122 +446,11 @@ module.exports = class Audio
                 }
                 else
                 {
-                    this.error(server, message.channel, 3, 'There is no queue');
+                    this.error(server, channel, 3, 'There is no queue');
                 }
             }
         }
-    }
-
-    static async queueMgr(servers, channel, command, args)
-    {
-        let server = servers[channel.guild.id];
-        console.log(`######\t-> ${server.global.guild.name}`);
-        console.log(`\tQueue Manager`);
-        /*
-            Command exemple :
-            t!a queue
-            t!a queue skip | t!a queue previous
-            t!a queue go 3
-            t!a delete 3 | t!a delete 3 7 | t!a delete 1 3 4 5 7 8 9 34
-            t!a queue clear
-            ...
-
-        */
-        if(!args[0])
-        {
-            if(!server.audio.queue[0]) return;
-            else this.queueDisplay(servers, server, 16, true);
-        }
-        else if(args[0] == 'clear' || args[0] == 'c')
-        {
-            console.log('\t\tClear');
-            server.audio.queue.splice(0,server.audio.queue.length);
-            server.audio.currentPlayingSong = null;
-            server.audio.loop = false;
-            server.audio.queueLoop = false;
-            server.audio.restart = false;
-            server.audio.arret = false;
-            server.audio.leave = false;
-            if(server.audio.Engine) server.audio.Engine.stop();
-            let text = '**Done ✅**';
-            Tools.simpleEmbed(server, channel, text, undefined, false, true, 1000);
-            if(server.audio.lastQueue.channelId != null)
-            {
-                let lastQueueChannel = channel.guild.channels.cache.get(server.audio.lastQueue.channelId);
-                lastQueueChannel.messages.fetch(server.audio.lastQueue.messageId)
-                .then(m => {
-                    m.delete();
-                    server.audio.lastQueue.messageId = null;
-                    server.audio.lastQueue.channelId = null;
-                });
-            }
-        }
-        else if(args[0] == 'delete' || args[0] == 'd' || args[0] == 'remove' || args[0] == 'r')
-        {
-            console.log('\tDelete');
-            if(!args[1]) this.error(server, channel, 1, 'No argument(s) detected');
-            else if(args.length == 2) // single
-            {
-                args[1] = this.QueueSelectorConverter(server, args[1]);
-                if(args[1] == null)
-                {
-                    this.error(server, channel, 0, "The argument must be a queue selector or an number between 0 and the size of the queue.");
-                    return;
-                }
-
-                server.audio.queue.splice(args[1],1);
-                if(args[1] <= server.audio.currentPlayingSong)
-                {
-                    server.audio.currentPlayingSong--;
-                }
-                if(args[1] == server.audio.currentPlayingSong) server.audio.Engine.stop();
-            }
-            else if(args.length == 3) // range
-            {
-                args[1] = this.QueueSelectorConverter(server, args[1]);
-                args[2] = this.QueueSelectorConverter(server, args[2]);
-                
-                if(args[2] <= args[1])
-                {
-                    this.error(server, channel, 0, '2nd argument must be superior to the 1st argument');
-                    return;
-                }
-                else
-                {
-                    server.audio.queue.splice(args[1], args[2] - args[1] + 1);
-                    if(server.audio.currentPlayingSong >= args[1] && server.audio.currentPlayingSong <= args[2])
-                    {
-                        server.audio.currentPlayingSong = args[1]-1;
-                        server.audio.Engine.stop();
-                    }
-                    else if(server.audio.currentPlayingSong > args[2])
-                    {
-                        server.audio.currentPlayingSong -= args[2] - args[1] + 1;
-                    }
-                }
-            }
-            else // multiple
-            {
-                let needStop = false
-                for(let i = 1; i < args.length; i++)
-                {
-                    args[i] = this.QueueSelectorConverter(server, args[i]);
-                    if(args[i] == null)
-                    {
-                        this.error(server, channel, 0, `\"${args[i]}\" This argument must be a queue selector or an number between 0 and the size of the queue.`);
-                        continue;
-                    }
-                    server.audio.queue.splice(args[1],1);
-                    if(args[i] <= server.audio.currentPlayingSong) server.audio.currentPlayingSong--;
-                    if(args[i] == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') needStop = true;
-                }
-                if(needStop) server.audio.Engine.stop();
-            }
-
-            let text = `**Done ✅**`;
-            Tools.simpleEmbed(server, channel, text, undefined, false, true, 1000);
-            this.queueDisplay(servers, server, 16, true);
-        }
+        
         else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
             console.log('\t\tNext');
@@ -627,6 +530,123 @@ module.exports = class Audio
                 this.queueDisplay(servers, server, 16, true);
             }
         }
+    }
+
+    static async queueMgr(servers, channel, args)
+    {
+        let server = servers[channel.guild.id];
+        console.log(`######\t-> ${server.global.guild.name}`);
+        console.log(`\tQueue Manager`);
+        /*
+            Command exemple :
+            t!a queue
+            t!a queue skip | t!a queue previous
+            t!a queue go 3
+            t!a delete 3 | t!a delete 3 7 | t!a delete 1 3 4 5 7 8 9 34
+            t!a queue clear
+            ...
+
+        */
+        
+        if(!args[0])
+        {
+            if(!server.audio.queue[0]) return;
+            else this.queueDisplay(servers, server, 16, true);
+        }
+        else if(args[0] == 'clear' || args[0] == 'c')
+        {
+            console.log('\t\tClear');
+            server.audio.queue.splice(0,server.audio.queue.length);
+            server.audio.currentPlayingSong = null;
+            server.audio.loop = false;
+            server.audio.queueLoop = false;
+            server.audio.restart = false;
+            server.audio.arret = false;
+            server.audio.leave = false;
+            if(server.audio.Engine) server.audio.Engine.stop();
+            let text = '**Done ✅**';
+            Tools.simpleEmbed(server, channel, text, undefined, false, true, 1000);
+            if(server.audio.lastQueue.channelId != null)
+            {
+                let lastQueueChannel = channel.guild.channels.cache.get(server.audio.lastQueue.channelId);
+                lastQueueChannel.messages.fetch(server.audio.lastQueue.messageId)
+                .then(m => {
+                    m.delete();
+                    server.audio.lastQueue.messageId = null;
+                    server.audio.lastQueue.channelId = null;
+                });
+            }
+        }
+        else if(args[0] == 'delete' || args[0] == 'd' || args[0] == 'remove' || args[0] == 'r')
+        {
+            console.log('\tDelete');
+            if(!args[1]) this.error(server, channel, 1, 'No argument(s) detected');
+            else if(args.length == 2) // single
+            {
+                args[1] = this.QueueSelectorConverter(server, args[1]);
+                if(args[1] == null)
+                {
+                    this.error(server, channel, 0, "The argument must be a valid queue selector or an number between 0 and the size of the queue.");
+                    return;
+                }
+
+                server.audio.queue.splice(args[1], 1);
+                if(args[1] < server.audio.currentPlayingSong)
+                {
+                    server.audio.currentPlayingSong--;
+                }
+                else if(args[1] == server.audio.currentPlayingSong)
+                {
+                    server.audio.currentPlayingSong--;
+                    server.audio.Engine.stop();
+                }
+            }
+            else if(args.length == 3) // range
+            {
+                args[1] = this.QueueSelectorConverter(server, args[1]);
+                args[2] = this.QueueSelectorConverter(server, args[2]);
+                
+                if(args[2] <= args[1])
+                {
+                    this.error(server, channel, 0, '2nd argument must be superior to the 1st argument');
+                    return;
+                }
+                else
+                {
+                    server.audio.queue.splice(args[1], args[2] - args[1] + 1);
+                    if(server.audio.currentPlayingSong >= args[1] && server.audio.currentPlayingSong <= args[2])
+                    {
+                        server.audio.currentPlayingSong = args[1] - 1;
+                        server.audio.Engine.stop();
+                    }
+                    else if(server.audio.currentPlayingSong > args[2])
+                    {
+                        server.audio.currentPlayingSong -= args[2] - args[1] + 1;
+                    }
+                }
+            }
+            else // multiple
+            {
+                let needStop = false
+                for(let i = 1; i < args.length; i++)
+                {
+                    args[i] = this.QueueSelectorConverter(server, args[i]);
+                    if(args[i] == null)
+                    {
+                        this.error(server, channel, 0, `\"${args[i]}\" This argument must be a valid queue selector or an number between 0 and the size of the queue.`);
+                        continue;
+                    }
+                    server.audio.queue.splice(args[1],1);
+                    if(args[i] <= server.audio.currentPlayingSong) server.audio.currentPlayingSong--;
+                    if(args[i] == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') needStop = true;
+                }
+                if(needStop) server.audio.Engine.stop();
+            }
+
+            let text = `**Done ✅**`;
+            Tools.simpleEmbed(server, channel, text, undefined, false, true, 1000);
+            this.queueDisplay(servers, server, 16, true);
+        }
         else if(args[0] == 'move' || args[0] == 'm') this.error(server, channel, 3, 'Work in progress');
         else if(args[0] == 'swap' || args[0] == 'sw')
         {
@@ -645,7 +665,7 @@ module.exports = class Audio
             args[1] = this.QueueSelectorConverter(server, args[1]);
             args[2] = this.QueueSelectorConverter(server, args[2]);
 
-            if(args[1] == null || args[2] == null) this.error(server, channel, 0, 'The argument must be a queue selector or an number between 0 and the size of the queue.')
+            if(args[1] == null || args[2] == null) this.error(server, channel, 0, 'The argument must be a valid queue selector or an number between 0 and the size of the queue.')
             else if(args[1] == args[2]) this.error(server, channel, 0, 'The arguments can\'t have the same value');
             
             let temp = server.audio.queue[args[1]];
@@ -682,7 +702,7 @@ module.exports = class Audio
         Tools.serverSave(server);
     }
 
-    static async miscellaneous(servers, message, command, args)
+    static async miscellaneous(servers, message, args)
     {
         /*
             Command exemple :
@@ -850,7 +870,7 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // number of song in the queue
         
-        text += `*Numbers of song in the queue : **${server.audio.queue.length}***`;
+        text += `*Numbers of song in the queue : **${server.audio.queue.length - 1}***`;
         text += '\n\n';
         
         // --------------------------------------------------------------------------------
@@ -860,8 +880,11 @@ module.exports = class Audio
         if(server.audio.queue.length <= nbrOfMusicDisplayed) startAt = 0;
         else
         {
+            // at the begining
             if(server.audio.currentPlayingSong < afterCurrent) startAt = 0;
-            else if(server.audio.queue.length - (server.audio.currentPlayingSong - afterCurrent) < nbrOfMusicDisplayed) startAt = server.audio.queue.length - 1 - nbrOfMusicDisplayed;
+            // at the end
+            else if(server.audio.queue.length - (server.audio.currentPlayingSong - afterCurrent) < nbrOfMusicDisplayed) startAt = server.audio.queue.length - nbrOfMusicDisplayed;
+            // another else
             else startAt = server.audio.currentPlayingSong - afterCurrent;
         }
 
@@ -878,16 +901,16 @@ module.exports = class Audio
             {
                 if(server.audio.queue[i].url.startsWith('[LOCAL]'))
                 {
-                    text += `${i+1}: ${server.audio.queue[i].title}\n`;
+                    text += `${i + 1}: ${server.audio.queue[i].title}\n`;
                 }
                 else
                 {
                     // YouTube
-                    text += `${i+1}: ${server.audio.queue[i].title}\n`;
+                    text += `${i + 1}: ${server.audio.queue[i].title}\n`;
                 }
             }
 
-            if(i-startAt == nbrOfMusicDisplayed-1) break;
+            if(i - startAt == nbrOfMusicDisplayed - 1) break;
         }
         
         // --------------------------------------------------------------------------------
@@ -1037,9 +1060,20 @@ module.exports = class Audio
     static QueueSelectorConverter(server, arg)
     {
         if(arg == "c" || arg == "current") return server.audio.currentPlayingSong;
-        else if(arg == "a" || arg == "after" || arg == 'aft' || arg == "next" || arg == "n") return server.audio.currentPlayingSong + 1;
-        else if(arg == "p" || arg == "previous" || arg == "befor" || arg == "b") return server.audio.currentPlayingSong - 1;
-        else if(arg == "f" || arg == "final" || arg == "end" || arg == "e") return server.audio.queue.length - 1;
+        else if(arg == "a" || arg == "after" || arg == 'aft' || arg == "next" || arg == "n")
+        {
+            if(server.audio.currentPlayingSong == server.audio.queue.length - 1) return null;
+            else return server.audio.currentPlayingSong + 1;
+        }
+        else if(arg == "p" || arg == "previous" || arg == "befor" || arg == "b")
+        {
+            if(server.audio.currentPlayingSong == 0) return null;
+            return server.audio.currentPlayingSong - 1;
+        }
+        else if(arg == "f" || arg == "final" || arg == "end" || arg == "e")
+        {
+            return server.audio.queue.length - 1;
+        }
         else
         {
             if(isNaN(Number.parseInt(arg))) return null;

@@ -104,8 +104,7 @@ module.exports = class About
         
         else if(command === 'moveuser' || command === 'm') this.moveAllUser(servers[message.guild.id], message, args); // --> help
         
-        // else if(command === 'rec' || command == 'recall') this.recallPing(servers[message.guildId], message, args);
-        else if(command === 'trackvoice' || command == 'tv') this.trackingVoice(servers, servers[message.guildId], message, args); // --> help
+        else if(command === 'trackvoice' || command == 'tv') this.trackingVoice(servers, servers[message.guildId], message.channel, message.author, args); // --> help
         
         else if(command === 'cleardm') this.clearDM(servers[message.guildId], message); // --> help
         else if(command === 'invitelink') this.inviteLink(servers[message.guildId] ,message); // --> help
@@ -292,9 +291,9 @@ module.exports = class About
         }
     }
     
-    static async trackingVoice(servers, server, message, args)
+    static async trackingVoice(servers, server, channel, userAuthor, args)
     {
-        let user = this.userProfileCheck(server, message.author.id);
+        let user = this.userProfileCheck(server, userAuthor.id);
 
         if(!args[0])
         {
@@ -302,25 +301,25 @@ module.exports = class About
         }
         else if(args[0] == 'e' || args[0] == 'enable')
         {
-            if(user.voiceTracking.isActivated) Tools.simpleEmbed(server, message.channel, '**Already enable ℹ**', undefined, false, true, 2000)
+            if(user.voiceTracking.isActivated) Tools.simpleEmbed(server, channel, '**Already enable ℹ**', undefined, false, true, 2000)
             else
             {
                 user.voiceTracking.isActivated = true;
-                Tools.simpleEmbed(server, message.channel, '**✅ Alert enable**', undefined, false, true, 2000);
+                Tools.simpleEmbed(server, channel, '**✅ Alert enable**', undefined, false, true, 2000);
             }
         }
         else if(args[0] == 'd' || args[0] == 'disable')
         {
-            if(!user.voiceTracking.isActivated) Tools.simpleEmbed(server, message.channel, '**Already disable ℹ**', undefined, false, true, 2000)
+            if(!user.voiceTracking.isActivated) Tools.simpleEmbed(server, channel, '**Already disable ℹ**', undefined, false, true, 2000)
             else
             {
                 user.voiceTracking.isActivated = false;
-                Tools.simpleEmbed(server, message.channel, '**✅ Alert disabled**', undefined, false, true, 2000)
+                Tools.simpleEmbed(server, channel, '**✅ Alert disabled**', undefined, false, true, 2000)
             }
         }
         else if(args[0] == 's' || args[0] == 'status')
         {
-            let text = `**${message.author.username}, here is your voice tracking status**\n\n`;
+            let text = `**${userAuthor.username}, here is your voice tracking status**\n\n`;
 
             if(user.voiceTracking.isActivated) text += '**✅ Service is ON**';
             else text += '**❎ Service is OFF**';
@@ -350,8 +349,8 @@ module.exports = class About
 
             for(let object of arrayOfObject)
             {
-                let channel = server.global.guild.channels.cache.get(object.id);
-                text += `**${channel.name}**\n`;
+                let trackingChannel = server.global.guild.channels.cache.get(object.id);
+                text += `**${trackingChannel.name}**\n`;
                 for(let userId of object.usersId)
                 {
                     let member = server.global.guild.members.cache.get(userId);
@@ -370,11 +369,11 @@ module.exports = class About
 
             if(user.voiceTracking.statusMessageId != null)
             {
-                let channel = await message.author.createDM();
-                channel.messages.cache.get(user.voiceTracking.statusMessageId).delete();
+                let dmChannel = await userAuthor.createDM();
+                dmChannel.messages.cache.get(user.voiceTracking.statusMessageId)?.delete();
             }
 
-            message.author.send({
+            userAuthor.send({
                 embeds: [
                     {
                         color: '000000',
@@ -404,12 +403,12 @@ module.exports = class About
 
                 if(targetUserId == undefined)
                 {
-                    Tools.simpleEmbed(server, message.channel, '**❌ Unknown user**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, channel, '**❌ Unknown user**', undefined, false, true, 10000);
                     return;
                 }
-                else if(targetUserId == message.author.id)
+                else if(targetUserId == userAuthor.id)
                 {
-                    Tools.simpleEmbed(server, message.channel, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, channel, '**❌ You can\'t add yourself !**', undefined, false, true, 10000);
                     return;
                 }
             }
@@ -424,10 +423,10 @@ module.exports = class About
             {
                 if(targetChannel == undefined && !isRemoving)
                 {
-                    targetChannel = Tools.findChannel(args[2], message);
+                    targetChannel = Tools.findChannel(server, args[2]);
                     if(targetChannel == undefined)
                     {
-                        Tools.simpleEmbed(server, message.channel, '**❌ Unknown voice channel**', undefined, false, true, 10000)
+                        Tools.simpleEmbed(server, channel, '**❌ Unknown voice channel**', undefined, false, true, 10000)
                         return;
                     }
                 }
@@ -460,12 +459,12 @@ module.exports = class About
                 if(targetChannelIndex == -1) targetUser.channelsId.push(targetChannel.id);
                 else
                 {
-                    Tools.simpleEmbed(server, message.channel, '**❗ Channel already added for this user**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, channel, '**❗ Channel already added for this user**', undefined, false, true, 10000);
                     return;
                 }
                 
                 let targetMember = server.global.guild.members.cache.get(targetUserId);
-                let authorMember = server.global.guild.members.cache.get(message.author.id);
+                let authorMember = server.global.guild.members.cache.get(userAuthor.id);
                 let targetProfile = this.userProfileCheck(server, targetMember.user.id);
 
                 if( targetProfile.voiceTracking.allowedUsers.indexOf(authorMember.user.id) == -1 &&
@@ -500,23 +499,23 @@ module.exports = class About
                             if(i.customId == 'accept')
                             {
                                 i.message.delete();
-                                targetProfile.voiceTracking.allowedUsers.push(message.author.id);
+                                targetProfile.voiceTracking.allowedUsers.push(userAuthor.id);
                             }
                             else if(i.customId == 'refuse') i.message.delete();
 
                             Tools.serverSave(server);
                         });
                     }
-                    else if(targetProfile.voiceTracking.allowedUsers.indexOf(message.author.id) == -1) targetProfile.voiceTracking.allowedUsers.push(message.author.id);
+                    else if(targetProfile.voiceTracking.allowedUsers.indexOf(userAuthor.id) == -1) targetProfile.voiceTracking.allowedUsers.push(userAuthor.id);
                 }
 
-                Tools.simpleEmbed(server, message.channel, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
+                Tools.simpleEmbed(server, channel, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
             }
             else
             {
                 if(targetUserIndex == -1)
                 {
-                    Tools.simpleEmbed(server, message.channel, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    Tools.simpleEmbed(server, channel, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
                     return;
                 }
 
@@ -525,16 +524,16 @@ module.exports = class About
                 if(targetChannel == undefined)
                 {
                     user.voiceTracking.usersAndChannels.splice(targetUserIndex, 1);
-                    Tools.simpleEmbed(server, message.channel, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, channel, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
                 }
                 else
                 {
                     let targetChannelIndex = user.voiceTracking.usersAndChannels[targetUserIndex].channelsId.indexOf(targetChannel.id);
-                    if(targetChannelIndex == -1) Tools.simpleEmbed(server, message.channel, '**❌ Can\'t find the channel for this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
+                    if(targetChannelIndex == -1) Tools.simpleEmbed(server, channel, '**❌ Can\'t find the channel for this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 30000);
                     else
                     {
                         user.voiceTracking.usersAndChannels[targetUserIndex].channelsId.splice(targetChannelIndex, 1);
-                        Tools.simpleEmbed(server, message.channel, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.username}**`);
+                        Tools.simpleEmbed(server, channel, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.username}**`);
                     }
                 }
             }
@@ -549,18 +548,18 @@ module.exports = class About
             }
             else
             {
-                if(targetUserId == message.author.id)
+                if(targetUserId == userAuthor.id)
                 {
-                    Tools.simpleEmbed(server, message.channel, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, channel, '**❌ You can\'t allow yourself !**', undefined, false, true, 10000);
                     return;
                 }
                 else if(!Tools.isElementPresentInArray(user.voiceTracking.allowedUsers, targetUserId))
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     user.voiceTracking.allowedUsers.push(targetUserId);
-                    Tools.simpleEmbed(server, message.channel, `**✅ Allowed ${targetMember.user.username}**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, channel, `**✅ Allowed ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
-                else Tools.simpleEmbed(server, message.channel, '**❗ User already allowed !**', undefined, false, true, 10000);;
+                else Tools.simpleEmbed(server, channel, '**❗ User already allowed !**', undefined, false, true, 10000);;
             }
         }
         else if(args[0] == 'rev' || args[0] == 'revoke')
@@ -568,7 +567,7 @@ module.exports = class About
             let targetUserId = Tools.findUserId(args[1], server.global.guild);
             if(targetUserId == undefined)
             {
-                Tools.simpleEmbed(server, message.channel, '**❌ The user doesn\'t exist**', undefined, false, true, 10000);
+                Tools.simpleEmbed(server, channel, '**❌ The user doesn\'t exist**', undefined, false, true, 10000);
                 return;
             }
             else
@@ -578,9 +577,9 @@ module.exports = class About
                 {
                     let targetMember = server.global.guild.members.cache.get(targetUserId);
                     user.voiceTracking.allowedUsers.splice(targetUserIndex, 1);
-                    Tools.simpleEmbed(server, message.channel, `**✅ Revoked ${targetMember.user.username}**`, undefined, false, true, 10000);
+                    Tools.simpleEmbed(server, channel, `**✅ Revoked ${targetMember.user.username}**`, undefined, false, true, 10000);
                 }
-                else Tools.simpleEmbed(server, message.channel, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 10000);
+                else Tools.simpleEmbed(server, channel, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 10000);
             }
         }
 
