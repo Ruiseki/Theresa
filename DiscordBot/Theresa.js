@@ -3,8 +3,7 @@ const   Voice = require('@discordjs/voice'),
         { REST } = require('@discordjs/rest'),
         FS = require('fs'),
         Tools = require('./tools.js'),
-        shell = require('shelljs'),
-        ytdl = require('ytdl-core');
+        shell = require('shelljs');
 
 module.exports = class About
 {
@@ -493,7 +492,7 @@ module.exports = class About
                             components: [row]
                         });
                         user.voiceTracking.usersAndChannels[targetUserIndex].lastDM = Date.now();
-                        message.client.on('interactionCreate', i => {
+                        servers[0].client.on('interactionCreate', i => {
                             if( !i.isButton() ) return;
     
                             if(i.customId == 'accept')
