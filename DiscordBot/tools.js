@@ -228,16 +228,19 @@ module.exports = class tools
             let voiceConnectionBackup = servers[guild.id].global.voiceConnection;
             let guildBackup = servers[guild.id].global.guild;
             let engineBackup = servers[guild.id].audio.Engine;
+            let resourceBackup = servers[guild.id].audio.resource;
 
             servers[guild.id].global.voiceConnection = null;
             servers[guild.id].global.guild = null;
             servers[guild.id].audio.Engine = null;
+            servers[guild.id].audio.resource = null;
 
             FS.writeFileSync(`./Servers Backup/${guild.id}/${Date.now()}.json`, JSON.stringify(servers[guild.id]));
 
             servers[guild.id].global.voiceConnection = voiceConnectionBackup;
             servers[guild.id].global.guild = guildBackup;
             servers[guild.id].audio.Engine = engineBackup;
+            servers[guild.id].audio.resource = resourceBackup;
         });
     }
     
