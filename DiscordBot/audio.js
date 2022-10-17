@@ -313,7 +313,7 @@ module.exports = class Audio
                 else
                 {
                     if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
-                    server.audio.queue.splice(queuePos + 1, 0, {
+                    server.audio.queue.splice(queuePos, 0, {
                         title,
                         url: `[LOCAL]${array[0]}`,
                         artist,
@@ -613,7 +613,7 @@ module.exports = class Audio
                 }
                 else
                 {
-                    server.audio.queue.splice(args[1], args[2] - args[1] + 1);
+                    server.audio.queue.splice(args[1], args[2] - args[1]);
                     if(server.audio.currentPlayingSong >= args[1] && server.audio.currentPlayingSong <= args[2])
                     {
                         server.audio.currentPlayingSong = args[1] - 1;
@@ -1078,7 +1078,7 @@ module.exports = class Audio
         {
             if(isNaN(Number.parseInt(arg))) return null;
             arg = Number.parseInt(arg) - 1;
-            if(Number.parseInt(arg) >= 0 && Number.parseInt(arg) < server.audio.queue.length) return arg;
+            if(Number.parseInt(arg) >= 0 && Number.parseInt(arg) < server.audio.queue.length) return arg - 1;
             else return null;
         }
     }
