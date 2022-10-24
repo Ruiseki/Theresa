@@ -106,7 +106,6 @@ module.exports = class About
         else if(command === 'trackvoice' || command == 'tv') this.trackingVoice(servers, servers[message.guildId], message.channel, message.author, args); // --> help
         
         else if(command === 'cleardm') this.clearDM(servers[message.guildId], message); // --> help
-        else if(command === 'invitelink') this.inviteLink(servers[message.guildId] ,message); // --> help
         else
         {
             Tools.simpleEmbed(servers[message.guild.id],message.channel,'**❌ Unknown command**',undefined,false,true,5000);
@@ -121,25 +120,25 @@ module.exports = class About
     
     static checkTheresaFile()
     {
-        if(!FS.existsSync('./Servers')) FS.mkdirSync('./Servers');
-        if(!FS.existsSync('./Servers Backup')) FS.mkdirSync('./Servers Backup');
-        if(!FS.existsSync('./Servers Backup/lastBackup.ttime')) FS.writeFileSync('./Servers Backup/lastBackup.ttime', '0');
+        if(!FS.existsSync('../storage/discordServers')) FS.mkdirSync('../storage/discordServers');
+        if(!FS.existsSync('../storage/discordServersBackup')) FS.mkdirSync('../storage/discordServersBackup');
+        if(!FS.existsSync('../storage/discordServersBackup/lastBackup.ttime')) FS.writeFileSync('../storage/discordServersBackup/lastBackup.ttime', '0');
         if(!FS.existsSync('./audio')) FS.mkdirSync('./audio');
     }
 
     static checkServerFile(guild) // check is file exist. If not create a file. Return false is the data is not present
     {
-        if(!FS.existsSync(`./Servers/${guild.id}`)) FS.mkdirSync(`./Servers/${guild.id}`);
-        if(!FS.existsSync(`./Servers Backup/${guild.id}`)) FS.mkdirSync(`./Servers Backup/${guild.id}`);
+        if(!FS.existsSync(`../storage/discordServers/${guild.id}`)) FS.mkdirSync(`../storage/discordServers/${guild.id}`);
+        if(!FS.existsSync(`../storage/discordServersBackup/${guild.id}`)) FS.mkdirSync(`../storage/discordServersBackup/${guild.id}`);
         
-        if(!FS.existsSync(`./Servers/${guild.id}/${guild.id}.json`)) return false;
+        if(!FS.existsSync(`../storage/discordServers/${guild.id}/${guild.id}.json`)) return false;
         else return true;
     }
 
     static createServerFile(guild)
     {
-        FS.mkdirSync(`./Servers/${guild.id}`);
-        FS.mkdirSync(`./Servers Backup/${guild.id}`);
+        FS.mkdirSync(`../storage/discordServers/${guild.id}`);
+        FS.mkdirSync(`../storage/discordServers Backup/${guild.id}`);
     }
 
     static deleteServerFile(guild)
@@ -159,9 +158,9 @@ module.exports = class About
  
     static resetAllDataOfAGuild(servers, guild)
     {
-        if(FS.existsSync(`./Servers/${guild.id}/${guild.id}.json`))
+        if(FS.existsSync(`../storage/discordServers/${guild.id}/${guild.id}.json`))
         {
-            FS.rmSync(`./Servers/${guild.id}/${guild.id}.json`);
+            FS.rmSync(`../storage/discordServers/${guild.id}/${guild.id}.json`);
         }
  
         servers[guild.id] = undefined;
@@ -173,9 +172,9 @@ module.exports = class About
     static resetAllGuilds(servers)
     {
         servers[0].client.guilds.cache.each(guild => {
-            if(FS.existsSync(`./Servers/${guild.id}/${guild.id}.json`))
+            if(FS.existsSync(`../storage/discordServers/${guild.id}/${guild.id}.json`))
             {
-                FS.rmSync(`./Servers/${guild.id}/${guild.id}.json`);
+                FS.rmSync(`../storage/discordServers/${guild.id}/${guild.id}.json`);
                 servers[guild.id] = undefined;
                 this.objectGenerator(servers, guild.id);
                 Tools.serverSave(servers[guild.id]);
@@ -259,7 +258,7 @@ module.exports = class About
             return;
         }
 
-        let destChannel = Tools.findChannel(args[0], message);
+        let destChannel = Tools.findChannel(server, args[0]);
         
         if(destChannel == undefined)
         {
@@ -280,13 +279,13 @@ module.exports = class About
     
     static updateAllserver()
     {
-        var tabServ=FS.readdirSync(`./Servers/`,'utf8');
+        var tabServ=FS.readdirSync(`../storage/discordServers/`,'utf8');
         for(id of tabServ)
         {
-            if(!FS.existsSync(`./Servers${id}`)) FS.mkdirSync(`./Servers/${id}`);
-            if(!FS.existsSync(`./Servers/${id}/queueSave.Stsave`)) FS.writeFileSync(`./Servers/${id}/queueSavesave`,'');
-            if(!FS.existsSync(`./Servers/${id}/ServerInfo.tsave`)) FS.writeFileSync(`./Servers/${id}/ServerInfo.tsave`,'');
-            if(!FS.existsSync(`./Servers/${id}/userOption`)) FS.mkdirSync(`./Servers/${id}/userOption`,'');
+            if(!FS.existsSync(`../storage/discordServers${id}`)) FS.mkdirSync(`../storage/discordServers/${id}`);
+            if(!FS.existsSync(`../storage/discordServers/${id}/queueSave.Stsave`)) FS.writeFileSync(`../storage/discordServers/${id}/queueSavesave`,'');
+            if(!FS.existsSync(`../storage/discordServers/${id}/ServerInfo.tsave`)) FS.writeFileSync(`../storage/discordServers/${id}/ServerInfo.tsave`,'');
+            if(!FS.existsSync(`../storage/discordServers/${id}/userOption`)) FS.mkdirSync(`../storage/discordServers/${id}/userOption`,'');
         }
     }
     
@@ -628,7 +627,7 @@ module.exports = class About
             {
                 this.objectGenerator(servers,guild.id);
             }
-            servers[guild.id] = JSON.parse(FS.readFileSync(`./Servers/${guild.id}/${guild.id}.json`, "utf-8"));
+            servers[guild.id] = JSON.parse(FS.readFileSync(`../storage/discordServers/${guild.id}/${guild.id}.json`, "utf-8"));
             servers[guild.id].global.guild = guild;
 
             //check admin
@@ -857,10 +856,5 @@ module.exports = class About
     static leaveVoice(server,Audio)
     {
         server.global.voiceConnection.destroy();
-    }
-
-    static async inviteLink(server, message)
-    {
-        message.author.send(await server.global.guild.client.generateInvite());
     }
 }

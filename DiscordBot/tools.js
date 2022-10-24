@@ -214,7 +214,7 @@ module.exports = class tools
         server.audio.Engine = null;
         server.audio.resource = null;
         
-        FS.writeFileSync(`./Servers/${server.global.guildId}/${server.global.guildId}.json`, JSON.stringify(server));
+        FS.writeFileSync(`../storage/discordServers/${server.global.guildId}/${server.global.guildId}.json`, JSON.stringify(server));
         
         server.global.voiceConnection = voiceConnectionBackup;
         server.global.guild = guildBackup;
@@ -235,7 +235,7 @@ module.exports = class tools
             servers[guild.id].audio.Engine = null;
             servers[guild.id].audio.resource = null;
 
-            FS.writeFileSync(`./Servers Backup/${guild.id}/${Date.now()}.json`, JSON.stringify(servers[guild.id]));
+            FS.writeFileSync(`../storage/discordServersBackup/${guild.id}/${Date.now()}.json`, JSON.stringify(servers[guild.id]));
 
             servers[guild.id].global.voiceConnection = voiceConnectionBackup;
             servers[guild.id].global.guild = guildBackup;

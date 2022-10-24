@@ -2,8 +2,8 @@
 desktop.ini
 Icon?
 /DiscordBot/node_modules
-/DiscordBot/Servers/
-/DiscordBot/Servers Backup/
+/storage/discordServers/
+/storage/discordServersBackup/
 /DiscordBot/.vscode/
 /Web
 /Software

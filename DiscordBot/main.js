@@ -2,11 +2,13 @@ require('dotenv').config();
 const   Discord = require('discord.js'),  // Discord libraries
         FS = require('fs');
 
-const Audio = require('./audio.js'),
-    Tools = require('./tools.js'),
-    // RP = require('./rp.js'),
-    Theresa = require('./Theresa.js'),
-    Help = require('./help.js');
+const   Audio = require('./audio.js'),
+        Tools = require('./tools.js'),
+        // RP = require('./rp.js'),
+        Theresa = require('./Theresa.js'),
+        Help = require('./help.js');
+
+const   commandsFile = require('./commands.json');
 
 var client = new Discord.Client( // The bot and what he can do
     {
@@ -57,143 +59,7 @@ servers[0] = {
             refuse :        new Discord.ButtonBuilder().setCustomId('refuse').setLabel('Refuse').setStyle('Danger'),
         }
     },
-    commands: [
-        {
-            name : 'play',
-            description : '🎵 Play music in your voice channel',
-            options : [
-                {
-                    name : 'title',
-                    description : 'Enter the title of the music. I just need the begining if the song is local',
-                    type : 3,
-                    required : true
-                },
-                {
-                    name : 'queueselector',
-                    description : 'Place of your song in the queue',
-                    type : 3,
-                    required : false
-                }
-            ]
-        },
-        {
-            name : 'stop',
-            description : '⏹️ Stop playing and clear the queue',
-        },
-        {
-            name : 'queue',
-            description : 'Display or manage the music queue',
-            options : [
-                {
-                    name : 'delete',
-                    description : '🚮 Delete element(s) in the queue',
-                    type : 1,
-                    options : [
-                        {
-                            name : 'elements',
-                            description : '1 number : single. 2 numbers : range. More than 2 : specific',
-                            type : 3,
-                            required : true
-                        }
-                    ]
-                },
-                {
-                    name : 'clear',
-                    description : '⏹️ Clear the queue. Same as /stop',
-                    type : 1
-                },
-                {
-                    name : 'display',
-                    description : 'Display the queue (and remove the older one)',
-                    type : 1
-                }
-            ]
-        },
-        {
-            name : 'voicetracking',
-            description : 'Recieve an alerte when a friend connect himself in a voice channel',
-            options : [
-                {
-                    name : 'enable',
-                    description : '🔔✅ Activate the service',
-                    type : 1
-                },
-                {
-                    name : 'disable',
-                    description : '🔔❌ Desactivate the service (your friend will not longer recieve notification)',
-                    type : 1
-                },
-                {
-                    name : 'status',
-                    description : '🔔 Display your settings and the allowed user (I will you a DM and pin the message)',
-                    type : 1
-                },
-                {
-                    name : 'add',
-                    description : '🔔➕ Link a user to channel, and recieve a notification when he is connected to it',
-                    type : 1,
-                    options : [
-                        {
-                            name : 'user',
-                            description : 'The user you want to track',
-                            type : 6,
-                            required : true
-                        },
-                        {
-                            name : 'channel',
-                            description : 'The channel you want to link to the user (a user can have multiple channel)',
-                            type : 7,
-                            required : true
-                        }
-                    ]
-                },
-                {
-                    name : 'remove',
-                    description : '🔔➖ Delete notification for a user and a channel, for a user or for a channel',
-                    type : 1,
-                    options : [
-                        {
-                            name : 'user',
-                            description : 'Fill this field only to delete the user and all his channel',
-                            type : 6,
-                            required : true
-                        },
-                        {
-                            name : 'channel',
-                            description : 'The channel where the user is linked to',
-                            type : 7
-                        }
-                    ]
-                },
-                {
-                    name : 'allow',
-                    description : '🔔✅ Allow an user to be notified when you are connected to a voice channel',
-                    type : 1,
-                    options : [
-                        {
-                            name : 'user',
-                            description : 'The user you want to allow',
-                            type : 6,
-                            required : true
-                        }
-                    ]
-                },
-                {
-                    name : 'revoke',
-                    description : '🔔❌ Revoke an autorization',
-                    type : 1,
-                    options : [
-                        {
-                            name : 'user',
-                            description : 'The user you want to revoke from your autorization list',
-                            type : 6,
-                            required : true
-                        }
-                    ]
-                },
-            ]
-        }
-    ]
+    commands: commandsFile
 };
 
 networkCheck().then(networkState => {
@@ -205,9 +71,7 @@ var changeStatus = true;
 
 var selectedActivity = 0;
 var clientActivity = [
-    `t!help`,
-    `t!help`,
-    `t!a [music title]`,
+    `/play [title]`,
     `Version : BETA 0.4.5`
 ];
 
@@ -522,10 +386,10 @@ setInterval(function() {
                         // check the last update, and download data
                         // check the date of the last backup
     
-    if(Date.now() >= Number.parseInt(FS.readFileSync('./Servers Backup/lastBackup.ttime', 'utf-8')) + 1000 * 60 * 60 * 24) // 24h
+    if(Date.now() >= Number.parseInt(FS.readFileSync('../storage/discordServersBackup/lastBackup.ttime', 'utf-8')) + 1000 * 60 * 60 * 24) // 24h
     {
         Tools.serversBackup(servers, client);
-        FS.writeFileSync('./Servers Backup/lastBackup.ttime', Date.now().toString());
+        FS.writeFileSync('../storage/discordServersBackup/lastBackup.ttime', Date.now().toString());
         console.log('### Server backup completed');
     }
 },60000);
