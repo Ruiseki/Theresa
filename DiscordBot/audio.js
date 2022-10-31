@@ -1077,8 +1077,8 @@ module.exports = class Audio
         else
         {
             if(isNaN(Number.parseInt(arg))) return null;
-            arg = Number.parseInt(arg) - 1;
-            if(Number.parseInt(arg) >= 0 && Number.parseInt(arg) < server.audio.queue.length) return arg - 1;
+            arg = Number.parseInt(arg);
+            if(arg >= 0 && arg < server.audio.queue.length) return arg - 1;
             else return null;
         }
     }
