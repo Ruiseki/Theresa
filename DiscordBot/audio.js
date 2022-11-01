@@ -40,6 +40,7 @@ module.exports = class Audio
                 if(server.audio.restart) // restart (for ghost update)
                 {
                     server.audio.restart = false;
+                    server.audio.playing = true;
                     server.audio.currentPlayingSong++;
                     Tools.serverSave(server);
                     Tools.reboot();
@@ -1078,7 +1079,7 @@ module.exports = class Audio
         {
             if(isNaN(Number.parseInt(arg))) return null;
             arg = Number.parseInt(arg);
-            if(arg >= 0 && arg < server.audio.queue.length) return arg - 1;
+            if(arg > 0 && arg <= server.audio.queue.length) return arg - 1;
             else return null;
         }
     }
