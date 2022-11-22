@@ -72,7 +72,7 @@ var changeStatus = true;
 var selectedActivity = 0;
 var clientActivity = [
     `/play [title]`,
-    `Version : BETA 0.4.5`
+    `Version : BETA 0.5.0`
 ];
 
 client.once('ready', () => {

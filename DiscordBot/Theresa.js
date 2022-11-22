@@ -4,6 +4,7 @@ const   Voice = require('@discordjs/voice'),
         FS = require('fs'),
         Tools = require('./tools.js'),
         shell = require('shelljs');
+const { PermissionFlagsBits, OAuth2Scopes } = require('discord.js');
 
 module.exports = class About
 {
