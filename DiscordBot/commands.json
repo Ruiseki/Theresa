@@ -5,13 +5,13 @@
         "options" : [
             {
                 "name" : "title",
-                "description" : "Enter the title of the music. I just need the begining if the song is local",
+                "description" : "Enter the title of the music. I just need the begining if the file is local",
                 "type" : 3,
                 "required" : true
             },
             {
                 "name" : "queueselector",
-                "description" : "Place of your song in the queue",
+                "description" : "Place of your music in the queue",
                 "type" : 3,
                 "required" : false
             }
@@ -20,6 +20,18 @@
     {
         "name" : "stop",
         "description" : "⏹️ Stop playing and clear the queue"
+    },
+    {
+        "name" : "go",
+        "description" : "➡️🎵 Teleport through the queue",
+        "options" : [
+            {
+                "name" : "queueselector",
+                "description" : "Place of the music in the queue",
+                "type" : 3,
+                "required" : false
+            }
+        ]
     },
     {
         "name" : "queue",
