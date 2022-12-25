@@ -21,12 +21,12 @@ module.exports = class Audio
         if(command == undefined) ;
         else
         {
-            if(command == 'queue' || command == 'q') this.queueMgr(servers, message.channel, args);
-            else if(command == 'player' || command == 'p') this.engineMgr(servers, message.channel, args);
+            if(command == 'queue' || command == 'q')              this.queueMgr(servers, message.channel, args);
+            else if(command == 'player' || command == 'p')        this.engineMgr(servers, message.channel, args);
             else if(command == 'miscellaneous' || command == 'm') this.miscellaneous(servers, message, args);
-            else if(command == 'playlist' || command == 'pl') this.playlist(servers, message, args);
-            else if(command == 'download' || command == 'dl') this.download(servers, message, command, args);
-            else this.audioMaster(servers, message.member, message.channel, command, args);
+            else if(command == 'playlist' || command == 'pl')     this.playlist(servers, message, args);
+            else if(command == 'download' || command == 'dl')     this.download(servers, message, command, args);
+            else                                                  this.audioMaster(servers, message.member, message.channel, command, args);
         }
     }
 
@@ -614,7 +614,7 @@ module.exports = class Audio
                 }
                 else
                 {
-                    server.audio.queue.splice(args[1], args[2] - args[1]);
+                    server.audio.queue.splice(args[1], args[2] - args[1] + 1);
                     if(server.audio.currentPlayingSong >= args[1] && server.audio.currentPlayingSong <= args[2])
                     {
                         server.audio.currentPlayingSong = args[1] - 1;
