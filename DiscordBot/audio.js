@@ -471,12 +471,12 @@ module.exports = class Audio
             console.log('\tGo');
             if(args[1])
             {
-                if(Number.isNaN(args[1])) this.error(server, channel, 0, 'Expected value : integer');
-                else if(Number.parseInt(args[1]) > server.audio.queue.length-1 || Number.parseInt(args[1] <= 0)) this.error(server, channel, 3, 'Queue number doesn\'t exist');
+                args[1] = this.QueueSelectorConverter(server, args[1]);
+                if(args[1] == null) this.error(server, channel, 0, 'Expected value : valid queue selector');
                 else
                 {
-                    server.audio.currentPlayingSong = Number.parseInt(args[1])-1;
-                    if(server.audio.Engine) 
+                    server.audio.currentPlayingSong = args[1];
+                    if(server.audio.Engine)
                     {
                         server.audio.currentPlayingSong--;
                         server.audio.Engine.stop();

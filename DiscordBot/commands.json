@@ -29,7 +29,7 @@
                 "name" : "queueselector",
                 "description" : "Place of the music in the queue",
                 "type" : 3,
-                "required" : false
+                "required" : true
             }
         ]
     },
