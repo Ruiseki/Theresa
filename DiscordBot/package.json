@@ -1,8 +1,8 @@
 {
   "name": "theresa",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "Multi-purpose Discord bot.",
-  "main": "main.js",
+  "main": "src/discordBotMain.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

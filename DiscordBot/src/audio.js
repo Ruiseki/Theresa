@@ -9,7 +9,7 @@ const yts = require('yt-search');
 const Tools = require('./tools.js');
 
 // local music
-var musicDirectory = require('./audio/musicDirectory.json');
+var musicDirectory = require('../audio/musicDirectory.json');
 
 module.exports = class Audio
 {
@@ -952,7 +952,7 @@ module.exports = class Audio
             let tags = NodeID3.read(server.audio.queue[server.audio.currentPlayingSong].url.substring(7));
 
             if(tags.image != undefined) messageOption.files[0] = tags.image.imageBuffer;
-            else messageOption.files[0] = FS.readFileSync('./audio/noThumbnail.png');
+            else messageOption.files[0] = FS.readFileSync('../audio/noThumbnail.png');
         }
         else messageOption.embeds[0].thumbnail.url = server.audio.queue[server.audio.currentPlayingSong].thumbnail; // YouTube
 

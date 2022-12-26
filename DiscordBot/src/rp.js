@@ -1,6 +1,5 @@
 const FS = require('fs');
 const Discord = require('discord.js');
-const { compileFunction } = require('vm');
 const Tools = require('./tools.js');
 
 module.exports = class RP
@@ -100,9 +99,9 @@ module.exports = class RP
 
     static getGifPath(command)
     {
-        var files = this.getGifsOfFolder(`./Picture/rp/${command}`);
+        var files = this.getGifsOfFolder(`../Picture/rp/${command}`);
         var gifID = Tools.getRandomInt(files.length-1);
-        return `./Picture/rp/${command}/${files[gifID]}`;
+        return `../Picture/rp/${command}/${files[gifID]}`;
     }
 
     static embedGif(title,command,message)

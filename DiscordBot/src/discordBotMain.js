@@ -8,7 +8,7 @@ const   Audio = require('./audio.js'),
         Theresa = require('./Theresa.js'),
         Help = require('./help.js');
 
-const   commandsFile = require('./commands.json');
+const   commandsFile = require('./json/commands.json');
 
 var client = new Discord.Client( // The bot and what he can do
     {

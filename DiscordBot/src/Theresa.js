@@ -124,7 +124,7 @@ module.exports = class About
         if(!FS.existsSync('../storage/discordServers')) FS.mkdirSync('../storage/discordServers');
         if(!FS.existsSync('../storage/discordServersBackup')) FS.mkdirSync('../storage/discordServersBackup');
         if(!FS.existsSync('../storage/discordServersBackup/lastBackup.ttime')) FS.writeFileSync('../storage/discordServersBackup/lastBackup.ttime', '0');
-        if(!FS.existsSync('./audio')) FS.mkdirSync('./audio');
+        if(!FS.existsSync('../audio')) FS.mkdirSync('../audio');
     }
 
     static checkServerFile(guild) // check is file exist. If not create a file. Return false is the data is not present
