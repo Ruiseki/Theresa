@@ -193,6 +193,10 @@ client.on('interactionCreate', i => {
                 Audio.audioMaster(servers, i.member, i.channel, i.options.data[0].value, [i.options.data[1]?.value]);
                 break;
             
+            case 'go' :
+                Audio.engineMgr(servers, i.channel, ['go', i.options.data[0]?.value]);
+                break;
+            
             case 'stop' :
                 servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
                 Audio.queueMgr(servers, i.channel, ['clear']);
@@ -246,19 +250,19 @@ client.on('interactionCreate', i => {
     if( i.isButton() )
     {
         // ----- Audio -----
-        if(i.customId == 'nextBtn') Audio.engineMgr(          servers, i.message.channel, ['skip']);
-        else if(i.customId == 'previousBtn') Audio.engineMgr( servers, i.message.channel, ['previous']);
-        else if(i.customId == 'stopBtn') Audio.queueMgr(     servers, i.message.channel, ['clear']);
+        if(i.customId == 'nextBtn')             Audio.engineMgr(servers, i.message.channel, ['skip']);
+        else if(i.customId == 'previousBtn')    Audio.engineMgr(servers, i.message.channel, ['previous']);
+        else if(i.customId == 'stopBtn')        Audio.queueMgr(servers, i.message.channel, ['clear']);
         else if(i.customId == 'pausePlayBtn')
         {
             if(servers[i.guild.id].audio.Engine._state.status == 'playing') Audio.engineMgr(servers, i.message.channel, ['pause']);
             else Audio.engineMgr(servers, i.message.channel, ['play']);
             Audio.queueDisplay(servers, servers[i.guildId], 16, true);
         }
-        else if(i.customId == 'viewMore') Audio.queueDisplay(   servers, servers[i.guildId], 40, false);
-        else if(i.customId == 'loop') Audio.engineMgr(           servers, i.message.channel, ['loop']);
-        else if(i.customId == 'loopQueue') Audio.engineMgr(      servers, i.message.channel, ['loopqueue']);
-        else if(i.customId == 'replay') Audio.engineMgr(        servers, i.message.channel, ['replay']);
+        else if(i.customId == 'viewMore')   Audio.queueDisplay(servers, servers[i.guildId], 40, false);
+        else if(i.customId == 'loop')       Audio.engineMgr(servers, i.message.channel, ['loop']);
+        else if(i.customId == 'loopQueue')  Audio.engineMgr(servers, i.message.channel, ['loopqueue']);
+        else if(i.customId == 'replay')     Audio.engineMgr(servers, i.message.channel, ['replay']);
         // -----------------
     
         // ----- Help ------
