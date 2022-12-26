@@ -871,7 +871,7 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // number of song in the queue
         
-        text += `*Numbers of song in the queue : **${server.audio.queue.length - 1}***`;
+        text += `*Numbers of song in the queue : **${server.audio.queue.length}***`;
         text += '\n\n';
         
         // --------------------------------------------------------------------------------
