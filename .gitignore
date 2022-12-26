@@ -2,10 +2,13 @@
 desktop.ini
 Icon?
 
+.vscode/
+
 /DiscordBot/node_modules
-/DiscordBot/.vscode/
 
 /storage
+/localDatabase
+/audio
 
 /Web
 /Software
