@@ -81,7 +81,7 @@ module.exports = class Audio
             else if(newState.status == 'pause') server.audio.pause = true;
             else if(oldState.status == 'pause') server.audio.pause = false;
             else if(newState.status == 'playing') server.audio.playing = true;
-            else if(oldState.status == 'playing') server.audio.playing = false;
+            else if(oldState.status == 'playing' && newState.status != 'playing') server.audio.playing = false;
         });
     }
 
@@ -471,18 +471,22 @@ module.exports = class Audio
             console.log('\tGo');
             if(args[1])
             {
-                args[1] = this.QueueSelectorConverter(server, args[1]);
-                if(args[1] == null) this.error(server, channel, 0, 'Expected value : valid queue selector');
-                else
+                args.shift();
+                args = args.join(' ');
+                let index = this.QueueSelectorConverter(server, args);
+                if(index == null)
                 {
-                    server.audio.currentPlayingSong = args[1];
-                    if(server.audio.Engine)
-                    {
-                        server.audio.currentPlayingSong--;
-                        server.audio.Engine.stop();
-                    }
-                    else this.runAudioEngine(servers, server, channel.guild);
+                    this.error(server, channel, 0, 'Expected value : valid queue selector');
+                    return;
                 }
+                else server.audio.currentPlayingSong = index;
+
+                if(server.audio.Engine)
+                {
+                    server.audio.currentPlayingSong--;
+                    server.audio.Engine.stop();
+                }
+                else this.runAudioEngine(servers, server, channel.guild);
             }
         }
         else if(args[0] == 'loop' || args[0] == 'l')
@@ -846,7 +850,7 @@ module.exports = class Audio
         // --------------------------------------------------------------------------------
         // Indique the loop status in top of the queue
 
-        text = '*Playing options :* ';
+        text = '*Options :* ';
 
         if(!server.audio.loop && !server.audio.queueLoop && !server.audio.restart)
         {
@@ -952,7 +956,7 @@ module.exports = class Audio
             let tags = NodeID3.read(server.audio.queue[server.audio.currentPlayingSong].url.substring(7));
 
             if(tags.image != undefined) messageOption.files[0] = tags.image.imageBuffer;
-            else messageOption.files[0] = FS.readFileSync('../audio/noThumbnail.png');
+            else messageOption.files[0] = FS.readFileSync('./audio/noThumbnail.png');
         }
         else messageOption.embeds[0].thumbnail.url = server.audio.queue[server.audio.currentPlayingSong].thumbnail; // YouTube
 
@@ -1077,10 +1081,42 @@ module.exports = class Audio
         }
         else
         {
-            if(isNaN(Number.parseInt(arg))) return null;
-            arg = Number.parseInt(arg);
-            if(arg > 0 && arg <= server.audio.queue.length) return arg - 1;
-            else return null;
+            if(isNaN(Number.parseInt(arg)))
+            {
+                let mach = [], perfectMach = null;
+                for(let i = 0; i < server.audio.queue.length; i++)
+                {
+                    if(server.audio.queue[i].title.toLocaleLowerCase() == arg.toLocaleLowerCase())
+                    {
+                        perfectMach = i;
+                        break;
+                    }
+                    else if( server.audio.queue[i].title.toLocaleLowerCase().startsWith(arg.toLocaleLowerCase()) ) mach.push(i);
+                }
+
+                if(perfectMach == null && mach.length == 0) return null;
+                else if(perfectMach) return perfectMach;
+                else
+                {
+                    let returnedValue = mach.shift();
+                    if(mach.length > 0)
+                    {
+                        let text = `*Searching " __${arg}__ "*\n**⚠️ Other similar track : **\n\n`;
+                        mach.forEach(element => {
+                            text += `${element}: ${server.audio.queue[element].title}\n`;
+                        });
+                        Tools.simpleEmbed(server, server.global.guild.channels.cache.get(server.audio.lastMusicTextchannelId), text, undefined, false, true, 20000);
+                    }
+
+                    return returnedValue;
+                }
+            }
+            else
+            {
+                arg = Number.parseInt(arg);
+                if(arg > 0 && arg <= server.audio.queue.length) return arg - 1;
+                else return null;
+            }
         }
     }
 
