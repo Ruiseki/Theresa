@@ -7,7 +7,7 @@ Icon?
 /DiscordBot/node_modules
 
 /storage
-/audio
 
-/Web
-/Software
+/website
+/api
+/software
