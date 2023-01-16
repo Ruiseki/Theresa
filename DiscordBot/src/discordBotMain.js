@@ -104,18 +104,6 @@ client.on('messageCreate', message => { // Will be executed when a message is em
     if(message.guild !== null) // if the message is in a guild
     {   
         servers[message.guild.id].global.lastTextChannelId = message.channel.id; // write the information of the text channel.
-
-        messageWords = message.content.split(/ +/);
-
-        for(word of messageWords)
-        {
-            // ping tracking DM code here
-        }
-    }
-
-    if(message.content == `<@${client.user.id}>`) // if the message is @Theresa
-    {
-        Help.help(servers, message);
     }
     
     if(!message.content.startsWith(servers[0].prefix)) return; // if the message doesnt start with the prefix, exit. The reste of the code is for the commands
@@ -133,8 +121,8 @@ client.on('messageCreate', message => { // Will be executed when a message is em
 
     let type, command;
     const args = message.content.slice(servers[0].prefix.length).split(/ +/);  // delete the prefix and split all word of message
-    type = args.shift().toLocaleLowerCase();                        // the first word will be the TYPE
-    if(args[0] != undefined) command = args.shift();                // The next word the COMMAND, and the reste the ARGUMENTS
+    type = args.shift().toLocaleLowerCase();                                   // the first word will be the TYPE
+    if(args[0] != undefined) command = args.shift();                           // The next word the COMMAND, and the reste the ARGUMENTS
 
     /*
 
