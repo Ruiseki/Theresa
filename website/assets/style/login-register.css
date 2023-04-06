@@ -1,0 +1,216 @@
+:root {
+    --login_height: 300px;
+    --login_length: 500px;
+    --register_height: 340px;
+    --register_length: 500px;
+}
+
+#dark_background {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    z-index: 2;
+
+    background-color: rgb(0, 0, 0, 0.9);
+
+    display: none;
+}
+
+#login-register {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    
+    display: none;
+}
+
+#login, #login * {
+    z-index: 10;
+}
+
+#register, #register * {
+    z-index: 10;
+}
+
+#login {
+    position: absolute;
+    display: flex;
+    top: calc(50% - var(--login_height)/2);
+    left: calc(50% - var(--login_length)/2);
+}
+
+#register {
+    position: absolute;
+    display: none;
+    top: calc(50% - var(--register_height)/2);
+    left: calc(50% - var(--register_length)/2);
+}
+
+#login_box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    margin: auto;
+    height: var(--login_height);
+    width: var(--login_length);
+
+    background-color: rgb(40, 40, 40);
+    border: 2px white solid;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px white;
+}
+
+.regular_field {
+    color: white;
+    font-size: 20px;
+    
+    text-align: center;
+    
+    background-color: black;
+    border: 1px white solid;
+    border-radius: 7px;
+    box-shadow: 0px 0px 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 20px;
+    transition-duration: 100ms;
+    transition-delay: 250ms;
+}
+
+.regular_field:focus, .regular_field:hover {
+    box-shadow: 0px 0px 20px;
+    transition-delay: 0s;
+    transition-duration: 100ms;
+}
+
+.login-register_button {
+    color: white;
+    font-size: 20px;
+
+
+    margin-top: 25px;
+    margin-bottom: 20px;
+
+    background-color: black;
+
+    border: 1px white solid;
+    border-radius: 13px;
+    box-shadow: 0px 0px 25px;
+
+    height: 55px;
+    transition-duration: 250ms;
+    transition-delay: 250ms;
+}
+
+.login-register_button:focus, .login-register_button:hover {
+    text-shadow: 0px 0px 5px;
+    background-color: rgb(50, 50, 50);
+    transition-duration: 250ms;
+    transition-delay: 0s;
+}
+
+.loginRegisterTransparentButton {
+    color: white;
+    font-size: 17px;
+    font-family: 'Raleway', sans-serif;
+
+    background-color: transparent;
+    border-style: none;
+}
+
+#no_account {
+    padding: 0px;
+    margin: 0px;
+    margin-bottom: 16px;
+
+    transition-duration: 250ms;
+}
+
+#no_account:hover {
+    cursor: pointer;
+    transition-duration: 250ms;
+}
+
+#register_box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    margin: auto;
+    margin-top: auto;
+    height: var(--register_height);
+    width: var(--register_length);
+
+    background-color: rgb(40, 40, 40);
+    border: 2px white solid;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px white;
+}
+
+#register_step_1 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition-duration: 250ms;
+}
+
+#register_step_1 p:hover {
+    cursor: pointer;
+}
+
+#register_step_2 {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    transition-duration: 250ms;
+}
+
+#register_step_2 p:hover {
+    cursor: pointer;
+}
+
+#register_box p {
+    margin-top: 0px;
+}
+
+.error_message {
+    display: none;
+    font-size: 12px;
+    position: absolute;
+    color: red;
+    text-align: left;
+    margin: 0px;
+}
+
+#error_login_username {
+    top: 54px;
+    left: 390px;
+}
+
+#error_login_password {
+    top: 120px;
+    left: 390px;
+}
+
+#error_login {
+    top: 190px;
+    left: 350px;
+}
+
+#error_register_username {
+    top: 50px;
+    left: 390px;
+}
+
+#error_register_password {
+    top: 115px;
+    left: 390px;
+}
+
+#error_register_confirm_password {
+    top: 175px;
+    left: 390px;
+}

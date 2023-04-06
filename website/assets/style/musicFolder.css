@@ -1,0 +1,129 @@
+#musicFolder {
+    display: flex;
+    margin-top: 40px;
+}
+
+#musicListEdit {
+    margin-left: 300px;
+    width: 300px;
+}
+
+#musicListEdit ul {
+    padding-right: 130px;
+}
+
+#musicList {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding-left: 0px;
+    list-style-type: none;
+    margin-left: 100px;
+    width: 1000px;
+}
+
+#musicListEdit, #musicList {
+    background-color: var(--main-bright-background-color);
+    border-radius: 7px;
+    height: 700px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+#musicFieldOrigin {
+    display: none;
+}
+
+.musicField {
+    display : flex;
+    border: 1px solid white;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 20%;
+    margin-right: 20%;
+    border-radius: 9px;
+}
+
+.musicField input {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.musicTitle {
+    width: 350px;
+    margin-left: 50px;
+}
+
+#addMusic {
+    position: absolute;
+    display: none;
+    width: 1000px;
+    height: 500px;
+    left: calc(50% - 1000px/2);
+    top: calc(50% - 500px/2);
+
+    border-radius: 100px;
+    border: 5px solid white;
+
+    z-index: 3;
+    background-color: var(--main-bright-background-color);
+}
+
+#addMusic label {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    height: 80%;
+    width: 88%;
+
+    border-radius: 60px;
+    border-style: dashed;
+    border-color: var(--main-background-color);
+    transition-duration: 100ms;
+    transition-delay: 250ms;
+}
+
+#addMusic label:hover {
+    border-color: lime;
+    box-shadow: 0px 0px 30px lime;
+    transition-delay: 0s;
+}
+
+#loadedFileDescription, #loadedFileSize {
+    font-size: 30px;
+    margin: auto;
+    text-align: center;
+}
+
+#loadedFileSize {
+    display: none;
+}
+
+#addMusic input {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    opacity: 0;
+}
+
+#closeImportWindowsButton {
+    position: absolute;
+    margin: 0px;
+    width: 150px;
+    left: calc(50% - 150px/2);
+    top: 120%;
+    font-size: 25px;
+}
+
+#uploadTrackButton {
+    position: absolute;
+    margin: 0px;
+    width: 150px;
+    left: calc(50% - 150px/2);
+    top: 131%;
+    font-size: 25px;
+}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theresa's Website Assistant</title>
+
+    <script type="module" src="./main.js" defer></script>
+    
+    <link rel="stylesheet" href="./assets/style/style.css">
+    <link rel="stylesheet" href="./assets/style/login-register.css">
+    <link rel="stylesheet" href="./assets/style/musicFolder.css">
+    <link rel="stylesheet" href="./assets/style/animation.css">
+    <link rel="shortcut icon" href="./assets/ressource/Theresa.jpg" type="image/x-icon">
+</head>
+
+<body>
+    <div id="dark_background"></div>
+
+    <section id="theresa_talking">
+        <div>
+            <img src="./assets/ressource/Theresa.jpg">
+            <p>Happy to see you again~</p>
+        </div>
+    </section>
+
+    <section id="login-register">
+        <div id="login">
+            <div id="login_box">
+                <div>
+                    <input class="regular_field" type="text" id="login_username" placeholder="username">
+                    <p class="error_message" id="error_login_username">Invalid username</p>
+                </div>
+                <div>
+                    <input class="regular_field" type="password" id="login_password" placeholder="password">
+                    <p class="error_message" id="error_login_password">Invalid password</p>
+                </div>
+                <div>
+                    <button class="login-register_button" onclick="signIn()">🌸Sign in🌸</button>
+                    <p class="error_message" id="error_login">Username/password incorrect</p>
+                </div>
+                <button type="button" id="no_account" class="loginRegisterTransparentButton">I dont have an account</button>
+            </div>
+        </div>
+
+        <div id="register">
+            <div id="register_box">
+                <div id="register_step_1">
+                    <div>
+                        <input class="regular_field" type="text" id="register_username" placeholder="username">
+                        <p class="error_message" id="error_register_username">Invalid username</p>
+                    </div>
+                    <div>
+                        <input class="regular_field" type="password" id="register_password" placeholder="password">
+                        <p class="error_message" id="error_register_password">Invalid password</p>
+                    </div>
+                    <div>
+                        <input class="regular_field" type="password" id="confirm_register_password" placeholder="confirm password">
+                        <p class="error_message" id="error_register_confirm_password">Passwords are not the same</p>
+                    </div>
+                    <button class="login-register_button" onclick="register(1)">Step 2➡️</button>
+                    <button type="button" class="loginRegisterTransparentButton" id="back2login">back</button>
+                </div>
+                <div id="register_step_2">
+                    <div>
+                        <input class="regular_field" type="text" placeholder="Discord user id">
+                        <p class="error_message" id="error_discordId">Invalid Id</p>
+                    </div>
+                    <button class="login-register_button" onclick="checkDiscordId">check</button>
+                    <button type="button" class="loginRegisterTransparentButton">back</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="main_page">
+        <div id="navbar">
+            <p>Music folder</p>
+        </div>
+        <section id="musicFolder">
+            <div id="musicListEdit">
+                <ul>
+                    <p id="addMusicText" class="selectionableText" onclick="addFileDisplay()">Add</p>
+                    <p id="removeMusicText" class="selectionableText" onclick="removeTrack()">Remove</p>
+                    <p id="searchMusicText">Search</p>
+                </ul>
+            </div>
+            <div id="musicFieldOrigin">
+                <li class="musicField">
+                    <input type="checkbox">
+                    <p class="musicTitle">music title</p>
+                    <p class="musicArtist">music artist</p>
+                </li>
+            </div>
+            <ul id="musicList"></ul>
+            <div id="addMusic">
+                <input type="file" name="musicUploader" id="addMusicInput" accept=".mp3,.flac,.wav" multiple>
+                <label for="addMusicInput">
+                    <p id="loadedFileDescription">Waiting for file(s)...</p>
+                    <p id="loadedFileSize">0 Mo</p>
+                </label>
+                <button id="closeImportWindowsButton" class="mainPageButton" onclick="addFileHide()">close</button>
+                <button id="uploadTrackButton" class="mainPageButton" onclick="uploadTrack()">send</button>
+            </div>
+        </section>
+    </section>
+
+    <section id="debug">
+        <button id="debug_logout" onclick="logout()">logout</button>
+    </section>
+</body>
+
+</html>
