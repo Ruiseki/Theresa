@@ -24,7 +24,7 @@ export default class MusicFolder
             {
                 for(let file of musics)
                 {
-                    if(file.title == element.querySelector('p').innerHTML)
+                    if(file.title == element.querySelector('p').innerHTML || file.fileNameNoExt == element.querySelector('p').innerHTML)
                     {
                         checkedMusics.push(file.fileName);
                         break;
@@ -72,8 +72,10 @@ export default class MusicFolder
 
     static async upload()
     {
+        document.querySelector('#loadedFileDescription').innerHTML = 'Uploading please wait ...';
         await ApiRequester.sendFile('/musics/upload', document.querySelector('#addMusicInput').files);
         await MusicFolder.update();
+        document.querySelector('#loadedFileDescription').innerHTML = 'Waiting for file(s)...';
         MusicFolder.addFileHide();
     }
 
