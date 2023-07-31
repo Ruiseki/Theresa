@@ -148,7 +148,7 @@ client.on('messageCreate', message => { // Will be executed when a message is em
 
     if(type == 'a' || type == 'audio') // Class for music
     {
-        Audio.cmd(servers, servers[0].prefix, command, args, message);
+        Audio.cmd(servers, command, args, message);
         return;
     }
 

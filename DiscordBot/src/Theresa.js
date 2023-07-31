@@ -750,7 +750,7 @@ module.exports = class About
         this.offline(server, message);
         console.log('### Theresa has restarted ###');
         server.global.guild.client.destroy();
-        shell.exec('pm2 restart main.js');
+        shell.exec('pm2 restart discordBot');
     }
 
     static async clearDM(server, message)
