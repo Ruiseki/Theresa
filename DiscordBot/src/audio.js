@@ -9,11 +9,11 @@ const yts = require('yt-search');
 const Tools = require('./tools.js');
 
 // local music
-var musicDirectory = require('../audio/musicDirectory.json');
+var storage = '../storage/audio/';
 
 module.exports = class Audio
 {
-    static cmd(servers, prefix, command, args, message)
+    static cmd(servers, command, args, message)
     {
         message.delete();
         servers[message.guild.id].audio.lastMusicTextchannelId = message.channel.id;
@@ -130,7 +130,7 @@ module.exports = class Audio
         else if(queuePos == undefined) queuePos = server.audio.queue.length;
 
         // Adding music
-        let array = this.getPathOfFile(music, musicDirectory);
+        let array = this.getPathOfFile(music, [`${storage}${authorMember.user.id}/`]);
 
         if(array == undefined) // YouTube
         {
@@ -274,12 +274,12 @@ module.exports = class Audio
                 array[0] = array.pop();
             }
 
-            let tags = NodeID3.read(array[0]),
-            title, artist, thumbnail;
-            if(tags.title === undefined) title = this.getNameFromPath(array[0],false);
-            else title = tags.title;
-            if(tags.artist === undefined) artist = '<unknown>';
-            else artist = tags.artist;
+            let tags = NodeID3.read(array[0]);
+            let title, artist, thumbnail;
+
+            title = tags.title === undefined ? this.getNameFromPath(array[0], false) : tags.title;
+            artist = tags.artist === undefined ? artist = '<unknown>' : artist = tags.artist;
+
             let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos + 1}***\n*requested by __${authorMember.user.username}__*`;
             
             if(tags.image != undefined)
@@ -337,7 +337,7 @@ module.exports = class Audio
         {
             this.runAudioEngine(servers, server, channel.guild);
         }
-        else this.queueDisplay(servers, server, 16, true); // when the engine the playing something
+        else this.queueDisplay(servers, server, 16, true); // when the engine is playing something
 
         Tools.serverSave(server);
     }
@@ -707,7 +707,7 @@ module.exports = class Audio
         Tools.serverSave(server);
     }
 
-    static async miscellaneous(servers, message, args)
+    static miscellaneous(servers, message, args)
     {
         /*
             Command exemple :
@@ -719,7 +719,7 @@ module.exports = class Audio
         if(!args[0]) this.error(server, message.channel, 1, 'Please precise your intention(s).');
         else if(args[0] == 'find' || args[0] == 'f')
         {
-            let array = this.getPathOfFile(args[1],musicDirectory);
+            let array = this.getPathOfFile(args[1], [`${storage}${message.author.id}/`]);
             if(array == undefined) Tools.simpleEmbed(server, message.channel, 'No file was found ❌', undefined, false, true, 3000);
             else
             {
@@ -764,12 +764,17 @@ module.exports = class Audio
         }
         else if(args[0] == 'localshuffle' || args[0] == 'ls')
         {
+            console.log('Local shuffling ...');
             if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
-            
+
             let shuffledMusic = [];
-            for(let path of musicDirectory)
+            let directory = [`${storage}${message.author.id}/`];
+
+            for(let path of directory)
             {
+                console.log(`Reading directory : ${path}`);
                 FS.readdirSync(path).forEach(music => {
+                    console.log(`\t${music}`);
                     let extension = music.split('.').pop();
                     if(extension == 'mp3' || extension == 'wav' || extension == 'flac')
                     {
@@ -795,6 +800,7 @@ module.exports = class Audio
                 });
             }
 
+            console.log('Shuffling ...');
             // shuffling
             let indiceAlea;
             for(let i = shuffledMusic.length; i > 0; i--)
@@ -804,11 +810,11 @@ module.exports = class Audio
                 shuffledMusic.splice(indiceAlea, 1);
             }
 
+            console.log('Done');
             if(server.audio.Engine._state.status != 'playing') // playing or adding to the queue
-            {
                 this.runAudioEngine(servers, server, message.guild);
-            }
-            else this.queueDisplay(servers, server, 16, true);
+            else
+                this.queueDisplay(servers, server, 16, true);
         }
         else if(args[0] == 'folder' || args[0] == 'fd')
         {
@@ -1070,6 +1076,8 @@ module.exports = class Audio
             if(server.audio.currentPlayingSong == server.audio.queue.length - 1) return null;
             else return server.audio.currentPlayingSong + 1;
         }
+        // this thing. Not good.
+        // When a song is added, currentPlayingSong index will be incremented, but ↓ will not.
         else if(arg == "p" || arg == "previous" || arg == "befor" || arg == "b")
         {
             if(server.audio.currentPlayingSong == 0) return null;
@@ -1133,13 +1141,14 @@ module.exports = class Audio
         }
     }
 
-    static getPathOfFile(targetName,directory)
+    static getPathOfFile(targetName, directory)
     {
         /*
             Will give the path of "targetName" in "directory".
             Return an array of all file that commence by this name.
             Return undefined if doesn't exist.
         */
+
         let array=[];
         for(let path of directory)
         {
@@ -1157,8 +1166,8 @@ module.exports = class Audio
         }
         if(array.length == 0) return undefined;
         else return array;
+       
     }
-
 
     static clearMessagesTemps(server, guild)
     {
