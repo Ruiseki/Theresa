@@ -66,7 +66,7 @@ app.post('/musics/upload', upload.array('musicUploader'), async (req, res) => {
     console.log(`\t\tTotal Size : ${(totalSize / 1024 / 1024).toFixed(2)} Mo`);
     for(let file of req.files)
     {
-        if(await trackToBDD(file, req.body.username, req.body.password)) FS.writeFileSync(`${storageLocation}/audio/${req.body.username}/${file.originalname}`, file.buffer, "");
+        if(await trackToBDD(file, req.body.username, req.body.password)) FS.writeFileSync(`${storageLocation}/audio/${req.body.discordId}/${file.originalname}`, file.buffer, "");
         else
         {
             res.status(400).json({status:'error',message:`Probleme with the file ${file.originalname}`});
@@ -100,7 +100,7 @@ app.post('/musics/remove', async (req, res) => {
                 break;
             }
         }
-        FS.rmSync(`${storageLocation}/audio/${req.body.username}/${file}`);
+        FS.rmSync(`${storageLocation}/audio/${req.body.discordId}/${file}`);
     }
 
     FS.writeFileSync(`${storageLocation}/cache/users.json`, JSON.stringify(usersCache), 'utf-8');
@@ -116,6 +116,7 @@ app.post('/login', async (req, res) => {
             {
                 username: usersCache[index].username,
                 password: usersCache[index].password,
+                discordId :usersCache[index].discordId,
             }
         );
     }
@@ -163,7 +164,7 @@ async function trackToBDD(file, username, password)
 async function removeTrackFromBDD(fileName, username, password)
 {
     return new Promise(resolve => {
-        let query = `DELETE FROM track WHERE fileName = "${fileName}" AND userId = (SELECT id FROM user WHERE username = '${username}' AND password = '${password}');`;
+        let query = `DELETE FROM track WHERE fileName = "${fileName}" AND owner = (SELECT id FROM user WHERE username = '${username}' AND password = '${password}');`;
         mysqlConnection.query(query, (error) => {
             if(error)
             {

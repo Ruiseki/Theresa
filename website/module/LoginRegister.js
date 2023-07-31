@@ -57,7 +57,6 @@ export default class LoginRegister
         document.querySelector('#dark_background').style.display = 'none';
         setTimeout(() => {
             document.querySelector('#theresa_talking').style.display = 'none';
-            console.log('ok');
         }, 1000);
         document.querySelector('#login-register').style.display = 'none';
     }

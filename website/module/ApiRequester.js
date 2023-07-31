@@ -45,6 +45,7 @@ export default class ApiRequester
         for(let file of files) data.append('musicUploader', file);
         data.append('username', activeUser.username);
         data.append('password', activeUser.password);
+        data.append('discordId', activeUser.discordId);
 
         console.log(data.get('musicUploader'));
 
@@ -64,6 +65,7 @@ export default class ApiRequester
             body: JSON.stringify({
                 username: activeUser.username,
                 password: activeUser.password,
+                discordId: activeUser.discordId,
                 files : filesName
             })
         }).then(response => console.log(response));
