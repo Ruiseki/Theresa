@@ -144,9 +144,18 @@ async function trackToBDD(file, username, password)
             fileObject.artist  = fileObject.artist.replace(/'/g, "\\'");
         }
 
-        let query = `INSERT INTO track VALUES ((SELECT id FROM user WHERE username ='${username}' AND password = '${password}'), "${fileObject.fileName}", "${fileObject.fileNameNoExt}", '${fileObject.extension}', '${fileObject.title}', '${fileObject.artist}')`;
-        //                                                                                                                   OS will not allow special caractere in file name, so double quot
-        mysqlConnection.query(query, (error) => {
+        let query = 'INSERT INTO track VALUES ((SELECT id FROM user WHERE username = ? AND password = ?), ?, ?, ?, ?, ?)';
+        let parameters = [
+            username,
+            password,
+            fileObject.fileName,
+            fileObject.fileNameNoExt,
+            fileObject.extension,
+            fileObject.title,
+            fileObject.artist
+        ];
+
+        mysqlConnection.query(query, parameters, (error) => {
             if(error)
             {
                 resolve(false);
@@ -164,8 +173,14 @@ async function trackToBDD(file, username, password)
 async function removeTrackFromBDD(fileName, username, password)
 {
     return new Promise(resolve => {
-        let query = `DELETE FROM track WHERE fileName = "${fileName}" AND owner = (SELECT id FROM user WHERE username = '${username}' AND password = '${password}');`;
-        mysqlConnection.query(query, (error) => {
+        let query = 'DELETE FROM track WHERE fileName = ? AND owner = (SELECT id FROM user WHERE username = ? AND password = ?);';
+        let parameters = [
+            fileName,
+            username,
+            password
+        ];
+        
+        mysqlConnection.query(query, parameters, (error) => {
             if(error)
             {
                 console.error(error);
