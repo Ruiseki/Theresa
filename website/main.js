@@ -1,4 +1,4 @@
-var host = 'http://192.168.1.40',
+var host = 'http://localhost',
     port = '42847';
 
 import MusicFolder from './module/musicFolder.js';

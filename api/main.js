@@ -8,6 +8,8 @@ const   FS = require('fs'),
         cors = require('cors'),
         NodeID3 = require('node-id3'),
         mysql = require('mysql2');
+const { resolve } = require('path');
+const { removeListener } = require('process');
 const storageLocation = process.env.storageLocation;
 const port = 42847;
 const app = Express();
@@ -23,8 +25,7 @@ const corsOptions = {
     methods : ['GET', 'POST', 'PUT', 'DELETE']
 };
 
-var usersCache = require(`${storageLocation}/cache/users.json`);
-
+var usersCache;
 
 var mysqlConnection = mysql.createConnection({
     host: process.env.host,
@@ -34,6 +35,8 @@ var mysqlConnection = mysql.createConnection({
 });
 
 mysqlConnection.connect();
+
+updateCache();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
@@ -203,7 +206,7 @@ function addTrackToCache(username, file)
             element.musics.sort((a, b) => {
                 if      (a.title < b.title) return -1;
                 else if (a.title > b.title) return 1;
-                else                      return 0;
+                else                        return 0;
             });
             FS.writeFileSync(`${storageLocation}/cache/users.json`, JSON.stringify(usersCache), 'utf-8');
         }
@@ -230,6 +233,40 @@ function addUserToCache(user)
 {
     usersCache.push(user);
     FS.writeFileSync(`${storageLocation}/cache/users.json`, JSON.stringify(usersCache), 'utf-8');
+}
+
+function updateCache()
+{
+    console.log('\tUpdating cache ...');
+    usersCache = [];
+    let getUsersQuery = 'SELECT id, username, discordId FROM user;';
+    mysqlConnection.query(getUsersQuery, (error, usersResults) => {
+        if(error)
+            console.error(error);
+        else
+        {
+            for(let i = 0; i < usersResults.length; i++)
+            {
+                let getMusicsQuery = 'SELECT * FROM track WHERE owner = ?;';
+                mysqlConnection.query(getMusicsQuery, [usersResults[i].id], (error, tracksResults) => {
+                    if(error)
+                        console.error(error);
+                    else
+                    {
+                        usersResults[i].musics = tracksResults;
+                        usersCache.push(usersResults[i]);
+                    }
+
+                    if(i == usersResults.length - 1)
+                    {
+                        FS.writeFileSync(`${storageLocation}/cache/users.json`, JSON.stringify(usersCache), 'utf-8');
+                        console.log('\tCache updated');
+                    }
+                });
+
+            }
+        }
+    });
 }
 
 async function isUserExist(username, password)
@@ -261,7 +298,7 @@ async function isUserExist(username, password)
                         discordId: results[0].discordId,
                         musics: []
                     };
-                    mysqlConnection.query(`SELECT fileName, fileNameNoExt, extension, title, artist FROM track WHERE userId = (SELECT id FROM user WHERE username = '${username}' AND password = '${password}')`, (error, results) => {
+                    mysqlConnection.query(`SELECT fileName, fileNameNoExt, extension, title, artist FROM track WHERE owner = (SELECT id FROM user WHERE username = '${username}' AND password = '${password}')`, (error, results) => {
                         if(error)
                         {
                             console.error(error);
