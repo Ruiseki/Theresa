@@ -24,7 +24,10 @@ export default class MusicFolder
             {
                 for(let file of musics)
                 {
-                    if(file.title == element.querySelector('p').innerHTML || file.fileNameNoExt == element.querySelector('p').innerHTML)
+                    let elementTransform = element.querySelector('p').innerHTML ;
+                    elementTransform = elementTransform.replace(/&amp;/g, '&');
+
+                    if(file.title == elementTransform || file.fileNameNoExt == elementTransform)
                     {
                         checkedMusics.push(file.fileName);
                         break;
