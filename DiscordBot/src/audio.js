@@ -323,7 +323,7 @@ module.exports = class Audio
             }
         }
 
-        if(server.audio.queue.length == 1 && server.audio.Engine._state.status != 'playing') // play for the first time
+        if(server.audio.currentPlayingSong == null) // play for the first time
         {
             server.audio.currentPlayingSong = 0;
             this.runAudioEngine(servers, server, channel.guild);
