@@ -73,7 +73,7 @@ module.exports = class Audio
                         server.audio.lastQueue.messageId = null;
                         server.audio.lastQueue.channelId = null;
                     }
-                    server.audio.queue = [];
+                    server.audio.queue.splice(0, server.audio.queue.length);
                     console.log(`\tAudio Engine Standby`);
                 }
             }
