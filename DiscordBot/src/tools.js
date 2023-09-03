@@ -18,7 +18,7 @@ module.exports = class tools
 
     static reboot()
     {
-        shell.exec('pm2 restart main.js');
+        shell.exec('pm2 restart discordBot');
     }
 
     static getRandomInt(max)

@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { writeFileSync } from "fs";
 import { init as musicInit } from "./music.js";
+import { init as userInit } from "./user.js";
 
 export async function connect()
 {
@@ -20,7 +21,7 @@ export async function connect()
         console.log(`\t\t ❌ Can't connect to the database\n\t${error}`);
         process.exit();
     }
-    
+
     try {
         console.log('\tUpdating cache ...');
         await updateCache(usersCache);
@@ -33,9 +34,10 @@ export async function connect()
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(bodyParser.json());
     app.use(cors(corsOptions));
-    
+
+    userInit();
     musicInit();
-    
+
     app.listen(port, () => {
         console.log(`######\t✅ Online (port ${port})`);
     });

@@ -41,47 +41,50 @@ module.exports = class Audio
                 {
                     server.audio.restart = false;
                     server.audio.playing = true;
-                    server.audio.currentPlayingSong++;
+                    server.audio.currentPlayingSong = server.audio.nextPlayingSong;
                     Tools.serverSave(server);
                     Tools.reboot();
                 }
-                else if(server.audio.arret) return; // stop
-                else if(server.audio.loop) // loop
+                else if(server.audio.arret)
                 {
+                    server.audio.queue.splice(0, server.audio.queue.length)
+                    server.audio.currentPlayingSong = null;
+                    server.audio.nextPlayingSong = null;
+                    server.audio.arret = false;
+                    server.audio.loop = false;
+                    server.audio.loopQueue = false;
+                    server.audio.leave = false;
+                    return; // stop
+                }
+
+                
+                if(server.audio.nextPlayingSong)
+                {
+                    server.audio.currentPlayingSong = server.audio.nextPlayingSong;
                     this.runAudioEngine(servers, server, server.global.guild);
                 }
-                else if(server.audio.queueLoop) // queue loop
+                else
                 {
-                    if(!server.audio.queue[server.audio.currentPlayingSong+1]) server.audio.currentPlayingSong = 0;
-                    else server.audio.currentPlayingSong++;
-                    this.runAudioEngine(servers, server, server.global.guild);
-                }
-                else // normal execution. Play the next song or stop.
-                {
-                    server.audio.currentPlayingSong++;
-                    if(server.audio.queue[server.audio.currentPlayingSong]) // next song -> true
+                    server.audio.currentPlayingSong = null;
+                    if(server.audio.lastQueue.messageId != null)
                     {
-                        this.runAudioEngine(servers, server, server.global.guild);
+                        let channel = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
+                        channel.messages.fetch(server.audio.lastQueue.messageId).then(msg => msg.delete());
+                        server.audio.lastQueue.messageId = null;
+                        server.audio.lastQueue.channelId = null;
                     }
-                    else // next song -> false
-                    {
-                        if(server.audio.lastQueue.messageId != null)
-                        {
-                            let channel = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
-                            channel.messages.fetch(server.audio.lastQueue.messageId).then(msg => msg.delete());
-                            server.audio.lastQueue.messageId = null;
-                            server.audio.lastQueue.channelId = null;
-                        }
-                        server.audio.queue = [];
-                        server.audio.currentPlayingSong = 0;
-                        console.log(`\tAudio Engine Standby`);
-                    }
+                    server.audio.queue = [];
+                    console.log(`\tAudio Engine Standby`);
                 }
             }
+
             else if(newState.status == 'pause') server.audio.pause = true;
             else if(oldState.status == 'pause') server.audio.pause = false;
+
             else if(newState.status == 'playing') server.audio.playing = true;
             else if(oldState.status == 'playing' && newState.status != 'playing') server.audio.playing = false;
+
+            Tools.serverSave(server);
         });
     }
 
@@ -96,7 +99,7 @@ module.exports = class Audio
 
         */
 
-        let music = command, queuePos = undefined;
+        let music = command, queuePos = undefined, current = false;
         
         if(!authorMember.voice.channel)
         {
@@ -110,7 +113,12 @@ module.exports = class Audio
             {
                 if(args[0].startsWith('>>'))
                 {
-                    queuePos = this.QueueSelectorConverter(servers[channel.guildId], args[0].substring(2));
+                    if(args[0].substring(2) == 'c' || args[0].substring(2) == 'current')
+                    {
+                        current = true;
+                        queuePos = server.audio.currentPlayingSong;
+                    }
+                    else queuePos = this.QueueSelectorConverter(servers[channel.guildId], args[0].substring(2));
                     
                     if(queuePos == null || queuePos == undefined)
                     {
@@ -303,7 +311,7 @@ module.exports = class Audio
             }
             else
             {
-                if(server.audio.currentPlayingSong == queuePos) // current
+                if(current)
                 {
                     server.audio.queue[server.audio.currentPlayingSong] = {
                         title,
@@ -313,7 +321,9 @@ module.exports = class Audio
                 }
                 else
                 {
-                    if(server.audio.currentPlayingSong > queuePos) server.audio.currentPlayingSong++;
+                    if(server.audio.currentPlayingSong >= queuePos)
+                        server.audio.currentPlayingSong++;
+
                     server.audio.queue.splice(queuePos, 0, {
                         title,
                         url: `[LOCAL]${array[0]}`,
@@ -323,14 +333,16 @@ module.exports = class Audio
             }
         }
 
+        this.computeNextPlayingSong(server);
+
         if(server.audio.currentPlayingSong == null) // play for the first time
         {
             server.audio.currentPlayingSong = 0;
             this.runAudioEngine(servers, server, channel.guild);
         }
-        else if(queuePos == server.audio.currentPlayingSong && server.audio.Engine._state.status == 'playing') // with the option "current"
+        else if(current)
         {
-            server.audio.currentPlayingSong--;
+            server.audio.nextPlayingSong = server.audio.currentPlayingSong;
             server.audio.Engine.stop();
         }
         else if(server.audio.Engine._state.status != 'playing') // when the queue is complete and not reset
@@ -346,6 +358,7 @@ module.exports = class Audio
     {
         server.global.voiceConnection.subscribe(server.audio.Engine);
         this.queueDisplay(servers, server, 16, true);
+        this.computeNextPlayingSong(server);
         
         let voiceChannel = guild.channels.cache.get(servers[guild.id].global.lastVoiceChannelId)
         Theresa.joinVoice(server, voiceChannel);
@@ -435,14 +448,14 @@ module.exports = class Audio
         {
             if(server.audio.Engine)
             {
-                server.audio.currentPlayingSong--;
+                server.audio.nextPlayingSong = server.audio.currentPlayingSong;
                 server.audio.Engine.stop();
             }
             else
             {
                 if(server.audio.queue[0])
                 {
-                    server.audio.currentPlayingSong--;
+                    server.audio.nextPlayingSong = server.audio.currentPlayingSong;
                     server.audio.Engine.stop();
                 }
                 else
@@ -455,16 +468,14 @@ module.exports = class Audio
         else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
             console.log('\t\tNext');
+            server.audio.nextPlayingSong = server.audio.queue[server.audio.currentPlayingSong+1] ? server.audio.currentPlayingSong + 1 : null;
             server.audio.Engine.stop();
         }
         else if(args[0] == 'previous' || args[0] == '<')
         {
             console.log('\t\tPrevious');
-            if(server.audio.currentPlayingSong > 0)
-            {
-                server.audio.currentPlayingSong -= 2;
-                server.audio.Engine.stop();
-            }
+            server.audio.nextPlayingSong = server.audio.currentPlayingSong - 1 >= 0 ? server.audio.currentPlayingSong - 1 : 0;
+            server.audio.Engine.stop();
         }
         else if(args[0] == 'go')
         {
@@ -479,13 +490,11 @@ module.exports = class Audio
                     this.error(server, channel, 0, 'Expected value : valid queue selector');
                     return;
                 }
-                else server.audio.currentPlayingSong = index;
+                else server.audio.nextPlayingSong = index;
 
                 if(server.audio.Engine)
-                {
-                    server.audio.currentPlayingSong--;
                     server.audio.Engine.stop();
-                }
+
                 else this.runAudioEngine(servers, server, channel.guild);
             }
         }
@@ -535,6 +544,8 @@ module.exports = class Audio
                 this.queueDisplay(servers, server, 16, true);
             }
         }
+
+        Tools.serverSave(server);
     }
 
     static async queueMgr(servers, channel, args)
@@ -560,15 +571,11 @@ module.exports = class Audio
         }
         else if(args[0] == 'clear' || args[0] == 'c')
         {
+            if(!server.audio.Engine) return;
             console.log('\t\tClear');
-            server.audio.queue.splice(0,server.audio.queue.length);
-            server.audio.currentPlayingSong = null;
-            server.audio.loop = false;
-            server.audio.queueLoop = false;
-            server.audio.restart = false;
-            server.audio.arret = false;
-            server.audio.leave = false;
-            if(server.audio.Engine) server.audio.Engine.stop();
+            server.audio.arret = true;
+            server.audio.Engine.stop();
+            
             let text = '**Done ✅**';
             Tools.simpleEmbed(server, channel, text, undefined, false, true, 1000);
             if(server.audio.lastQueue.channelId != null)
@@ -1056,32 +1063,42 @@ module.exports = class Audio
         }
     }
     
+    static computeNextPlayingSong(server)
+    {
+        if(server.audio.loop)
+            server.audio.nextPlayingSong = server.audio.currentPlayingSong;
+        else
+        {
+            server.audio.nextPlayingSong = server.audio.currentPlayingSong + 1;
+    
+            if(server.audio.nextPlayingSong == server.audio.queue.length)
+            {
+                if(server.audio.loopQueue) server.audio.nextPlayingSong = 0;
+                else server.audio.nextPlayingSong = null;
+            }
+        }
+    }
+
     static playlist(servers, message, args)
     {
         let server = servers[message.guild.id];
         if(!args[0]) this.error(server, message.channel, 1, 'Possible action : *please fill this line of text Ruiseki sama~*')
         
         let user = server.users.find(element => element.userId == message.author.id);
-        if(args[0] == 'create')
-        {
-
-        }
+        if(args[0] == 'create') { }
     }
 
     static QueueSelectorConverter(server, arg)
     {
-        if(arg == "c" || arg == "current") return server.audio.currentPlayingSong;
-        else if(arg == "a" || arg == "after" || arg == 'aft' || arg == "next" || arg == "n")
+        if(arg == "a" || arg == "after" || arg == 'aft' || arg == "next" || arg == "n")
         {
             if(server.audio.currentPlayingSong == server.audio.queue.length - 1) return null;
             else return server.audio.currentPlayingSong + 1;
         }
-        // this thing. Not good.
-        // When a song is added, currentPlayingSong index will be incremented, but ↓ will not.
         else if(arg == "p" || arg == "previous" || arg == "befor" || arg == "b")
         {
             if(server.audio.currentPlayingSong == 0) return null;
-            return server.audio.currentPlayingSong - 1;
+            return server.audio.currentPlayingSong; // <- will be inserted, so p = current
         }
         else if(arg == "f" || arg == "final" || arg == "end" || arg == "e")
         {

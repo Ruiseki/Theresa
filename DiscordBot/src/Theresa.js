@@ -708,6 +708,7 @@ module.exports = class About
                 },
                 lastMusicTextchannelId: null,
                 currentPlayingSong: null,
+                nextPlayingSong: null,
                 playing:    false,
                 pause:      false,
                 loop:       false,

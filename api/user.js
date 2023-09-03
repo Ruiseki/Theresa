@@ -1,20 +1,23 @@
-export default class User
+import { app, usersCache } from "./main.js";
+import { isUserExist  } from "./tools.js";
+
+export async function init()
 {
-    static init(app)
+    app.post('/login', async (req, res) => { login(req, res) });
+}
+
+async function login(req, res)
+{
+    let index = await isUserExist(req.body.username, req.body.password);
+    if(index == -1) res.sendStatus(400);
+    else
     {
-        app.post('/login', async (req, res) => {
-            let index = await isUserExist(req.body.username, req.body.password);
-            if(index == -1) res.sendStatus(400);
-            else
+        res.status(200).json(
             {
-                res.status(200).json(
-                    {
-                        username: usersCache[index].username,
-                        password: usersCache[index].password,
-                        discordId :usersCache[index].discordId,
-                    }
-                );
+                username: usersCache[index].username,
+                password: usersCache[index].password,
+                discordId :usersCache[index].discordId,
             }
-        });
+        );
     }
 }
