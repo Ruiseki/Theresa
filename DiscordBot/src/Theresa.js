@@ -69,6 +69,7 @@ module.exports = class About
                 if(command === 'save') Tools.serverSave(servers[message.guild.id]);
                 else if(command === 'devreport') this.DevReport(message);
                 else if(command === 'rns' || command === 'restartnextsong') this.restartNextSong(servers[message.guildId]);
+                else if(command === 'arns' || command === 'abortrestartnextsong') this.abortRestartNextSong(servers[message.guildId]);
                 else if(command === 'restart' || command === 'r') this.restart(servers[message.guildId], message);
                 else if(command === 'test')
                 {
@@ -744,6 +745,12 @@ module.exports = class About
     {
         console.log('### Theresa will restart after this music ###');
         server.audio.restart = true;
+    }
+
+    static abortRestartNextSong(server)
+    {
+        console.log('### Aborting restart ###');
+        server.audio.restart = false;
     }
 
     static restart(server, message)
