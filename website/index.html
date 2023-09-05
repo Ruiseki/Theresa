@@ -109,7 +109,14 @@
 
     <section id="debug">
         <button id="debug_logout" onclick="logout()">logout</button>
+        <button id="debug_selectall" onclick="selectall()">check all</button>
     </section>
+    <script>
+        function selectall()
+        {
+            document.querySelectorAll('.musicField input').forEach(element => element.checked = !element.checked);
+        }
+    </script>
 </body>
 
 </html>
