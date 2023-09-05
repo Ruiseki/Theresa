@@ -50,7 +50,7 @@ async function updateCache()
     const [usersResults] = await mysqlConnection.query('SELECT id, username, discordId FROM user;');
     for(let i = 0; i < usersResults.length; i++)
     {
-        let getMusicsQuery = 'SELECT * FROM track WHERE owner = ?;';
+        let getMusicsQuery = 'SELECT * FROM track WHERE track.owner = ? ORDER BY fileName ASC;';
         const [tracksResults] = await mysqlConnection.execute(getMusicsQuery, [usersResults[i].id])
         usersResults[i].musics = tracksResults;
         pushUsersCache(usersResults[i]);

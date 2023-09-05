@@ -39,8 +39,8 @@ async function musicsUpload(req, res)
     console.log(`\t\tTotal Size : ${(totalSize / 1024 / 1024).toFixed(2)} Mo`);
     for(let file of req.files)
     {
-        await trackToBDD(file, req.body.username, req.body.password);
-        writeFileSync(`${storageLocation}/audio/${req.body.discordId}/${file.originalname}`, file.buffer, "");
+        if( await trackToBDD(file, req.body.username, req.body.password) )
+            writeFileSync(`${storageLocation}/audio/${req.body.discordId}/${file.originalname}`, file.buffer, "");
     }
 
     res.sendStatus(200);
@@ -91,6 +91,7 @@ async function removeTrackFromBDD(fileName, username, password)
 
 async function trackToBDD(file, username, password)
 {
+    let succes = true;
     let fileObject = fileToObject(file);
 
     if (fileObject.title)
@@ -116,8 +117,14 @@ async function trackToBDD(file, username, password)
         fileObject.artist
     ];
 
-    await mysqlConnection.execute(query, parameters);
-    addTrackToCache(username, file);
+    try {
+        await mysqlConnection.execute(query, parameters);
+        addTrackToCache(username, file);
+    } catch (error) {
+        console.error(error.message);
+        succes = false;
+    }
+    return succes;
 }
 
 function fileToObject(file)
