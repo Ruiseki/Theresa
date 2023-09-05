@@ -58,7 +58,7 @@ module.exports = class Audio
                 }
 
                 
-                if(server.audio.nextPlayingSong)
+                if(server.audio.nextPlayingSong != null)
                 {
                     server.audio.currentPlayingSong = server.audio.nextPlayingSong;
                     this.runAudioEngine(servers, server, server.global.guild);
@@ -464,11 +464,10 @@ module.exports = class Audio
                 }
             }
         }
-        
         else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
         {
             console.log('\t\tNext');
-            server.audio.nextPlayingSong = server.audio.queue[server.audio.currentPlayingSong+1] ? server.audio.currentPlayingSong + 1 : null;
+            server.audio.nextPlayingSong = server.audio.queue[server.audio.currentPlayingSong+1] ? server.audio.currentPlayingSong + 1 : server.audio.loopQueue ? 0 : null;
             server.audio.Engine.stop();
         }
         else if(args[0] == 'previous' || args[0] == '<')
@@ -510,14 +509,16 @@ module.exports = class Audio
                 if(server.audio.loop)
                 {
                     server.audio.loop = false;
+                    this.computeNextPlayingSong(server);
                     Tools.simpleEmbed(server, channel, '**Loop Off ➡**', undefined, false, true, 1000);
                 }
                 else
                 {
                     server.audio.loop = true;
+                    this.computeNextPlayingSong(server);
                     Tools.simpleEmbed(server, channel, '**Loop On 🔂**', undefined, false, true, 1000);
                 }
-
+                
                 this.queueDisplay(servers, server, 16, true);
             }
         }
@@ -530,17 +531,18 @@ module.exports = class Audio
             }
             else
             {
-                if(server.audio.queueLoop)
+                if(server.audio.loopQueue)
                 {
-                    server.audio.queueLoop = false;
+                    server.audio.loopQueue = false;
                     Tools.simpleEmbed(server, channel, '**Loop queue Off ➡**', undefined, false, true, 1000);
                 }
                 else
                 {
-                    server.audio.queueLoop = true;
+                    server.audio.loopQueue = true;
                     Tools.simpleEmbed(server, channel, '**Loop queue On 🔁**', undefined, false, true, 1000);
                 }
 
+                this.computeNextPlayingSong(server);
                 this.queueDisplay(servers, server, 16, true);
             }
         }
@@ -865,14 +867,14 @@ module.exports = class Audio
 
         text = '*Options :* ';
 
-        if(!server.audio.loop && !server.audio.queueLoop && !server.audio.restart)
+        if(!server.audio.loop && !server.audio.loopQueue && !server.audio.restart)
         {
             text += '**None**';
         }
         else
         {
             if(server.audio.loop) text += '🔂';
-            if(server.audio.queueLoop) text += '🔁';
+            if(server.audio.loopQueue) text += '🔁';
             if(server.audio.restart) text += '⏏';
         }
         text += '\n';

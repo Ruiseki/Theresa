@@ -713,7 +713,7 @@ module.exports = class About
                 playing:    false,
                 pause:      false,
                 loop:       false,
-                queueLoop:  false,
+                loopQueue:  false,
                 leave:      false,
                 arret:      false,
                 restart:    false,
