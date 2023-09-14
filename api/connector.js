@@ -35,6 +35,10 @@ export async function connect()
     app.use(bodyParser.json());
     app.use(cors(corsOptions));
 
+    app.get('/check', (req, res) => {
+        res.sendStatus(200);
+    });
+
     userInit();
     musicInit();
 
