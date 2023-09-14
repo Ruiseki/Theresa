@@ -387,7 +387,7 @@ export async function runAudioEngine(server, guild)
 
     serverSave(servers[guild.id]);
 
-    console.log(`------- 🎵 ${server.global.guild.name} 🎵 -----`);
+    console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----`);
     console.log(`\tAudio Engine loaded\n\tSong : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
 }
 
