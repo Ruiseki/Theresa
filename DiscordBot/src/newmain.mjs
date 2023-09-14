@@ -1,5 +1,6 @@
-import { client, initSlashCommand, joinVoice, leaveVoice, load, prefix, serverSave, servers, startup, cmd as theresaCmd, trackingVoice } from './theresa.mjs';
+import { client, initSlashCommand, joinVoice, leaveVoice, load, prefix, serverSave, servers, serversBackup, startup, storageLocation, cmd as theresaCmd, trackingVoice } from './theresa.mjs';
 import { cmd as audioCmd, audioMaster, engineMgr, queueDisplay, queueMgr } from './audio.mjs';
+import { readFileSync, writeFileSync } from 'fs';
 
 startup();
 
@@ -7,6 +8,7 @@ client.once('ready', () => {
     initSlashCommand
     load();
     console.log('----- Theresa is online -----');
+    setInterval(makeServerBackup, 60000);
 });
 
 client.on('messageCreate', (message) => {
@@ -227,3 +229,14 @@ client.on('interactionCreate', i => {
         i.deferUpdate();
     }
 });
+
+function makeServerBackup()
+{
+    if(Date.now() >= Number.parseInt(readFileSync(`${storageLocation}/discordServersBackup/lastBackup.ttime`, 'utf-8')) + 1000 * 60 * 60) // 1h
+    {
+        console.log('----- Saving data -----');
+        serversBackup(servers, client);
+        writeFileSync(`${storageLocation}/discordServersBackup/lastBackup.ttime`, Date.now().toString());
+        console.log('\tDone');
+    }
+}

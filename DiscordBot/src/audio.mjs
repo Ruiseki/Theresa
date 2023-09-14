@@ -32,7 +32,7 @@ export function eventsListeners(server)
     server.audio.Engine.on('stateChange', (oldState, newState) => {
         if(newState.status == 'idle')
         {
-            console.log(`######\t-> ${server.global.guild.name}\n\tAudio Engine in Idle`);
+            console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----\n\tIdling`);
             server.audio.playing = false;
             if(server.audio.restart) // restart (for ghost update)
             {
@@ -66,7 +66,7 @@ export function eventsListeners(server)
                 if(server.audio.lastQueue.messageId != null)
                 {
                     let channel = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
-                    channel.messages.fetch(server.audio.lastQueue.messageId).then(msg => msg.delete());
+                    channel.messages.fetch(server.audio.lastQueue.messageId).then(msg => msg.delete()).catch(() => console.error(`Message id ${msg.id} can't be reach`));
                     server.audio.lastQueue.messageId = null;
                     server.audio.lastQueue.channelId = null;
                 }
@@ -387,8 +387,8 @@ export async function runAudioEngine(server, guild)
 
     serverSave(servers[guild.id]);
 
-    console.log(`######\t-> ${server.global.guild.name}`);
-    console.log(`\t🎵 Audio Engine loaded\n\tSong : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
+    console.log(`------- 🎵 ${server.global.guild.name} 🎵 -----`);
+    console.log(`\tAudio Engine loaded\n\tSong : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
 }
 
 export function engineMgr(channel, args)
@@ -436,7 +436,8 @@ export function engineMgr(channel, args)
             {
                 let lastQueueChannel = channel.guild.channels.cache.get(server.audio.lastQueue.channelId);
                 lastQueueChannel.messages.fetch(server.audio.lastQueue.messageId)
-                .then(m => m.delete());
+                .then(m => m.delete())
+                .catch(() => console.error(`Message id ${msg.id} can't be reach`));
             }
             error(server, channel, 3, `Audio Engine isn't playing.`);
         }
@@ -591,7 +592,8 @@ export async function queueMgr(channel, args)
                 m.delete();
                 server.audio.lastQueue.messageId = null;
                 server.audio.lastQueue.channelId = null;
-            });
+            })
+            .catch(() => console.error(`Message id ${msg.id} can't be reach`));
         }
     }
     else if(args[0] == 'delete' || args[0] == 'd' || args[0] == 'remove' || args[0] == 'r')
@@ -764,7 +766,7 @@ function miscellaneous(message, args)
                             }
                             catch(err)
                             {
-                                console.err(`Message id ${msg.id} can't be reach`)
+                                console.err(`Message id ${msg.id} can't be reach`);
                             }
                             serverSave(server);
                             break;
@@ -1010,7 +1012,8 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
                 {
                     let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
                     channelOfTheLastQueue.messages.fetch(server.audio.lastQueue.messageId)
-                    .then(queueMessage => queueMessage.delete());
+                    .then(queueMessage => queueMessage.delete())
+                    .catch(() => console.error(`Message id ${msg.id} can't be reach`));
                 }
                 
                 // --------------------------------------------------------------------------------
@@ -1204,7 +1207,7 @@ export function clearMessagesTemps(server, guild)
                 }
                 catch(err)
                 {
-                    console.log(err);
+                    console.error(`Message id ${msg.id} can't be reach`);
                     console.log(' -> in "clearChannel"');
                 }
             });
@@ -1234,7 +1237,14 @@ function error(server, channel, type, text)
         server.audio.lastQueue.channelId = msg.channel.id;
         serverSave(server);
         setTimeout(function(){
-            if(server.audio.lastQueue.messageId != null) msg.delete();
+            if(server.audio.lastQueue.messageId != null)
+            {
+                try {
+                    msg.delete();
+                } catch (error) {
+                    console.error(`Message id ${msg.id} can't be reach`);
+                }
+            }
         }, 5000);
     });
     server.audio.lastQueue.channelId=undefined;

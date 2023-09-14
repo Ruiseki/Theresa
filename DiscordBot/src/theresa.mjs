@@ -125,7 +125,7 @@ export async function startup()
     let result = checkStorage();
     if(result.edited)
     {
-        console.log('\t\tMissing folders has been detected and successfully created :');
+        console.log('\t\tMissing folders/files has been detected and successfully created :');
         result.editedFolder.forEach(detail => console.log(`\t\t\t${detail}`));
     }
     console.log('\t\t✅ Structure check completed');
@@ -157,7 +157,7 @@ export function load()
     console.log('----- Loading -----');
     client.guilds.cache.each(guild => {
         console.log(`\t${guild.name}`);
-        objectGenerator(guild.id);
+        servers[guild.id] = objectGenerator(guild.id);
         if( !FS.existsSync(`${storageLocation}/discordServers/${guild.id}/${guild.id}.json`) )
             FS.writeFileSync(`${storageLocation}/discordServers/${guild.id}/${guild.id}.json`, '');
         else servers[guild.id] = JSON.parse(FS.readFileSync(`${storageLocation}/discordServers/${guild.id}/${guild.id}.json`, "utf-8"));
@@ -386,6 +386,13 @@ function checkStorage()
             info.edited = true;
             info.editedFolder.push(`Server ${guildId} data folder`);
         }
+        if (!FS.existsSync(`${storageLocation}/discordServers/${guildId}/${guildId}.json`))
+        {
+            FS.writeFileSync( `${storageLocation}/discordServers/${guildId}/${guildId}.json`, JSON.stringify(objectGenerator(guildId)) );
+            info.edited = true;
+            info.editedFolder.push(`Server ${guildId} data file`);
+        }
+
         if (!existingBackupFolder.find(element => element == guildId))
         {
             FS.mkdirSync(`${storageLocation}/discordServersBackup/${guildId}`);
@@ -394,6 +401,13 @@ function checkStorage()
         }
     });
 
+    if (!FS.existsSync(`${storageLocation}/discordServersBackup/lastBackup.ttime`))
+    {
+        FS.writeFileSync(`${storageLocation}/discordServersBackup/lastBackup.ttime`, '0');
+        info.edited = true;
+        info.editedFolder.push(`Server backup time file`);
+    }
+    
     return info;
 }
 
@@ -485,8 +499,7 @@ function resetServer(guild)
         FS.rmSync(`${storageLocation}/discordServers/${guild.id}/${guild.id}.json`);
     }
 
-    servers[guild.id] = undefined;
-    objectGenerator(guild.id);
+    servers[guild.id] = objectGenerator(guild.id);
 
     serverSave(servers[guild.id]);
 }
@@ -1029,8 +1042,7 @@ function restart()
 
 function objectGenerator(guildId)
 {
-    servers[guildId] =
-    {
+    return {
         global: {
             guild: null,
             guildId,
@@ -1110,8 +1122,7 @@ function resetAllGuilds()
         if(FS.existsSync(`../storage/discordServers/${guild.id}/${guild.id}.json`))
         {
             FS.rmSync(`../storage/discordServers/${guild.id}/${guild.id}.json`);
-            servers[guild.id] = undefined;
-            objectGenerator(servers, guild.id);
+            servers[guild.id] = objectGenerator(guild.id);
             serverSave(servers[guild.id]);
         }
     });
