@@ -1,189 +1,229 @@
-import dotenv from 'dotenv';
-import Discord from 'discord.js';
-import FS from 'fs';
-import DNS from 'dns';
-import commandsFile from './json/commands.json' assert { type : 'json'};
-import packageInfo from '../package.json' assert { type : 'json'};
+import { client, initSlashCommand, joinVoice, leaveVoice, load, prefix, serverSave, servers, startup, cmd as theresaCmd, trackingVoice } from './theresa.mjs';
+import { cmd as audioCmd, audioMaster, engineMgr, queueDisplay, queueMgr } from './audio.mjs';
 
-dotenv.config();
-export var client;
-export var servers = [];
-export var prefix = 't!';
-export var isConnected = false, previousNetworkState = null, login = false;
-export var button = {
-    audio: {
-        previousBtn :   new Discord.ButtonBuilder().setCustomId('previousBtn').setLabel('⏮').setStyle('Secondary'),
-        nextBtn :       new Discord.ButtonBuilder().setCustomId('nextBtn').setLabel('⏭').setStyle('Secondary'),
-        pausePlayBtn :  new Discord.ButtonBuilder().setCustomId('pausePlayBtn').setLabel('⏯').setStyle('Secondary'),
-        stopBtn :       new Discord.ButtonBuilder().setCustomId('stopBtn').setLabel('⏹').setStyle('Secondary'),
-        viewMore :      new Discord.ButtonBuilder().setCustomId('viewMore').setLabel('🔎').setStyle('Secondary'),
-        loop :          new Discord.ButtonBuilder().setCustomId('loop').setLabel('🔂').setStyle('Secondary'),
-        loopQueue :     new Discord.ButtonBuilder().setCustomId('loopQueue').setLabel('🔁').setStyle('Secondary'),
-        replay :        new Discord.ButtonBuilder().setCustomId('replay').setLabel('⏪').setStyle('Secondary')
-    },
-    help: {
-        main :          new Discord.ButtonBuilder().setCustomId('main').setLabel('Main Page').setStyle('Primary'),
-        audio :         new Discord.ButtonBuilder().setCustomId('audio').setLabel('Audio 🎵').setStyle('Primary'),
-        queueManager :  new Discord.ButtonBuilder().setCustomId('queueManager').setLabel('Queue Manager 🎼').setStyle('Primary'),
-        debug :         new Discord.ButtonBuilder().setCustomId('debug').setLabel('reload').setStyle('Danger')
-    },
-    voiceTracking: {
-        accept :        new Discord.ButtonBuilder().setCustomId('accept').setLabel('Accept').setStyle('Success'),
-        refuse :        new Discord.ButtonBuilder().setCustomId('refuse').setLabel('Refuse').setStyle('Danger'),
-    }
-};
-export var commands = commandsFile;
-export var storageLocation = '../storage/';
+startup();
 
-init();
+client.once('ready', () => {
+    initSlashCommand
+    load();
+    console.log('----- Theresa is online -----');
+});
 
-async function init()
-{
-    console.log('----- Waking up -----');
+client.on('messageCreate', (message) => {
+    if(message.guild == null) return; // no guild
+    if(!message.content.startsWith(prefix)) return; // no prefix
 
-    // client intents
-    client = new Discord.Client({
-        intents: [
-            Discord.GatewayIntentBits.Guilds,
-            Discord.GatewayIntentBits.GuildMembers,
-            Discord.GatewayIntentBits.GuildEmojisAndStickers,
-            Discord.GatewayIntentBits.GuildInvites,
-            Discord.GatewayIntentBits.GuildVoiceStates,
-            Discord.GatewayIntentBits.GuildPresences,
-            Discord.GatewayIntentBits.GuildMessages,
-            Discord.GatewayIntentBits.GuildMessageReactions,
-            Discord.GatewayIntentBits.DirectMessages,
-            Discord.GatewayIntentBits.DirectMessageReactions,
-            Discord.GatewayIntentBits.MessageContent
-        ]
-    });
+    servers[message.guildId].global.lastTextChannelId = message.channelId; // save the channel
+    serverSave(servers[message.guildId]);
+    
 
-    // checklist
+    /*
+     * COMMANDS DETAILS
+     *
+     * [prefix][type] [command] (args1) (args2) (argsN)
+     *
+     */
 
-    // internet access
-    console.log('\tNetwork access ...');
-    if( !await checkInternetConnection() )
+
+    const args = message.content.slice(prefix.length).split(/ +/);
+    let type = args.shift().toLocaleLowerCase();
+    let command = args[0] != undefined ? args.shift() : null;
+
+    switch(type)
     {
-        console.log('\t\t❌ Connection test failed. Retrying in 10 sec');
-        let connectionTest = () => {
-            return new Promise((resolve) => {
-                let loopId = setInterval(async () => {
-                    if( await checkInternetConnection() )
-                    {
-                        clearInterval(loopId);
-                        resolve(true);
-                    }
-                    else
-                        console.log('\t\t❌ Connection test failed. Retrying in 10 sec');
-                }, 10000);
+        case 'a':
+        case 'audio':
+            audioCmd(message, command, args);
+            break;
+        default:
+            theresaCmd(message, type, command, args);
+    }
+});
+
+client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a user change his state in a voice channel (join, leave, mute, unmute...)
+    
+    let theresaMember = newState.guild.members.cache.get(client.user.id);
+
+    //---------------------------------------------//
+    // Theresa will join the voice channel of his creator and leave with him if she doing nothing
+    if(
+        oldState.channel == null &&
+        newState.channel != null &&
+        newState.id == '606684737611759628' &&
+        theresaMember.voice.channel == null
+        ) joinVoice(servers[newState.guild.id], newState.member.voice.channel)
+
+    if(
+        oldState.channel != null &&
+        newState.channel == null &&
+        newState.id == '606684737611759628' &&
+        servers[newState.guild.id].audio.Engine._state.status != 'playing' &&
+        !servers[newState.guild.id].audio.queue[0] &&
+        theresaMember.voice.channel != null
+        ) leaveVoice(servers[oldState.guild.id]);
+    //---------------------------------------------//
+
+    if(newState.channel != null && newState.id == client.user.id)
+    {
+        servers[newState.guild.id].global.lastVoiceChannelId = newState.channel.id;
+        serverSave(servers[newState.guild.id]);
+    }
+
+    if(newState.channel == null && oldState.channel != null && newState.id == client.user.id)
+    {
+        servers[newState.guild.id].global.lastVoiceChannelId = null;
+        serverSave(servers[newState.guild.id]);
+    }
+
+    // voice tracking
+    if(newState.channel != null && oldState.channel != newState.channel)
+    {
+        // for each user profile...
+        servers[newState.guild.id].users.forEach(userProfile => {
+            // in each usersAndChannels object (that containt the tracked user id and all the channels for this user)
+            userProfile.voiceTracking.usersAndChannels.forEach(userAndChannel => {
+                // user found !
+                if(userAndChannel.userId == newState.id)
+                {
+                    userAndChannel.channelsId.forEach(channelId => {
+                        // channel found !
+                        if(newState.channel.id == channelId)
+                        {
+                            // searching the index of the tracked user to check if he has allowed the master user
+                            let trackedUserIndex = servers[newState.guild.id].users.findIndex(value => {
+                                if(value.userId == userAndChannel.userId) return value;
+                            });
+
+                            // checking if the tracked user have a profile
+                            if(trackedUserIndex == -1) return;
+
+                            for(let allowedUserId of servers[newState.guild.id].users[trackedUserIndex].voiceTracking.allowedUsers)
+                            {
+                                // allowed !
+                                if(allowedUserId == userProfile.userId)
+                                {
+                                    let trackedMember = newState.guild.members.cache.get(userAndChannel.userId),
+                                    masterMember = newState.guild.members.cache.get(userProfile.userId),
+                                    trackedChannel = newState.guild.channels.cache.get(channelId);
+
+                                    if(masterMember.voice.channel != undefined && masterMember.voice.channel.id == trackedMember.voice.channel.id) return; // final check, dont DM if the tracked user is in the same channel as the master user
+
+                                    masterMember.user.send({
+                                        embeds:[{
+                                            color: '000000',
+                                            title: '🔊🔎 Voice tracking notification 🔔',
+                                            description: `**${trackedMember.user.username}** is in a voice channel !\n\nChannel : **${trackedChannel.name}**\nServer : **${trackedChannel.guild.name}**`,
+                                            thumbnail:{
+                                                url: newState.guild.iconURL()
+                                            }
+                                        }]
+                                    });
+
+                                    console.log(`######\tVoice Tracking\n\t\tDirect message send to ${masterMember.user.username} (${trackedMember.user.username} in ${trackedChannel.name} in ${trackedChannel.guild.name})`);
+                                }
+                            }
+
+                        }
+                    });
+                }
             });
-        }
-
-        await connectionTest();
-    }
-    console.log('\t\t✅ Connection test passed');
-
-    // login
-    console.log('\tLogin ...');
-    await client.login(process.env.key)
-    .then(() => console.log('\t\t✅ Login successful'));
-
-    // storage access and structure
-    console.log('\tStructure...');
-    let result = checkStorage();
-    if(result.edited)
-    {
-        console.log('\t\tMissing folders has been detected and successfully created :');
-        result.editedFolder.forEach(detail => console.log(`\t\t\t${detail}`));
-    }
-    console.log('\t\t✅Structure check completed');
-
-    // status
-    // bot status variables
-    let changeStatus = true; // use to cycle the status of the bot. Usually on true
-    let selectedActivity = 0;
-    let clientActivity = [
-        `/play [title]`,
-        `Version : ${packageInfo.version}`
-    ];
-    console.log('\tBot status...');
-    setInterval(() => {
-        if(changeStatus)
-        {
-            selectedActivity = selectedActivity % clientActivity.length;
-            client.user.setActivity(clientActivity[selectedActivity]);
-            selectedActivity++;
-        }
-    }, 10000);
-    console.log('\t\t✅ Bot status set');
-
-    console.log('----- Initialisation completed -----');
-}
-
-function checkInternetConnection()
-{
-    return new Promise((resolve, error) => {
-        DNS.resolve('www.google.com', err => {
-            if(err) // no internet (or no google, but less likely to happen)
-                error(err);
-            else // internet available
-                resolve(true);
-        });
-    });
-}
-
-function checkStorage()
-{
-    let info = {
-        edited : false,
-        editedFolder : []
-    }
-    let clientServersIdList = [];
-    client.guilds.cache.each(guild => clientServersIdList.push(guild.id));
-
-    if( !FS.existsSync(`${storageLocation}/discordServers`) )
-    {
-        FS.mkdirSync(`${storageLocation}/discordServers`);
-        info.edited = true;
-        info.editedFolder.push('Servers data');
-        clientServersIdList.forEach(guildId => {
-            FS.mkdirSync(`${storageLocation}/discordServers/${guildId}`);
-            info.editedFolder.push(`Server ${guildId} data folder`);
         });
     }
-    if( !FS.existsSync(`${storageLocation}/discordServersBackup`) )
-    {
-        FS.mkdirSync(`${storageLocation}/discordServersBackup`);
-        info.edited = true;
-        info.editedFolder.push('Servers backup');
-        clientServersIdList.forEach(guildId => {
-            FS.mkdirSync(`${storageLocation}/discordServersBackup/${guildId}`);
-            info.editedFolder.push(`Server ${guildId} backup folder`);
-        });
-    }
-    if( !FS.existsSync(`${storageLocation}/audio`) )
-    {
-        FS.mkdirSync(`${storageLocation}/audio`);
-        info.edited = true;
-        info.editedFolder.push('Audio folder');
-    }
+});
 
-    let existingFolder = FS.readdirSync(`${storageLocation}/discordServers`);
-    let existingBackupFolder = FS.readdirSync(`${storageLocation}/discordServersBackup`);
-    clientServersIdList.forEach(guildId => {
-        if (!existingFolder.find(element => element == guildId))
-        {
-            FS.mkdirSync(`${storageLocation}/discordServers/${guildId}`);
-            info.edited = true;
-            info.editedFolder.push(`Server ${guildId} data folder`);
-        }
-        if (!existingBackupFolder.find(element => element == guildId))
-        {
-            FS.mkdirSync(`${storageLocation}/discordServersBackup/${guildId}`);
-            info.edited = true;
-            info.editedFolder.push(`Server ${guildId} backup folder`);
-        }
-    });
+client.on('interactionCreate', i => {
 
-    return info;
-}
+    // ----- Slash Command -----
+    if(i.isCommand())
+    {
+        if(i.options.data[1]) i.options.data[1].value = `>>${i.options.data[1]?.value}`;
+
+        let array = [];
+        switch(i.commandName)
+        {
+            case 'play' :
+                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                audioMaster(i.member, i.channel, i.options.data[0].value, [i.options.data[1]?.value]);
+                break;
+            
+            case 'go' :
+                engineMgr(i.channel, ['go', i.options.data[0]?.value]);
+                break;
+            
+            case 'stop' :
+                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                queueMgr(i.channel, ['clear']);
+                break;
+
+            case 'queue' :
+                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                array.push(i.options.data[0].name);
+
+                if(array[0] == 'delete') i.options.data[0].options[0].value.split(/ +/).forEach(element => array.push(element));
+                else if(array[0] == 'display') array.pop();
+
+                queueMgr(i.channel, array);
+                break;
+
+            case 'voicetracking' :
+                array.push(i.options.data[0].name)
+                
+                if(array[0] == 'add')
+                {
+                    array.push(i.options.data[0].options[0].value);
+                    array.push(i.options.data[0].options[1].value);
+                }
+                if(array[0] == 'remove')
+                {
+                    array.push(i.options.data[0].options[0].value);
+                    if(i.options.data[0].options[1]) array.push(i.options.data[0].options[1].value);
+                    else array.push(undefined);
+                }
+
+                trackingVoice(servers[i.guildId], i.channel, i.user, array);
+                break;
+        }
+        
+        i.reply(
+            {
+                embeds : [
+                    {
+                        color: '000000',
+                        description: '**Done ✅**',
+                    }
+                ],
+                ephemeral : true
+            }
+        )
+    }
+    // -------------------------
+    
+    
+    // --------- Button --------
+    if( i.isButton() )
+    {
+        // ----- Audio -----
+        if(i.customId == 'nextBtn')             engineMgr(i.message.channel, ['skip']);
+        else if(i.customId == 'previousBtn')    engineMgr(i.message.channel, ['previous']);
+        else if(i.customId == 'stopBtn')        queueMgr(i.message.channel, ['clear']);
+        else if(i.customId == 'pausePlayBtn')
+        {
+            if(servers[i.guild.id].audio.Engine._state.status == 'playing') engineMgr(i.message.channel, ['pause']);
+            else engineMgr(i.message.channel, ['play']);
+            queueDisplay(servers[i.guildId], 16, true);
+        }
+        else if(i.customId == 'viewMore')   queueDisplay(servers[i.guildId], 40, false);
+        else if(i.customId == 'loop')       engineMgr(i.message.channel, ['loop']);
+        else if(i.customId == 'loopQueue')  engineMgr(i.message.channel, ['loopqueue']);
+        else if(i.customId == 'replay')     engineMgr(i.message.channel, ['replay']);
+        // -----------------
+    
+        // ----- Help ------
+        // else if(i.customId == 'main') Help.help(servers, i.message);
+        // else if(i.customId == 'audio') Help.audioMain(servers, i.message);
+        // else if(i.customId == 'queueManager') Help.audioQueueManager(servers, i.message);
+        // -----------------
+    
+        i.deferUpdate();
+    }
+});
