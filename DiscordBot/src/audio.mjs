@@ -135,7 +135,7 @@ export async function audioMaster(authorMember, channel, command, args)
     else if(queuePos == undefined) queuePos = server.audio.queue.length;
 
     // Adding music
-    let array = getPathOfFile(music, [`${storageLocation}/audio/${authorMember.user.id}/`]);
+    let array = existsSync(`${storageLocation}/audio/${authorMember.user.id}/`) ? getPathOfFile(music, [`${storageLocation}/audio/${authorMember.user.id}/`]) : undefined;
 
     if(array == undefined) // YouTube
     {
@@ -1013,7 +1013,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
                     let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
                     channelOfTheLastQueue.messages.fetch(server.audio.lastQueue.messageId)
                     .then(queueMessage => queueMessage.delete())
-                    .catch(() => console.error(`Message id ${msg.id} can't be reach`));
+                    .catch(() => console.error(`Message id ${server.audio.lastQueue.messageId} can't be reach`));
                 }
                 
                 // --------------------------------------------------------------------------------
