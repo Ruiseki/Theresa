@@ -32,7 +32,6 @@ export function eventsListeners(server)
     server.audio.Engine.on('stateChange', (oldState, newState) => {
         if(newState.status == 'idle')
         {
-            console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----\n\tIdling`);
             server.audio.playing = false;
             if(server.audio.restart) // restart (for ghost update)
             {
@@ -44,6 +43,7 @@ export function eventsListeners(server)
             }
             else if(server.audio.arret)
             {
+                console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----\n\tIdling`);
                 server.audio.queue.splice(0, server.audio.queue.length)
                 server.audio.currentPlayingSong = null;
                 server.audio.nextPlayingSong = null;
@@ -62,6 +62,7 @@ export function eventsListeners(server)
             }
             else
             {
+                console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----\n\tIdling`);
                 server.audio.currentPlayingSong = null;
                 if(server.audio.lastQueue.messageId != null)
                 {
@@ -71,7 +72,6 @@ export function eventsListeners(server)
                     server.audio.lastQueue.channelId = null;
                 }
                 server.audio.queue.splice(0, server.audio.queue.length);
-                console.log(`\tAudio Engine Standby`);
             }
         }
 

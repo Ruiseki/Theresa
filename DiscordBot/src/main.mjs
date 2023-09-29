@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from 'fs';
 startup();
 
 client.once('ready', () => {
-    initSlashCommand
+    initSlashCommand();
     load();
     console.log('----- Theresa is online -----');
     setInterval(makeServerBackup, 60000);

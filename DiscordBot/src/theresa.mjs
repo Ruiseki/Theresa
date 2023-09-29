@@ -37,7 +37,6 @@ export var button = {
         refuse :        new Discord.ButtonBuilder().setCustomId('refuse').setLabel('Refuse').setStyle('Danger'),
     }
 };
-export var commands = commandsFile;
 export var storageLocation = '../storage';
 
 // client intents
@@ -1138,12 +1137,12 @@ function online()
     client.user.setStatus('online');
 }
 
-export async function initSlashCommand(token)
+export async function initSlashCommand()
 {
     const rest = new REST({ version : '10'}).setToken(process.env.key);
     
     await rest.put(
-        Discord.Routes.applicationCommands(servers[0].client.user.id),
-        { body: servers[0].commands }
+        Discord.Routes.applicationCommands(client.user.id),
+        { body: commandsFile }
     );
 }
