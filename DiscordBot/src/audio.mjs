@@ -43,7 +43,7 @@ export function eventsListeners(server)
             }
             else if(server.audio.arret)
             {
-                console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----\n\tIdling`);
+                console.log('\tIdling');
                 server.audio.queue.splice(0, server.audio.queue.length)
                 server.audio.currentPlayingSong = null;
                 server.audio.nextPlayingSong = null;
@@ -62,7 +62,7 @@ export function eventsListeners(server)
             }
             else
             {
-                console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----\n\tIdling`);
+                console.log('\tIdling');
                 server.audio.currentPlayingSong = null;
                 if(server.audio.lastQueue.messageId != null)
                 {
@@ -354,14 +354,24 @@ export async function audioMaster(authorMember, channel, command, args)
 export async function runAudioEngine(server, guild)
 {
     server.global.voiceConnection.subscribe(server.audio.Engine);
-    queueDisplay(server, 16, true);
     computeNextPlayingSong(server);
     
-    let voiceChannel = guild.channels.cache.get(server.global.lastVoiceChannelId)
+    let voiceChannel = guild.channels.cache.get(server.global.lastVoiceChannelId);
     joinVoice(server, voiceChannel);
     
     if(server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // local file
     {
+        // check if the file exist
+        if(!existsSync( server.audio.queue[server.audio.currentPlayingSong].url.substring(7) ))
+        {
+            console.log(`❗ File ${server.audio.queue[server.audio.currentPlayingSong].url.substring(7)} doesn't exist anymore. Deleting and skipping`);
+            let text = `Unable to read the track ${server.audio.queue[server.audio.currentPlayingSong].title}`;
+            let textChannel = guild.channels.cache.get(server.audio.lastMusicTextchannelId);
+            simpleEmbed(server, textChannel, text, undefined, false, true, 10000);
+            server.audio.queue.splice(server.audio.currentPlayingSong, 1);
+            runAudioEngine(server, guild);
+        }
+
         server.audio.resource = createAudioResource(
             createReadStream(
                 server.audio.queue[server.audio.currentPlayingSong].url.substring(7)
@@ -385,9 +395,9 @@ export async function runAudioEngine(server, guild)
         server.audio.Engine.play(server.audio.resource);
     }
 
+    queueDisplay(server, 16, true);
     serverSave(servers[guild.id]);
 
-    console.log(`----- 🎵 ${server.global.guild.name} 🎵 -----`);
     console.log(`\tAudio Engine loaded\n\tSong : ${server.audio.queue[server.audio.currentPlayingSong].title}`);
 }
 
@@ -464,13 +474,13 @@ export function engineMgr(channel, args)
     }
     else if(args[0] == 'skip' || args[0] == 's' || args[0] == '>')
     {
-        console.log('\t\tNext');
+        console.log('\tNext');
         server.audio.nextPlayingSong = server.audio.queue[server.audio.currentPlayingSong+1] ? server.audio.currentPlayingSong + 1 : server.audio.loopQueue ? 0 : null;
         server.audio.Engine.stop();
     }
     else if(args[0] == 'previous' || args[0] == '<')
     {
-        console.log('\t\tPrevious');
+        console.log('\tPrevious');
         server.audio.nextPlayingSong = server.audio.currentPlayingSong - 1 >= 0 ? server.audio.currentPlayingSong - 1 : 0;
         server.audio.Engine.stop();
     }
@@ -551,7 +561,6 @@ export function engineMgr(channel, args)
 export async function queueMgr(channel, args)
 {
     let server = servers[channel.guild.id];
-    console.log(`######\t-> ${server.global.guild.name}`);
     console.log(`\tQueue Manager`);
     /*
         Command exemple :
@@ -572,7 +581,7 @@ export async function queueMgr(channel, args)
     else if(args[0] == 'clear' || args[0] == 'c')
     {
         if(!server.audio.Engine) return;
-        console.log('\t\tClear');
+        console.log('\tClear');
 
         // possible problem when engine is in pause
         if(server.audio.playing)
@@ -592,6 +601,7 @@ export async function queueMgr(channel, args)
                 m.delete();
                 server.audio.lastQueue.messageId = null;
                 server.audio.lastQueue.channelId = null;
+                serverSave();
             })
             .catch(() => console.error(`Message id ${msg.id} can't be reach`));
         }
@@ -738,7 +748,13 @@ function miscellaneous(message, args)
         else
         {
             let text = '';
-            for(let object of array) text += getNameFromPath(object,false)+'\n';
+            for(let object of array)
+            {
+                let tags = read(object);
+                text += `${getNameFromPath(object, false)}`;
+                if(tags.title != undefined) text += ` ➡️ ${tags.title}`;
+                text += '\n';
+            }
             message.channel.send({
                 embeds: [
                     {
@@ -772,13 +788,13 @@ function miscellaneous(message, args)
                             break;
                         }
                     }
-                }, 10000);
+                }, 30000);
             });
         }
     }
     else if(args[0] == 'localshuffle' || args[0] == 'ls')
     {
-        console.log('Local shuffling ...');
+        console.log('\tLocal shuffling ...');
         if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
 
         let shuffledMusic = [];
@@ -786,9 +802,9 @@ function miscellaneous(message, args)
 
         for(let path of directory)
         {
-            console.log(`Reading directory : ${path}`);
+            console.log(`\t\tReading directory : ${path}`);
             readdirSync(path).forEach(music => {
-                console.log(`\t${music}`);
+                console.log(`\t\t\t${music}`);
                 let extension = music.split('.').pop();
                 if(extension == 'mp3' || extension == 'wav' || extension == 'flac')
                 {
@@ -814,7 +830,7 @@ function miscellaneous(message, args)
             });
         }
 
-        console.log('Shuffling ...');
+        console.log('\tShuffling ...');
         // shuffling
         let indiceAlea;
         for(let i = shuffledMusic.length; i > 0; i--)
@@ -824,7 +840,7 @@ function miscellaneous(message, args)
             shuffledMusic.splice(indiceAlea, 1);
         }
 
-        console.log('Done');
+        console.log('\tDone');
         if(server.audio.Engine._state.status != 'playing') // playing or adding to the queue
             runAudioEngine(server, message.guild);
         else
@@ -1207,8 +1223,7 @@ export function clearMessagesTemps(server, guild)
                 }
                 catch(err)
                 {
-                    console.error(`Message id ${msg.id} can't be reach`);
-                    console.log(' -> in "clearChannel"');
+                    console.error(`Message id ${msg.id} can't be reach in "clearMessagesTemps"`);
                 }
             });
         });

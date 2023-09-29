@@ -1,5 +1,5 @@
 import shell from 'shelljs';
-import { writeFileSync } from 'fs';
+import { rmSync, writeFileSync } from 'fs';
 import { serverSave } from './theresa.mjs';
 
 export function reboot()
@@ -135,11 +135,10 @@ export function findChannel(server, element) // return a channel. The function a
     }
 }
 
-export function clearLogs(message)
+export function clearLogs()
 {
-    if(message.author.id !== '606684737611759628') return;
-    writeFileSync(`%USERPROFILE%/.pm2/logs/main-error.log`, '');
-    writeFileSync(`%USERPROFILE%/.pm2/logs/main-out.log`, '');
+    rmSync(`${process.env.USERPROFILE}\\.pm2\\logs\\discordBot-error.log`);
+    rmSync(`${process.env.USERPROFILE}\\.pm2\\logs\\discordBot-out.log`);
 }
 
 export function addIntoArray(element, place, array)

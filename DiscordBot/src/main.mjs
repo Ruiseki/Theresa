@@ -35,9 +35,11 @@ client.on('messageCreate', (message) => {
     {
         case 'a':
         case 'audio':
+            console.log(`----- 🎵 ${servers[message.guildId].global.guild.name} 🎵 -----`);
             audioCmd(message, command, args);
             break;
         default:
+            console.log(`----- ${servers[message.guildId].global.guild.name} -----`);
             theresaCmd(message, type, command, args);
     }
 });
@@ -140,11 +142,13 @@ client.on('interactionCreate', i => {
     {
         if(i.options.data[1]) i.options.data[1].value = `>>${i.options.data[1]?.value}`;
 
+        console.log(`----- // ${servers[i.guildId].global.guild.name} // -----`);
+
         let array = [];
         switch(i.commandName)
         {
             case 'play' :
-                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                servers[i.guild.id].audio.lastMusicTextchannelId = i.channelId;
                 audioMaster(i.member, i.channel, i.options.data[0].value, [i.options.data[1]?.value]);
                 break;
             
@@ -153,12 +157,12 @@ client.on('interactionCreate', i => {
                 break;
             
             case 'stop' :
-                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                servers[i.guildId].audio.lastMusicTextchannelId = i.channelId;
                 queueMgr(i.channel, ['clear']);
                 break;
 
             case 'queue' :
-                servers[i.guild.id].audio.lastMusicTextchannelId = i.channel.id;
+                servers[i.guildId].audio.lastMusicTextchannelId = i.channelId;
                 array.push(i.options.data[0].name);
 
                 if(array[0] == 'delete') i.options.data[0].options[0].value.split(/ +/).forEach(element => array.push(element));
@@ -204,6 +208,7 @@ client.on('interactionCreate', i => {
     // --------- Button --------
     if( i.isButton() )
     {
+        console.log(`----- [<] ${servers[i.guildId].global.guild.name} [>] -----`);
         // ----- Audio -----
         if(i.customId == 'nextBtn')             engineMgr(i.message.channel, ['skip']);
         else if(i.customId == 'previousBtn')    engineMgr(i.message.channel, ['previous']);

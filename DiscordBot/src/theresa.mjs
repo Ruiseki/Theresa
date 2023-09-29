@@ -268,7 +268,7 @@ function adminCommand(command, args, message)
                 switch(command)
                 {
                     case 'clearlogs':
-                        clearLogs(message);
+                        clearLogs();
                         break;
                     case 'devreport':
                         DevReport(message);
