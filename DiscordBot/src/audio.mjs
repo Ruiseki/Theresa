@@ -476,6 +476,8 @@ export function engineMgr(channel, args)
     {
         console.log('\tNext');
         server.audio.nextPlayingSong = server.audio.queue[server.audio.currentPlayingSong+1] ? server.audio.currentPlayingSong + 1 : server.audio.loopQueue ? 0 : null;
+        if(server.audio.Engine._state.status != 'playing' && server.audio.queue.length != 0)
+            server.audio.Engine.unpause();
         server.audio.Engine.stop();
     }
     else if(args[0] == 'previous' || args[0] == '<')
@@ -601,9 +603,9 @@ export async function queueMgr(channel, args)
                 m.delete();
                 server.audio.lastQueue.messageId = null;
                 server.audio.lastQueue.channelId = null;
-                serverSave();
+                serverSave(server);
             })
-            .catch(() => console.error(`Message id ${msg.id} can't be reach`));
+            .catch(() => console.error(`Message id ${server.audio.lastQueue.messageId} can't be reach`));
         }
     }
     else if(args[0] == 'delete' || args[0] == 'd' || args[0] == 'remove' || args[0] == 'r')
@@ -721,7 +723,7 @@ export async function queueMgr(channel, args)
 
         if(server.audio.Engine._state.status == 'playing')
         {
-            server.audio.currentPlayingSong -= 1;
+            server.audio.nextPlayingSong = server.audio.currentPlayingSong;
             server.audio.Engine.stop();
         }
         else runAudioEngine(server, guild);
@@ -794,6 +796,12 @@ function miscellaneous(message, args)
     }
     else if(args[0] == 'localshuffle' || args[0] == 'ls')
     {
+        if(!message.member.voice.channel)
+        {
+            error(server, channel, 3, "Please connect yourselft in a voice channel first");
+            return;
+        }
+
         console.log('\tLocal shuffling ...');
         if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
 
