@@ -160,6 +160,13 @@ export async function audioMaster(authorMember, channel, command, args)
                 videoId: music.substring('https://youtu.be/'.length, 'https://youtu.be/'.length + 11)
             });
         }
+        else if(music.startsWith('https://music.youtube.com/watch?v='))
+        {
+            //https://music.youtube.com/watch?v=[videoId(11caractère)]
+            video = await yts({
+                videoId: music.substring('https://music.youtube.com/watch?v='.length, 'https://music.youtube.com/watch?v='.length + 11)
+            });
+        }
         else if(music.startsWith('https://www.youtube.com/watch?v='))
         {
             //https://www.youtube.com/watch?v=[videoId(11caractère)]&list=[playlistId(34caractère)]&index=[indexdelavideo]
