@@ -1068,7 +1068,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
                         server.audio.lastQueue.messageId = msg.id;
                         server.audio.lastQueue.channelId = msg.channel.id;
                         serverSave(server);
-                        setTimeout(function(){Audio.queueDisplay(server, 16, true)}, 120000);
+                        setTimeout(function(){queueDisplay(server, 16, true)}, 120000);
                     });
                     serverSave(server);
                 }
@@ -1095,7 +1095,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
                 server.audio.lastQueue.messageId = msg.id;
                 server.audio.lastQueue.channelId = msg.channel.id;
                 serverSave(server);
-                setTimeout(() => {Audio.queueDisplay(server, 16, true)}, 120000);
+                setTimeout(() => {queueDisplay(server, 16, true)}, 120000);
             });
             serverSave(server);
         }
