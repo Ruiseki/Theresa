@@ -324,10 +324,10 @@ function mainCommandMgr(command, args, message)
             break;
         case 'tv':
         case 'trackvoice':
-            trackingVoice(server, message.channel, message.author, args);
+            trackingVoice(servers[message.guildId], message.channel, message.author, args);
             break;
         case 'cleardm':
-            clearDM(server, message);
+            clearDM(servers[message.guildId], message);
             break;
         default:
             simpleEmbed(servers[message.guildId],message.channel,'**❌ Unknown command**',undefined,false,true,5000);

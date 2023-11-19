@@ -179,7 +179,7 @@ client.on('interactionCreate', i => {
                     array.push(i.options.data[0].options[0].value);
                     array.push(i.options.data[0].options[1].value);
                 }
-                if(array[0] == 'remove')
+                if(array[0] == 'remove' || array[0] == 'revoke')
                 {
                     array.push(i.options.data[0].options[0].value);
                     if(i.options.data[0].options[1]) array.push(i.options.data[0].options[1].value);
