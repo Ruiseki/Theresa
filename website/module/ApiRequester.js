@@ -1,15 +1,10 @@
-var host, port;
+import { host, port } from "../main.js";
+
 var activeUser = null;
 var musics = [];
 
 export default class ApiRequester
 {
-    static init(h, p)
-    {
-        host = h;
-        port = p;
-    }
-
     static async login(username, password)
     {
         await fetch(`${host}:${port}/login`, {

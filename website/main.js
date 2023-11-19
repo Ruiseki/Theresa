@@ -1,5 +1,5 @@
-var host = 'http://localhost',
-    port = '42847';
+export var  host = 'http://localhost',
+            port = '42847';
 
 import MusicFolder from './module/musicFolder.js';
 import LoginRegister from './module/LoginRegister.js';
@@ -8,7 +8,6 @@ import ApiRequester from './module/ApiRequester.js';
 
 // ------------------------------------------------------------------------ //
 
-ApiRequester.init(host, port);
 ApiRequester.setActiveUser( JSON.parse(localStorage.getItem('lastLogin')) );
 
 document.querySelector('#addMusicInput').addEventListener('change', MusicFolder.fileLoaded);

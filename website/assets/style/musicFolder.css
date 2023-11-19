@@ -115,15 +115,15 @@
     margin: 0px;
     width: 150px;
     left: calc(50% - 150px/2);
-    top: 120%;
+    top: 131%;
     font-size: 25px;
 }
 
 #uploadTrackButton {
     position: absolute;
     margin: 0px;
-    width: 150px;
-    left: calc(50% - 150px/2);
-    top: 131%;
-    font-size: 25px;
+    width: 200px;
+    left: calc(50% - 200px/2);
+    top: 115%;
+    font-size: 30px;
 }

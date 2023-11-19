@@ -22,12 +22,16 @@ export default class MusicFolder
         document.querySelectorAll('#musicList li').forEach(async element => {
             if(element.querySelector('input').checked)
             {
+                let title = element.querySelector('.musicTitle').innerHTML;
+                let artist = element.querySelector('.musicArtist').innerHTML;
+                title = title.replace(/&amp;/g, '&');
+                artist = artist.replace(/&amp;/g, '&');
+
+                artist = artist == "--unknown--" ? null : artist;
+
                 for(let file of musics)
                 {
-                    let elementTransform = element.querySelector('p').innerHTML ;
-                    elementTransform = elementTransform.replace(/&amp;/g, '&');
-
-                    if(file.title == elementTransform || file.fileNameNoExt == elementTransform)
+                    if((file.title == title || file.fileNameNoExt == title) && file.artist == artist)
                     {
                         checkedMusics.push(file.fileName);
                         break;
@@ -79,6 +83,8 @@ export default class MusicFolder
         await ApiRequester.sendFile('/musics/upload', document.querySelector('#addMusicInput').files);
         await MusicFolder.update();
         document.querySelector('#loadedFileDescription').innerHTML = 'Waiting for file(s)...';
+        document.querySelector('#loadedFileDescription').style.marginBottom = '';
+        document.querySelector('#loadedFileSize').style.display = "none";
         MusicFolder.addFileHide();
     }
 
