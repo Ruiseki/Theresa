@@ -14,9 +14,9 @@ export const app = Express();
 export const upload = multer();
 export const corsOptions = {
     origin : [
-        'http://localhost:5500',
         'http://127.0.0.1:5500',
-        'http://192.168.1.40:5500',
+        'http://127.0.0.1',
+        'http://localhost:5500',
         'http://localhost'
     ],
     optionsSuccessStatus : 200,
