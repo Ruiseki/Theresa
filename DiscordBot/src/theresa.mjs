@@ -135,6 +135,7 @@ export async function startup()
     let selectedActivity = 0;
     let clientActivity = [
         `/play [title]`,
+        `/voicetracking`,
         `Version : ${packageInfo.version}`
     ];
     console.log('\tBot status...');
