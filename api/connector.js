@@ -12,7 +12,7 @@ export async function connect()
         console.log("\tConnection to the database ...");
         setMysqlConn(await createConnection({
             host: process.env.host,
-            user: process.env.user,
+            user: process.env.dbuser,
             password: process.env.password,
             database: process.env.database
         }));
