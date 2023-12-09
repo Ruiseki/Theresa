@@ -1007,7 +1007,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
         let tags = read(server.audio.queue[server.audio.currentPlayingSong].url.substring(7));
 
         if(tags.image != undefined) messageOption.files[0] = tags.image.imageBuffer;
-        else messageOption.files[0] = readFileSync('./audio/noThumbnail.png');
+        else messageOption.files[0] = readFileSync(`${storageLocation}/ressource/image/noThumbnail.png`);
     }
     else messageOption.embeds[0].thumbnail.url = server.audio.queue[server.audio.currentPlayingSong].thumbnail; // YouTube
 
