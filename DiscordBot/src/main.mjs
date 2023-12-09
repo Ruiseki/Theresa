@@ -101,6 +101,9 @@ client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a us
                             // checking if the tracked user have a profile
                             if(trackedUserIndex == -1) return;
 
+                            // cheking if the tracked user have enabled the service
+                            if(!servers[newState.guild.id].users[trackedUserIndex].voiceTracking.isActivated) return;
+
                             for(let allowedUserId of servers[newState.guild.id].users[trackedUserIndex].voiceTracking.allowedUsers)
                             {
                                 // allowed !
@@ -110,7 +113,7 @@ client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a us
                                     masterMember = newState.guild.members.cache.get(userProfile.userId),
                                     trackedChannel = newState.guild.channels.cache.get(channelId);
 
-                                    if(masterMember.voice.channel != undefined && masterMember.voice.channel.id == trackedMember.voice.channel.id) return; // final check, dont DM if the tracked user is in the same channel as the master user
+                                    if(masterMember.voice.channel && masterMember.voice.channel.id == trackedMember.voice.channel.id) return; // final check, dont DM if the tracked user is in the same channel as the master user
 
                                     masterMember.user.send({
                                         embeds:[{
