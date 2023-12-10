@@ -42,8 +42,10 @@ export async function connect()
     userInit();
     musicInit();
 
+    console.log('----- Initialization completed -----');
+
     app.listen(port, () => {
-        console.log(`######\t✅ Online (port ${port})`);
+        console.log(`\tListening on port ${port}`);
     });
 }
 
