@@ -1,13 +1,16 @@
 import { app, mysqlConnection, storageLocation, upload, usersCache } from "./main.js";
-import { rmSync, writeFileSync } from "fs";
+import { rmSync, writeFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import { isUserExist } from "./tools.js";
 import NodeID3 from "node-id3";
+import Yauzl from 'yauzl';
+import resizeImage from 'resize-image-buffer';
 
 export async function init()
 {
     app.post('/musics', (req, res) => { musics(req, res) });
     app.post('/musics/upload', upload.array('musicUploader'), (req, res) => { musicsUpload(req, res) });
     app.post('/musics/remove', (req, res) => { musicsRemove(req, res) });
+    app.get('/musics/thumbnail/:discordId/:fileName/', (req, res) => { sendThumbnail(req, res) });
 }
 
 async function musics(req, res)
@@ -37,10 +40,31 @@ async function musicsUpload(req, res)
     let totalSize = 0;
     for(let file of req.files) totalSize += file.size;
     console.log(`\t\tTotal Size : ${(totalSize / 1024 / 1024).toFixed(2)} Mo`);
+
     for(let file of req.files)
     {
-        if( await trackToBDD(file, req.body.username, req.body.password) )
-            writeFileSync(`${storageLocation}/audio/${req.body.discordId}/${file.originalname}`, file.buffer, "");
+        if(file.mimetype == 'audio/mpeg' || file.mimetype == 'audio/flac')
+        {
+            if( await trackToBDD(file, req.body.username, req.body.password) )
+                writeFileSync(`${storageLocation}/audio/${req.body.discordId}/${file.originalname}`, file.buffer, "");
+        }
+        else if(file.mimetype == 'application/x-zip-compressed')
+        {
+            writeFileSync(`${storageLocation}/audio/temp/${req.body.discordId}.zip`, file.buffer, "");
+            Yauzl.open(`${storageLocation}/audio/temp/${req.body.discordId}.zip`, {lazyEntries: true}, (err, zipFile) => {
+                if (err)
+                    console.error(err);
+                else
+                {
+                    zipFile.readEntry();
+                    zipFile.on('entry', entry => {
+                        
+                    });
+                }
+            });
+
+            rmSync(`${storageLocation}/audio/temp/${req.body.discordId}.zip`);
+        }
     }
 
     res.sendStatus(200);
@@ -71,10 +95,70 @@ async function musicsRemove(req, res)
             }
         }
         rmSync(`${storageLocation}/audio/${req.body.discordId}/${file}`);
+        let imageName = file.split('.');
+        imageName[imageName.length - 1] = 'png';
+        imageName = imageName.join('.');
+        if(existsSync(`${storageLocation}/audio/${req.body.discordId}/lowThumbnail/${imageName}`))
+            rmSync(`${storageLocation}/audio/${req.body.discordId}/lowThumbnail/${imageName}`);
     }
 
     writeFileSync(`${storageLocation}/cache/users.json`, JSON.stringify(usersCache), 'utf-8');
     res.sendStatus(200);
+}
+
+async function sendThumbnail(req, res)
+{
+    req.params.fileName = req.params.fileName.replace('&amp;', '&');
+
+    let userAudioLocation = `${storageLocation}/audio/${req.params.discordId}`,
+        fileLocation = `${userAudioLocation}/${req.params.fileName}`,
+        img = undefined;
+
+    if(existsSync(fileLocation))
+    {
+        if(!existsSync(`${userAudioLocation}/lowThumbnail`))
+            mkdirSync(`${userAudioLocation}/lowThumbnail`);
+        
+        if(req.query.res)
+        {
+            if(req.query.res == 'low')
+            {
+                let imageName = req.params.fileName.split('.');
+                imageName[imageName.length - 1] = 'png';
+                imageName = imageName.join('.');
+
+                if(existsSync(`${userAudioLocation}/lowThumbnail/${imageName}`))
+                    img = readFileSync(`${userAudioLocation}/lowThumbnail/${imageName}`);
+                else
+                {
+                    let tags = NodeID3.read(fileLocation);
+                    if(tags.image)
+                    {
+                        img = await resizeImage(tags.image.imageBuffer, {width: 100, height: 100});
+                        writeFileSync(`${userAudioLocation}/lowThumbnail/${imageName}`, img);
+                    }
+                    else img = readFileSync(`${storageLocation}/ressource/image/noThumbnail.png`);
+                }
+            }
+            else if(req.query.res == 'medium')
+                img = await resizeImage(img, {width: 300, height: 300});
+        }
+        else
+        {
+            let tags = NodeID3.read(fileLocation);
+            img = tags.image.imageBuffer;
+        }
+    }
+    else img = readFileSync(`${storageLocation}/ressource/image/noThumbnail.png`);
+
+    if(img)
+    {
+        // let tempFilePath = `${storageLocation}/audio/temp/${req.params.discordId}.png`;
+        // writeFileSync(tempFilePath, img);
+        res.status(200).type('image/png').send(img);
+    }
+    else if(img === null) res.sendStatus(204);
+    else if(img === undefined) res.sendStatus(404);
 }
 
 async function removeTrackFromBDD(fileName, username, password)

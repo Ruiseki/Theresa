@@ -4,8 +4,8 @@
 }
 
 #musicListEdit {
-    margin-left: 300px;
-    width: 300px;
+    margin-left: 10%;
+    width: 15%;
 }
 
 #musicListEdit ul {
@@ -13,12 +13,22 @@
 }
 
 #musicList {
+    width: 60%;
     margin-top: 0px;
     margin-bottom: 0px;
-    padding-left: 0px;
-    list-style-type: none;
     margin-left: 100px;
-    width: 1000px;
+    padding-left: 0px;
+
+    list-style-type: none;
+}
+
+#musicList > li ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    overflow: auto;
+    padding: 20px 50px;
+    gap: 20px 50px;
 }
 
 #musicListEdit, #musicList {
@@ -29,28 +39,62 @@
     overflow-y: auto;
 }
 
-#musicFieldOrigin {
+#musicBase {
     display: none;
 }
 
 .musicField {
+    list-style: none;
+    display: flex;
+}
+
+.musicField label {
     display : flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
     border: 1px solid white;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    margin-left: 20%;
-    margin-right: 20%;
+    width: 200px;
     border-radius: 9px;
+    transition-duration: 250ms;
+    transition-delay: 500ms;
 }
 
-.musicField input {
-    margin-left: 20px;
-    margin-right: 20px;
+.musicField img {
+    height: 100px;
+    width: 100px;
 }
 
-.musicTitle {
-    width: 350px;
-    margin-left: 50px;
+.musicField p {
+    text-align: center;
+    margin-bottom: 0px;
+}
+
+.inputMusicInList:checked + label {
+    border-color: lime;
+    box-shadow: 0px 0px 20px;
+    transition-duration: 250ms;
+    transition-delay: 0s;
+}
+
+.inputMusicInList:hover + label {
+    transition-delay: 0s;
+    box-shadow: 0px 0px 20px;
+    transition-duration: 250ms;
+}
+
+/* CSS Priority warning */
+#musicList .inputCollapseOrShow:checked + ul {
+    display: none;
+}
+
+.listLetter {
+    text-align: center;
+}
+
+.listLetter > label p {
+    font-size: 40px;
+    text-shadow: 0px 0px 20px;
 }
 
 #addMusic {
@@ -87,12 +131,6 @@
     transition-delay: 250ms;
 }
 
-#addMusic label:hover {
-    border-color: lime;
-    box-shadow: 0px 0px 30px lime;
-    transition-delay: 0s;
-}
-
 #loadedFileDescription, #loadedFileSize {
     font-size: 30px;
     margin: auto;
@@ -103,10 +141,8 @@
     display: none;
 }
 
-#addMusic input {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+#addMusicInput {
+    display: none;
     opacity: 0;
 }
 
@@ -126,4 +162,17 @@
     left: calc(50% - 200px/2);
     top: 115%;
     font-size: 30px;
+}
+
+.inputFieldMusicFolder {
+    color: white;
+    
+    text-align: center;
+    
+    background-color: var(--main-background-color);
+    border: 1px white solid;
+    border-radius: 7px;
+    box-shadow: 0px 0px 5px;
+    width: 100%;
+    margin-bottom: 20px;
 }

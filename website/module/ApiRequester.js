@@ -34,6 +34,11 @@ export default class ApiRequester
         return musics;
     }
 
+    static getTrackThumbnail(fileName)
+    {
+        return `${host}:${port}/musics/thumbnail/${activeUser.discordId}/${fileName}`;
+    }
+
     static async sendFile(route, files)
     {
         let data = new FormData();
@@ -42,12 +47,12 @@ export default class ApiRequester
         data.append('password', activeUser.password);
         data.append('discordId', activeUser.discordId);
 
-        console.log(data.get('musicUploader'));
+        // console.log(data.get('musicUploader'));
 
         await fetch(`${host}:${port}${route}`, {
             method: 'POST',
             body: data
-        }).then(response => console.log(response));
+        })//.then(response => console.log(response));
     }
 
     static async removeTrack(filesName)
@@ -63,7 +68,7 @@ export default class ApiRequester
                 discordId: activeUser.discordId,
                 files : filesName
             })
-        }).then(response => console.log(response));
+        })//.then(response => console.log(response));
     }
 
     static getActiveUser()

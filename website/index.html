@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Theresa's Website Assistant</title>
+    <title>Theresa</title>
 
     <script type="module" src="./main.js" defer></script>
     
@@ -84,19 +84,34 @@
                 <ul>
                     <p id="addMusicText" class="selectionableText" onclick="addFileDisplay()">Add</p>
                     <p id="removeMusicText" class="selectionableText" onclick="removeTrack()">Remove</p>
-                    <p id="searchMusicText">Search</p>
+                    <p id="selectAllText" class="selectionableText" onclick="selectionOnTracks(true)">Select all</p>
+                    <p id="unselectAllText" class="selectionableText" onclick="selectionOnTracks(false)" style="display: none;">Unselect all</p>
+                    <input type="text" class="inputFieldMusicFolder" id="inputSearchByTitle" placeholder="Search title...">
+                    <input type="text" class="inputFieldMusicFolder" id="inputSearchByArtist" placeholder="Search artist...">
                 </ul>
             </div>
-            <div id="musicFieldOrigin">
+            <div id="musicBase">
                 <li class="musicField">
-                    <input type="checkbox">
-                    <p class="musicTitle">music title</p>
-                    <p class="musicArtist">music artist</p>
+                    <input type="checkbox" name="selectMusicInList" class="inputMusicInList" style="display: none;">
+                    <label>
+                        <img src="">
+                        <p class="musicTitle">music title</p>
+                        <p class="musicFileName">music file name</p>
+                        <p class="musicArtist">music artist</p>
+                        <p class="fileExt" style="display: none;">mp3</p>
+                    </label>
+                </li>
+                <li class="listLetter">
+                    <label>
+                        <p>Letter</p>
+                    </label>
+                    <input type="checkbox" name="collapseOrShow" class="inputCollapseOrShow" style="display: none;">
+                    <ul></ul>
                 </li>
             </div>
             <ul id="musicList"></ul>
             <div id="addMusic">
-                <input type="file" name="musicUploader" id="addMusicInput" accept=".mp3,.flac,.wav" multiple>
+                <input type="file" name="musicUploader" id="addMusicInput" accept=".mp3,.flac,.wav" webkitdirectory multiple>
                 <label for="addMusicInput">
                     <p id="loadedFileDescription">Waiting for file(s)...</p>
                     <p id="loadedFileSize">0 Mo</p>
@@ -109,13 +124,8 @@
 
     <section id="debug">
         <button id="debug_logout" onclick="logout()">logout</button>
-        <button id="debug_selectall" onclick="selectall()">check all</button>
     </section>
     <script>
-        function selectall()
-        {
-            document.querySelectorAll('.musicField input').forEach(element => element.checked = !element.checked);
-        }
     </script>
 </body>
 

@@ -1,8 +1,8 @@
 import ApiRequester from "./ApiRequester.js";
-import MusicFolder from "./musicFolder.js";
+import MusicFolder from "./MusicFolder.js";
 import TheresaTalking from "./TheresaTalking.js";
 
-export default class LoginRegister                                                                                                  
+export default class LoginRegister
 {
     static darkBackgroundDisplay()
     {
