@@ -1,5 +1,4 @@
-
-console.log('######\tStarting Theresa\'s API...');
+console.log('----- Initialization -----');
 
 import dotenv from 'dotenv';
 import { connect } from './connector.js';
