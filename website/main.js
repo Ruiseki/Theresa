@@ -4,7 +4,7 @@ export var  host = 'http://localhost',
 import MusicFolder from './module/MusicFolder.js';
 import LoginRegister from './module/LoginRegister.js';
 import TheresaTalking from './module/TheresaTalking.js';
-import ApiRequester from './module/ApiRequester.js';
+import ApiRequester, { activeUser } from './module/ApiRequester.js';
 
 // ------------------------------------------------------------------------ //
 
@@ -14,7 +14,7 @@ document.querySelector('#addMusicInput').addEventListener('change', MusicFolder.
 
 // ------------------------------------------------------------------------ //
 
-if(ApiRequester.getActiveUser() == null)
+if(activeUser == null)
 {
     TheresaTalking.display();
     LoginRegister.loginDisplay();

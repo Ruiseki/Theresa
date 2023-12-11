@@ -1,4 +1,4 @@
-import ApiRequester from "./ApiRequester.js";
+import ApiRequester, { activeUser } from "./ApiRequester.js";
 import LoginRegister from "./LoginRegister.js";
 
 let dropArea = document.querySelector("#addMusic label");
@@ -40,7 +40,7 @@ document.querySelector('#inputSearchByArtist').addEventListener('keyup', searchT
 
 async function searchTrack()
 {
-    let filteredArray = await ApiRequester.getUserMusic();
+    let filteredArray = activeUser.musics;
     let queryTitle = document.querySelector('#inputSearchByTitle').value;
     let queryArtist = document.querySelector('#inputSearchByArtist').value;
 
@@ -90,7 +90,7 @@ export default class MusicFolder
         });
 
         await ApiRequester.removeTrack(checkedMusics);
-        await MusicFolder.update(await ApiRequester.getUserMusic());
+        MusicFolder.update(await ApiRequester.getUserMusic());
         document.querySelectorAll('.musicField input').forEach(element => {
             if(element.checked) element.checked = false
         });
@@ -133,24 +133,17 @@ export default class MusicFolder
     {
         document.querySelector('#loadedFileDescription').innerHTML = 'Uploading please wait ...';
         await ApiRequester.sendFile('/musics/upload', document.querySelector('#addMusicInput').files);
-        await MusicFolder.update(await ApiRequester.getUserMusic());
+        MusicFolder.update(await ApiRequester.getUserMusic());
         document.querySelector('#loadedFileDescription').innerHTML = 'Waiting for file(s)...';
         document.querySelector('#loadedFileDescription').style.marginBottom = '';
         document.querySelector('#loadedFileSize').style.display = "none";
         MusicFolder.addFileHide();
     }
 
-    static async update(userMusics)
+    static update(userMusics)
     {
-        let activeUser = ApiRequester.getActiveUser();
-
-        /* document.querySelectorAll('#musicList .musicField input').forEach(input => {
-            input.removeEventListener('change');
-        }); */
-
         document.querySelectorAll('#musicList > li').forEach(li => document.querySelector('#musicList').removeChild(li));
 
-        
         if(activeUser != null)
         {
             userMusics.sort((a, b) => {
@@ -203,7 +196,7 @@ export default class MusicFolder
             let musicFieldLi = document.querySelectorAll('#musicList .musicField');
 
             document.querySelectorAll('#musicList .musicField input').forEach(input => {
-                input.addEventListener('change', event => {
+                input.addEventListener('change', () => {
                     let allCheck = true;
                     document.querySelectorAll('#musicList .musicField input').forEach(element => { if(!element.checked) allCheck = false });
 

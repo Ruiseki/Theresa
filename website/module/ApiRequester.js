@@ -1,6 +1,6 @@
 import { host, port } from "../main.js";
 
-var activeUser = null;
+export var activeUser = null;
 var musics = [];
 
 export default class ApiRequester
@@ -47,12 +47,12 @@ export default class ApiRequester
         data.append('password', activeUser.password);
         data.append('discordId', activeUser.discordId);
 
-        // console.log(data.get('musicUploader'));
-
         await fetch(`${host}:${port}${route}`, {
             method: 'POST',
             body: data
-        })//.then(response => console.log(response));
+        });
+
+        activeUser.musics = await this.getUserMusic();
     }
 
     static async removeTrack(filesName)
@@ -68,12 +68,9 @@ export default class ApiRequester
                 discordId: activeUser.discordId,
                 files : filesName
             })
-        })//.then(response => console.log(response));
-    }
+        });
 
-    static getActiveUser()
-    {
-        return activeUser;
+        activeUser.musics = await this.getUserMusic();
     }
 
     static setActiveUser(user)
