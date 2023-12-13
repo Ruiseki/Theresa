@@ -1,5 +1,5 @@
 import { client, initSlashCommand, joinVoice, leaveVoice, load, prefix, serverSave, servers, serversBackup, startup, storageLocation, cmd as theresaCmd, trackingVoice } from './theresa.mjs';
-import { cmd as audioCmd, audioMaster, engineMgr, queueDisplay, queueMgr } from './audio.mjs';
+import { cmd as audioCmd, audioMaster, checkQueueEditPermission, engineMgr, queueDisplay, queueMgr } from './audio.mjs';
 import { readFileSync, writeFileSync } from 'fs';
 
 startup();
@@ -119,7 +119,7 @@ client.on('voiceStateUpdate',(oldState, newState) => { // will be call when a us
                                         embeds:[{
                                             color: '000000',
                                             title: '🔊🔎 Voice tracking notification 🔔',
-                                            description: `**${trackedMember.user.username}** is in a voice channel !\n\nChannel : **${trackedChannel.name}**\nServer : **${trackedChannel.guild.name}**`,
+                                            description: `**${trackedMember.user.globalName}** is in a voice channel !\n\nChannel : **${trackedChannel.name}**\nServer : **${trackedChannel.guild.name}**`,
                                             thumbnail:{
                                                 url: newState.guild.iconURL()
                                             }
@@ -148,6 +148,28 @@ client.on('interactionCreate', i => {
         console.log(`----- // ${servers[i.guildId].global.guild.name} // -----`);
 
         let array = [];
+        
+        if( i.commandName == 'play' ||
+            i.commandName == 'go' ||
+            i.commandName == 'stop' ||
+            i.commandName == 'queue' )
+        {
+            if( !checkQueueEditPermission(i.channel, i.member) )
+            {
+                i.reply(
+                    {
+                        embeds : [
+                            {
+                                color: '000000',
+                                description: '❌ **Access to the queue denied. Permission is accorded if you are in my voice channel**',
+                            }
+                        ],
+                        ephemeral : true
+                    }
+                )
+                return;
+            }
+        }
         switch(i.commandName)
         {
             case 'play' :
@@ -213,19 +235,23 @@ client.on('interactionCreate', i => {
     {
         console.log(`----- [<] ${servers[i.guildId].global.guild.name} [>] -----`);
         // ----- Audio -----
-        if(i.customId == 'nextBtn')             engineMgr(i.message.channel, ['skip']);
-        else if(i.customId == 'previousBtn')    engineMgr(i.message.channel, ['previous']);
-        else if(i.customId == 'stopBtn')        queueMgr(i.message.channel, ['clear']);
-        else if(i.customId == 'pausePlayBtn')
+        if( checkQueueEditPermission(i.channel, i.member) )
         {
-            if(servers[i.guild.id].audio.Engine._state.status == 'playing') engineMgr(i.message.channel, ['pause']);
-            else engineMgr(i.message.channel, ['play']);
-            queueDisplay(servers[i.guildId], 16, true);
+            if(i.customId == 'nextBtn')             engineMgr(i.message.channel, ['skip']);
+            else if(i.customId == 'previousBtn')    engineMgr(i.message.channel, ['previous']);
+            else if(i.customId == 'stopBtn')        queueMgr(i.message.channel, ['clear']);
+            else if(i.customId == 'pausePlayBtn')
+            {
+                if(servers[i.guild.id].audio.Engine._state.status == 'playing') engineMgr(i.message.channel, ['pause']);
+                else engineMgr(i.message.channel, ['play']);
+
+                queueDisplay(servers[i.guildId], 16, true);
+            }
+            else if(i.customId == 'viewMore')   queueDisplay(servers[i.guildId], 40, false);
+            else if(i.customId == 'loop')       engineMgr(i.message.channel, ['loop']);
+            else if(i.customId == 'loopQueue')  engineMgr(i.message.channel, ['loopqueue']);
+            else if(i.customId == 'replay')     engineMgr(i.message.channel, ['replay']);
         }
-        else if(i.customId == 'viewMore')   queueDisplay(servers[i.guildId], 40, false);
-        else if(i.customId == 'loop')       engineMgr(i.message.channel, ['loop']);
-        else if(i.customId == 'loopQueue')  engineMgr(i.message.channel, ['loopqueue']);
-        else if(i.customId == 'replay')     engineMgr(i.message.channel, ['replay']);
         // -----------------
     
         // ----- Help ------
@@ -233,8 +259,12 @@ client.on('interactionCreate', i => {
         // else if(i.customId == 'audio') Help.audioMain(servers, i.message);
         // else if(i.customId == 'queueManager') Help.audioQueueManager(servers, i.message);
         // -----------------
-    
-        i.deferUpdate();
+        
+        try {
+            i.deferUpdate();
+        } catch(err) {
+            console.error(err);
+        }
     }
 });
 

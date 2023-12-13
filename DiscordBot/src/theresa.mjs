@@ -210,7 +210,7 @@ export function load()
         servers[guild.id].audio.Engine = createAudioPlayer();
         eventsListeners(servers[guild.id]);
         clearMessagesTemps(servers[guild.id], guild);
-        if(servers[guild.id].audio.playing) runAudioEngine(servers[guild.id], guild);
+        if(servers[guild.id].audio.queue.length > 0) runAudioEngine(servers[guild.id], guild);
         
         serverSave(servers[guild.id]);
     });
@@ -590,7 +590,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
     }
     else if(args[0] == 's' || args[0] == 'status')
     {
-        let text = `**${userAuthor.username}, here is your voice tracking status**\n\n`;
+        let text = `**${userAuthor.globalName}, here is your voice tracking status**\n\n`;
 
         if(user.voiceTracking.isActivated) text += '**✅ Service is ON**';
         else text += '**❎ Service is OFF**';
@@ -625,7 +625,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
             for(let userId of object.usersId)
             {
                 let member = server.global.guild.members.cache.get(userId);
-                text += `${member.user.username}\n`;
+                text += `${member.user.globalName}\n`;
             }
             text += '\n';
         }
@@ -635,7 +635,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
         for(let allowedUserId of user.voiceTracking.allowedUsers)
         {
             let allowedMember = server.global.guild.members.cache.get(allowedUserId);
-            text += `${allowedMember.user.username}\n`
+            text += `${allowedMember.user.globalName}\n`
         }
 
         if(user.voiceTracking.statusMessageId != null)
@@ -754,8 +754,8 @@ export async function trackingVoice(server, channel, userAuthor, args)
                         embeds: [
                             {
                                 color:'000000',
-                                description:`***${authorMember.user.username}*** want to know when you are connected to a voice channel.`,
-                                title:`Authorization for voice tracking (from ${authorMember.user.username} in ${server.global.guild.name})`,
+                                description:`***${authorMember.user.globalName}*** want to know when you are connected to a voice channel.`,
+                                title:`Authorization for voice tracking (from ${authorMember.user.globalName} in ${server.global.guild.name})`,
                                 thumbnail: {
                                     url: authorMember.user.avatarURL()
                                 }
@@ -780,7 +780,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
                 else if(targetProfile.voiceTracking.allowedUsers.indexOf(userAuthor.id) == -1) targetProfile.voiceTracking.allowedUsers.push(userAuthor.id);
             }
 
-            simpleEmbed(server, channel, `**✅ Added __${targetMember.user.username}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
+            simpleEmbed(server, channel, `**✅ Added __${targetMember.user.globalName}__ in the voice channel __${targetChannel.name}__**`, undefined, false, true, 10000);
         }
         else
         {
@@ -795,7 +795,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
             if(targetChannel == undefined)
             {
                 user.voiceTracking.usersAndChannels.splice(targetUserIndex, 1);
-                simpleEmbed(server, channel, `**✅ Deleted the user ${targetMember.user.username} from your list**`, undefined, false, true, 10000);
+                simpleEmbed(server, channel, `**✅ Deleted the user ${targetMember.user.globalName} from your list**`, undefined, false, true, 10000);
             }
             else
             {
@@ -804,7 +804,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
                 else
                 {
                     user.voiceTracking.usersAndChannels[targetUserIndex].channelsId.splice(targetChannelIndex, 1);
-                    simpleEmbed(server, channel, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.username}**`);
+                    simpleEmbed(server, channel, `**✅ Deleted the channel ${targetChannel.name} for the user ${targetMember.user.globalName}**`);
                 }
             }
         }
@@ -828,7 +828,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
             {
                 let targetMember = server.global.guild.members.cache.get(targetUserId);
                 user.voiceTracking.allowedUsers.push(targetUserId);
-                simpleEmbed(server, channel, `**✅ Allowed ${targetMember.user.username}**`, undefined, false, true, 10000);
+                simpleEmbed(server, channel, `**✅ Allowed ${targetMember.user.globalName}**`, undefined, false, true, 10000);
             }
             else simpleEmbed(server, channel, '**❗ User already allowed !**', undefined, false, true, 10000);;
         }
@@ -848,7 +848,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
             {
                 let targetMember = server.global.guild.members.cache.get(targetUserId);
                 user.voiceTracking.allowedUsers.splice(targetUserIndex, 1);
-                simpleEmbed(server, channel, `**✅ Revoked ${targetMember.user.username}**`, undefined, false, true, 10000);
+                simpleEmbed(server, channel, `**✅ Revoked ${targetMember.user.globalName}**`, undefined, false, true, 10000);
             }
             else simpleEmbed(server, channel, '**❌ Can\'t find this user in your list. Type `t!trackvoice status` to see your list**', undefined, false, true, 10000);
         }
@@ -947,11 +947,11 @@ function adminMgr(server, message, args)
         if(index == -1)
         {
             server.global.adminList.push(targetUser.id);
-            simpleEmbed(server, message.channel, `***${targetUser.user.username}*** was added to the admin list ✅`, undefined, false, true, 3000);
+            simpleEmbed(server, message.channel, `***${targetUser.user.globalName}*** was added to the admin list ✅`, undefined, false, true, 3000);
         }
         else
         {
-            simpleEmbed(server, message.channel, `***${targetUser.user.username}*** is already admin`, undefined, false, true, 3000);
+            simpleEmbed(server, message.channel, `***${targetUser.user.globalName}*** is already admin`, undefined, false, true, 3000);
         }
     }
     else if(args[0] == 'remove' || args[0] == 'r')
@@ -968,16 +968,16 @@ function adminMgr(server, message, args)
 
         if(targetUser.id == server.global.guild.ownerId)
         {
-            simpleEmbed(server, message.channel, `Server owner (***${targetUser.user.username}***) can't be deleted from the administrator list ❌`, undefined, false, true, 5000);
+            simpleEmbed(server, message.channel, `Server owner (***${targetUser.user.globalName}***) can't be deleted from the administrator list ❌`, undefined, false, true, 5000);
         }
         else if(index != -1)
         {
             server.global.adminList.splice(index, 1);
-            simpleEmbed(server, message.channel, `***${targetUser.user.username}*** was added to the administrator list ✅`, undefined, false, true, 3000);
+            simpleEmbed(server, message.channel, `***${targetUser.user.globalName}*** was added to the administrator list ✅`, undefined, false, true, 3000);
         }
         else
         {
-            simpleEmbed(server, message.channel, `***${targetUser.user.username}*** is not an administrator ❌`, undefined, false, true, 3000);
+            simpleEmbed(server, message.channel, `***${targetUser.user.globalName}*** is not an administrator ❌`, undefined, false, true, 3000);
         }
     }
     else if(args[0] == 'view' || args[0] == 'v')

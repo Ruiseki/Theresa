@@ -1,12 +1,12 @@
 import { createReadStream, readdirSync, existsSync, readFileSync } from 'fs';
-import { ActionRowBuilder } from 'discord.js';
+import { ActionRowBuilder, messageLink } from 'discord.js';
 import { createAudioResource } from '@discordjs/voice';
 import NodeID3 from 'node-id3';
 import ytdl from 'ytdl-core';
 import yts from 'yt-search';
 
-import { servers, storageLocation, joinVoice, serverSave, button } from './theresa.mjs';
-import { reboot, simpleEmbed, getRandomInt } from './tools.mjs';
+import { servers, storageLocation, joinVoice, serverSave, button, client } from './theresa.mjs';
+import { reboot, simpleEmbed, getRandomInt, isUserPresentInVoiceChannel } from './tools.mjs';
 
 const { read } = NodeID3;
 // local music
@@ -19,8 +19,16 @@ export function cmd(message, command, args)
     if(command == undefined) ;
     else
     {
-        if(command == 'queue' || command == 'q')              queueMgr(message.channel, args);
-        else if(command == 'player' || command == 'p')        engineMgr(message.channel, args);
+        if(command == 'queue' || command == 'q')
+        {
+            if(checkQueueEditPermission(message.channel, message.member))
+                queueMgr(message.channel, args);
+        }
+        else if(command == 'player' || command == 'p')
+        {
+            if(checkQueueEditPermission(message.channel, message.member))
+                engineMgr(message.channel, args);
+        }
         else if(command == 'miscellaneous' || command == 'm') miscellaneous(message, args);
         else if(command == 'playlist' || command == 'pl')     playlist(message, args);
         else                                                  audioMaster(message.member, message.channel, command, args);
@@ -184,7 +192,7 @@ export async function audioMaster(authorMember, channel, command, args)
         let embed;
         if(list == undefined)
         {
-            let text = `**${video.title}**  :notes:\n*__${video.url}__*\n\n*Position : **${queuePos + 1}***\n*requested by __${authorMember.user.username}__*`;
+            let text = `**${video.title}**  :notes:\n*__${video.url}__*\n\n*Position : **${queuePos + 1}***\n*requested by ${authorMember.user.globalName}*`;
 
             embed = {
                 color: '000000',
@@ -196,7 +204,7 @@ export async function audioMaster(authorMember, channel, command, args)
         }
         else
         {
-            let text = `**${list.title}**  :notes:\n*__${list.url}__*\n\n*Number of songs : ${list.videos.length}\nPosition : **${queuePos + 1}***\n*requested by __${authorMember.user.username}__*`;
+            let text = `**${list.title}**  :notes:\n*__${list.url}__*\n\n*Number of songs : ${list.videos.length}\nPosition : **${queuePos + 1}***\n*requested by ${authorMember.user.globalName}*`;
             embed = {
                 color: '000000',
                 description: text,
@@ -292,7 +300,7 @@ export async function audioMaster(authorMember, channel, command, args)
         title = tags.title === undefined ? getNameFromPath(array[0], false) : tags.title;
         artist = tags.artist === undefined ? artist = '<unknown>' : artist = tags.artist;
 
-        let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos + 1}***\n*requested by __${authorMember.user.username}__*`;
+        let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos + 1}***\n*requested by ${authorMember.user.globalName}*`;
         
         if(tags.image != undefined)
         {
@@ -581,7 +589,7 @@ export async function queueMgr(channel, args)
         ...
 
     */
-    
+
     if(!args[0])
     {
         if(!server.audio.queue[0]) return;
@@ -1280,4 +1288,17 @@ function error(server, channel, type, text)
     server.audio.lastQueue.channelId=undefined;
     server.audio.lastQueue.messageId=undefined;
     serverSave(server);
+}
+
+export function checkQueueEditPermission(channel, authorMember)
+{
+    if( isUserPresentInVoiceChannel(authorMember.user.id, servers[channel.guildId].global.voiceConnection.joinConfig.channelId) )
+        return true;
+    else
+    {
+        let username = authorMember.nickname ? authorMember.nickname : authorMember.user.globalName;
+        let text = `❌ **Acces denied to the queue for ${username}**`;
+        simpleEmbed(servers[channel.guildId], channel, text, undefined, false, true, 120000);
+        return false;
+    }
 }

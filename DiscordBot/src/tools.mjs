@@ -1,6 +1,6 @@
 import shell from 'shelljs';
-import { rmSync, writeFileSync } from 'fs';
-import { serverSave } from './theresa.mjs';
+import { rmSync } from 'fs';
+import { client, serverSave } from './theresa.mjs';
 
 export function reboot()
 {
@@ -141,16 +141,6 @@ export function clearLogs()
     rmSync(`${process.env.USERPROFILE}\\.pm2\\logs\\discordBot-out.log`);
 }
 
-export function addIntoArray(element, place, array)
-{
-    /* for(let i=array.length; i >= place; i--) array[i] = array [i-1]
-    array[place] = element;
-    return array; */
-
-    array.splice(place, 0, element);
-    return array;
-}
-
 export function findUserId(element, guild)
 {
     var id = undefined;
@@ -159,7 +149,7 @@ export function findUserId(element, guild)
     {
         if(guild.members.cache.get(element) != undefined) return element;
         guild.members.cache.find(member => {
-            if(member.user.username == element) id=member.user.id
+            if(member.user.username == element || member.user.globalName == element) id=member.user.id
         });
         return id;
     }
@@ -174,4 +164,13 @@ export function isElementPresentInArray(array, element)
         else isPresent = false;
     });
     return isPresent;
+}
+
+export function isUserPresentInVoiceChannel(userId, voiceChannelId)
+{
+    let channel = client.channels.cache.get(voiceChannelId);
+    let member = channel.guild.members.cache.get(userId);
+
+    if( member.voice.channel && member.voice.channel.id == channel.id ) return true;
+    else return false;
 }
