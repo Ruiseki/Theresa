@@ -764,7 +764,7 @@ export async function trackingVoice(server, channel, userAuthor, args)
                         components: [row]
                     });
                     user.voiceTracking.usersAndChannels[targetUserIndex].lastDM = Date.now();
-                    servers[0].client.on('interactionCreate', i => {
+                    client.on('interactionCreate', i => {
                         if( !i.isButton() ) return;
 
                         if(i.customId == 'accept')

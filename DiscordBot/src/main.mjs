@@ -211,6 +211,7 @@ client.on('interactionCreate', i => {
                     else array.push(undefined);
                 }
 
+                i.options.data[0].options.forEach(option => array.push(option.user.id));
                 trackingVoice(servers[i.guildId], i.channel, i.user, array);
                 break;
         }
@@ -233,6 +234,8 @@ client.on('interactionCreate', i => {
     // --------- Button --------
     if( i.isButton() )
     {
+        if(!i.guildId) return;
+
         console.log(`----- [<] ${servers[i.guildId].global.guild.name} [>] -----`);
         // ----- Audio -----
         if( checkQueueEditPermission(i.channel, i.member) )
