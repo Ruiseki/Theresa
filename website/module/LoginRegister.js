@@ -1,4 +1,4 @@
-import ApiRequester from "./ApiRequester.js";
+import ApiRequester, { activeUser } from "./ApiRequester.js";
 import MusicFolder from "./MusicFolder.js";
 import TheresaTalking from "./TheresaTalking.js";
 
@@ -41,7 +41,7 @@ export default class LoginRegister
         if(password.length < 6) document.querySelector('#error_login_password').style.display = 'block';
         if(username.length < 3 || password.length < 6) return;
 
-        let activeUser = await ApiRequester.login(username, password);
+        await ApiRequester.login(username, password);
         if(activeUser == null)
         {
             document.querySelector('#error_login').style.display = 'block';
@@ -53,7 +53,7 @@ export default class LoginRegister
         document.querySelector('#login_password').value = '';
 
         theresa_talking.innerHTML = `Welcome again ${activeUser.username} !`;
-        MusicFolder.update();
+        MusicFolder.update(activeUser.musics);
         document.querySelector('#dark_background').style.display = 'none';
         setTimeout(() => {
             document.querySelector('#theresa_talking').style.display = 'none';
@@ -65,7 +65,7 @@ export default class LoginRegister
     {
         localStorage.setItem('lastLogin', null);
         ApiRequester.setActiveUser(null);
-        MusicFolder.update();
+        MusicFolder.update([]);
 
         LoginRegister.darkBackgroundDisplay();
         LoginRegister.loginDisplay();
