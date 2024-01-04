@@ -43,8 +43,8 @@ async function searchTrack()
     let filteredArray = activeUser.musics;
     let queryTitle = document.querySelector('#inputSearchByTitle').value;
     let queryArtist = document.querySelector('#inputSearchByArtist').value;
-
-    filteredArray = filteredArray.filter(value => (!queryTitle || value.title && value.title.toLowerCase().includes(queryTitle.toLowerCase())) || value.fileNameNoExt.includes(queryTitle.toLowerCase()));
+    
+    filteredArray = filteredArray.filter(value => !queryTitle || value.title?.toLowerCase().includes(queryTitle.toLowerCase()) || value.fileNameNoExt.toLowerCase().includes(queryTitle.toLowerCase()));
     filteredArray = filteredArray.filter(value => !queryArtist || value.artist && value.artist.toLowerCase().includes(queryArtist.toLowerCase()));
 
     MusicFolder.update(filteredArray);
