@@ -4,8 +4,16 @@ import Discord, { REST } from 'discord.js';
 import FS from 'fs';
 import DNS from 'dns';
 import shelljs from 'shelljs';
+
+/* Experimental
+
 import packageInfo from '../package.json' assert { type : 'json'};
 import commandsFile from './json/commands.json' assert { type : 'json'};
+
+*/
+
+var packageInfo = JSON.parse(FS.readFileSync('package.json'));
+var commandsFile = JSON.parse(FS.readFileSync('src/json/commands.json'));
 
 import { clearMessagesTemps, eventsListeners, runAudioEngine } from './audio.mjs';
 import { clearLogs, findChannel, findUserId, isElementPresentInArray, simpleEmbed } from './tools.mjs';
