@@ -7,10 +7,11 @@ import resizeImage from 'resize-image-buffer';
 
 export async function init()
 {
-    app.post('/musics', (req, res) => { musics(req, res) });
-    app.post('/musics/upload', upload.array('musicUploader'), (req, res) => { musicsUpload(req, res) });
+    app.post('/musics', (req, res) => { musics(req, res); });
+    app.get('/musics/:discordId', (req, res) => { getMusics(req, res); })
+    app.post('/musics/upload', upload.array('musicUploader'), (req, res) => { musicsUpload(req, res); });
     app.post('/musics/remove', (req, res) => { musicsRemove(req, res) });
-    app.get('/musics/thumbnail/:discordId/:fileName/', (req, res) => { sendThumbnail(req, res) });
+    app.get('/musics/thumbnail/:discordId/:fileName/', (req, res) => { sendThumbnail(req, res); });
 }
 
 async function musics(req, res)
@@ -23,6 +24,23 @@ async function musics(req, res)
     }
 
     res.status(200).json(usersCache[index].musics);
+}
+
+async function getMusics(req, res)
+{
+    let query = 'SELECT title, fileNameNoExt, fileName, artist FROM track WHERE ( SELECT id FROM user WHERE discordId = ? )';
+    let parameters = [req.params.discordId];
+
+    try
+    {
+        let [data] = await mysqlConnection.execute(query, parameters);
+        res.status(200).json(data);
+    }
+    catch(err)
+    {
+        console.error(err);
+        res.status(400).json({status:'error',message:"No account associated with this discordId."})
+    }
 }
 
 async function musicsUpload(req, res)
