@@ -1,5 +1,5 @@
 import { createReadStream, readdirSync, existsSync, readFileSync } from 'fs';
-import { ActionRowBuilder, messageLink } from 'discord.js';
+import { ActionRowBuilder } from 'discord.js';
 import { createAudioResource } from '@discordjs/voice';
 import NodeID3 from 'node-id3';
 import ytdl from 'ytdl-core';
@@ -59,6 +59,8 @@ export function eventsListeners(server)
                 server.audio.loop = false;
                 server.audio.loopQueue = false;
                 server.audio.leave = false;
+
+                serverSave(server);
                 return; // stop
             }
 
@@ -366,6 +368,28 @@ export async function audioMaster(authorMember, channel, command, args)
     serverSave(server);
 }
 
+export async function newAudioMaster(authorMember, channel, command, args)
+{
+    let server = servers[channel.guildId];
+
+    // command exemple : t!audio Eclipse Parade -pos:next -youtube
+
+    let params = {};
+
+    // gettings all words starting by "-" and if they are a command, assign the requested value.
+    // If not, keep them in the query
+    args.splice(0, 0, command);
+    args.forEach(value => {
+        if(value.startsWith("-") && value.search(/:/))
+        {
+            value = value.split("-")[1].split(":");
+            console.log(value);
+            if(value[0] == "pos" || value[0] == "position") params.pos = value[1];
+            else if(value[0] == "yt" || value[0] == "youtube") params.youtube = true;
+        }
+    });
+}
+
 export async function runAudioEngine(server, guild)
 {
     server.global.voiceConnection.subscribe(server.audio.Engine);
@@ -606,10 +630,7 @@ export async function queueMgr(channel, args)
             server.audio.arret = true;
             server.audio.Engine.stop();
         }
-        //
 
-        let text = '**Done ✅**';
-        simpleEmbed(server, channel, text, undefined, false, true, 1000);
         if(server.audio.lastQueue.channelId != null)
         {
             let lastQueueChannel = channel.guild.channels.cache.get(server.audio.lastQueue.channelId);
@@ -689,8 +710,6 @@ export async function queueMgr(channel, args)
             if(needStop) server.audio.Engine.stop();
         }
 
-        let text = `**Done ✅**`;
-        simpleEmbed(server, channel, text, undefined, false, true, 1000);
         queueDisplay(server, 16, true);
     }
     else if(args[0] == 'move' || args[0] == 'm') error(server, channel, 3, 'Work in progress');
@@ -748,7 +767,7 @@ export async function queueMgr(channel, args)
     serverSave(server);
 }
 
-function miscellaneous(message, args)
+async function miscellaneous(message, args)
 {
     /*
         Command exemple :
@@ -820,47 +839,26 @@ function miscellaneous(message, args)
         console.log('\tLocal shuffling ...');
         if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
 
-        let shuffledMusic = [];
-        let directory = [`${storageLocation}/audio/${message.author.id}/`];
-
-        for(let path of directory)
-        {
-            console.log(`\t\tReading directory : ${path}`);
-            readdirSync(path).forEach(music => {
-                console.log(`\t\t\t${music}`);
-                let extension = music.split('.').pop();
-                if(extension == 'mp3' || extension == 'wav' || extension == 'flac')
-                {
-                    let tags = read(path + music);
-                    if(tags.title != undefined)
-                    {
-                        music = {
-                            title: tags.title,
-                            url: '[LOCAL]' + path + music,
-                            artist: tags.artist,
-                        };
-                    }
-                    else
-                    {
-                        music = {
-                            title: music.substring(0, music.length-4),
-                            url: '[LOCAL]' + path + music,
-                            artist: tags.artist,
-                        };
-                    }
-                    shuffledMusic.push(music);
-                }
-            });
-        }
+        let userMusics = await fetch(`http://${process.env.apiUrl}:${process.env.apiPort}/musics/${message.author.id}`)
+        .then(result => result.json())/* 
+        .then(json => userMusics = json) */;
+        
+        userMusics.forEach(element => {
+            element.url = `[LOCAL]${storageLocation}/audio/${message.author.id}/${element.fileName}`;
+            if(!element.title) element.title = element.fileNameNoExt;
+            if(!element.artist) element.artist = '<unknown>';
+            delete element.fileName;
+            delete element.fileNameNoExt;
+        });
 
         console.log('\tShuffling ...');
         // shuffling
         let indiceAlea;
-        for(let i = shuffledMusic.length; i > 0; i--)
+        for(let i = userMusics.length; i > 0; i--)
         {
-            indiceAlea = getRandomInt(shuffledMusic.length - 1);
-            server.audio.queue.push(shuffledMusic[indiceAlea]);
-            shuffledMusic.splice(indiceAlea, 1);
+            indiceAlea = getRandomInt(userMusics.length - 1);
+            server.audio.queue.push(userMusics[indiceAlea]);
+            userMusics.splice(indiceAlea, 1);
         }
 
         console.log('\tDone');
