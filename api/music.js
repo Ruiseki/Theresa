@@ -9,6 +9,7 @@ export async function init()
 {
     app.post('/musics', (req, res) => { musics(req, res); });
     app.get('/musics/:discordId', (req, res) => { getMusics(req, res); })
+    app.get('/musics/random/:discordId', (req, res) => { getRandomMusics(req, res); })
     app.post('/musics/upload', upload.array('musicUploader'), (req, res) => { musicsUpload(req, res); });
     app.post('/musics/remove', (req, res) => { musicsRemove(req, res) });
     app.get('/musics/thumbnail/:discordId/:fileName/', (req, res) => { sendThumbnail(req, res); });
@@ -29,6 +30,38 @@ async function musics(req, res)
 async function getMusics(req, res)
 {
     let query = 'SELECT title, fileNameNoExt, fileName, artist FROM track WHERE ( SELECT id FROM user WHERE discordId = ? )';
+    let parameters = [req.params.discordId];
+
+    try
+    {
+        let [data] = await mysqlConnection.execute(query, parameters);
+        res.status(200).json(data);
+    }
+    catch(err)
+    {
+        console.error(err);
+        res.status(400).json({status:'error',message:"No account associated with this discordId."})
+    }
+}
+
+async function getRandomMusics(req, res)
+{
+    let query = `
+            SELECT
+                CASE
+                    WHEN isnull(title)
+                    THEN fileNameNoExt
+                    ELSE title
+                END as title,
+                fileName as url,
+                CASE
+                    WHEN isnull(artist)
+                    THEN '<unknown>'
+                    ELSE artist
+                END as artist
+            FROM track
+            WHERE ( SELECT id FROM user WHERE discordId = ? )
+            ORDER BY RAND();`;
     let parameters = [req.params.discordId];
 
     try
