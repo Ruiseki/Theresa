@@ -835,33 +835,16 @@ async function miscellaneous(message, args)
             error(server, channel, 3, "Please connect yourselft in a voice channel first");
             return;
         }
-
-        console.log('\tLocal shuffling ...');
         if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
 
-        let userMusics = await fetch(`http://${process.env.apiUrl}:${process.env.apiPort}/musics/${message.author.id}`)
-        .then(result => result.json())/* 
-        .then(json => userMusics = json) */;
+        const url = `http://${process.env.apiUrl}:${process.env.apiPort}/musics/random/${message.author.id}`;
+        let userMusics = await fetch(url).then(result => result.json());
         
-        userMusics.forEach(element => {
-            element.url = `[LOCAL]${storageLocation}/audio/${message.author.id}/${element.fileName}`;
-            if(!element.title) element.title = element.fileNameNoExt;
-            if(!element.artist) element.artist = '<unknown>';
-            delete element.fileName;
-            delete element.fileNameNoExt;
-        });
-
-        console.log('\tShuffling ...');
-        // shuffling
-        let indiceAlea;
-        for(let i = userMusics.length; i > 0; i--)
-        {
-            indiceAlea = getRandomInt(userMusics.length - 1);
-            server.audio.queue.push(userMusics[indiceAlea]);
-            userMusics.splice(indiceAlea, 1);
-        }
-
-        console.log('\tDone');
+        for(let element of userMusics)
+        element.url = `[LOCAL]${storageLocation}/audio/${message.author.id}/${element.url}`;
+    
+        server.audio.queue.push(...userMusics);
+        
         if(server.audio.Engine._state.status != 'playing') // playing or adding to the queue
             runAudioEngine(server, message.guild);
         else
