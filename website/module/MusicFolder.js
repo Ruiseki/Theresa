@@ -134,6 +134,7 @@ export default class MusicFolder
         document.querySelector('#loadedFileDescription').innerHTML = 'Uploading please wait ...';
         await ApiRequester.sendFile('/musics/upload', document.querySelector('#addMusicInput').files);
         MusicFolder.update(await ApiRequester.getUserMusic());
+        localStorage.setItem('lastLogin', JSON.stringify(activeUser));
         document.querySelector('#loadedFileDescription').innerHTML = 'Waiting for file(s)...';
         document.querySelector('#loadedFileDescription').style.marginBottom = '';
         document.querySelector('#loadedFileSize').style.display = "none";

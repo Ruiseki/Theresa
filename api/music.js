@@ -7,12 +7,12 @@ import resizeImage from 'resize-image-buffer';
 
 export async function init()
 {
-    app.post('/musics', (req, res) => { musics(req, res); });
-    app.get('/musics/:discordId', (req, res) => { getMusics(req, res); })
-    app.get('/musics/random/:discordId', (req, res) => { getRandomMusics(req, res); })
+    app.post('/musics', (req, res) =>                                       { musics(req, res); });
+    app.get('/musics/:discordId', (req, res) =>                             { getMusics(req, res); })
+    app.get('/musics/random/:discordId', (req, res) =>                      { getRandomMusics(req, res); })
     app.post('/musics/upload', upload.array('musicUploader'), (req, res) => { musicsUpload(req, res); });
-    app.post('/musics/remove', (req, res) => { musicsRemove(req, res) });
-    app.get('/musics/thumbnail/:discordId/:fileName/', (req, res) => { sendThumbnail(req, res); });
+    app.post('/musics/remove', (req, res) =>                                { musicsRemove(req, res) });
+    app.get('/musics/thumbnail/:discordId/:fileName/', (req, res) =>        { sendThumbnail(req, res); });
 }
 
 async function musics(req, res)
