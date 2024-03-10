@@ -368,6 +368,7 @@ export async function audioMaster(authorMember, channel, command, args)
     serverSave(server);
 }
 
+// work in progress
 export async function newAudioMaster(authorMember, channel, command, args)
 {
     let server = servers[channel.guildId];

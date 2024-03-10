@@ -4,7 +4,7 @@ import { client, serverSave } from './theresa.mjs';
 
 export function reboot()
 {
-    shell.exec('pm2 restart discordBot');
+    shell.exec('pm2 restart dbot');
 }
 
 export function getRandomInt(max)
