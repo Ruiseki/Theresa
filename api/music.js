@@ -29,7 +29,7 @@ async function musics(req, res)
 
 async function getMusics(req, res)
 {
-    let query = 'SELECT title, fileNameNoExt, fileName, artist FROM track WHERE ( SELECT id FROM user WHERE discordId = ? )';
+    let query = 'SELECT title, fileNameNoExt, fileName, artist, album FROM track WHERE ( SELECT id FROM user WHERE discordId = ? )';
     let parameters = [req.params.discordId];
 
     try
@@ -58,7 +58,12 @@ async function getRandomMusics(req, res)
                     WHEN isnull(artist)
                     THEN '<unknown>'
                     ELSE artist
-                END as artist
+                END as artist,
+                CASE
+                    WHEN isnull(album)
+                    THEN '<unknown>'
+                    ELSE album
+                END as album
             FROM track
             WHERE ( SELECT id FROM user WHERE discordId = ? )
             ORDER BY RAND();`;
@@ -241,7 +246,13 @@ async function trackToBDD(file, username, password)
         fileObject.artist  = fileObject.artist.replace(/'/g, "\\'");
     } else fileObject.artist = null;
 
-    let query = 'INSERT INTO track VALUES ((SELECT id FROM user WHERE username = ? AND password = ?), ?, ?, ?, ?, ?)';
+    if (fileObject.album)
+    {
+        fileObject.album = fileObject.album.replace(/\\/g, "\\\\");
+        fileObject.album  = fileObject.album.replace(/'/g, "\\'");
+    } else fileObject.album = null;
+
+    let query = 'INSERT INTO track VALUES ((SELECT id FROM user WHERE username = ? AND password = ?), ?, ?, ?, ?, ?, ?)';
     let parameters = [
         username,
         password,
@@ -249,7 +260,8 @@ async function trackToBDD(file, username, password)
         fileObject.fileNameNoExt,
         fileObject.extension,
         fileObject.title,
-        fileObject.artist
+        fileObject.artist,
+        fileObject.album
     ];
 
     try {
@@ -274,7 +286,8 @@ function fileToObject(file)
         fileNameNoExt: fileNameNoExt,
         extension,
         title: tags.title,
-        artist: tags.artist
+        artist: tags.artist,
+        album: tags.album
     });
 }
 
