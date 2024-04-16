@@ -35,17 +35,19 @@ dropArea.addEventListener('drop', event => {
 });
 
 document.querySelector('#inputSearchByTitle').addEventListener('keyup', searchTrack);
-
 document.querySelector('#inputSearchByArtist').addEventListener('keyup', searchTrack);
+document.querySelector('#inputSearchByAlbum').addEventListener('keyup', searchTrack);
 
 async function searchTrack()
 {
     let filteredArray = activeUser.musics;
     let queryTitle = document.querySelector('#inputSearchByTitle').value;
     let queryArtist = document.querySelector('#inputSearchByArtist').value;
+    let queryAlbum = document.querySelector('#inputSearchByAlbum').value;
     
     filteredArray = filteredArray.filter(value => !queryTitle || value.title?.toLowerCase().includes(queryTitle.toLowerCase()) || value.fileNameNoExt.toLowerCase().includes(queryTitle.toLowerCase()));
-    filteredArray = filteredArray.filter(value => !queryArtist || value.artist && value.artist.toLowerCase().includes(queryArtist.toLowerCase()));
+    filteredArray = filteredArray.filter(value => !queryArtist || value.artist?.toLowerCase().includes(queryArtist.toLowerCase()));
+    filteredArray = filteredArray.filter(value => !queryAlbum || value.album?.toLowerCase().includes(queryAlbum.toLowerCase()))
 
     MusicFolder.update(filteredArray);
 }
@@ -161,9 +163,8 @@ export default class MusicFolder
                 music.querySelector('.musicTitle').innerHTML = element.title ? element.title : element.fileNameNoExt;
                 if(music.querySelector('.musicTitle').innerHTML != element.fileNameNoExt) music.querySelector('.musicFileName').innerHTML = element.fileNameNoExt;
                 else music.querySelector('.musicFileName').style.display = 'none';
-
                 music.querySelector('.musicArtist').innerHTML = element.artist ? element.artist : "--unknown--";
-
+                music.querySelector('.musicAlbum').innerHTML = element.album ? element.album : "--unknown--";
                 music.querySelector('.fileExt').innerHTML = element.extension;
 
                 let idName = `inputFor${element.fileNameNoExt.replace(/ +/g, '_')}`;

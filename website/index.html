@@ -75,10 +75,12 @@
         </div>
     </section>
 
-    <section id="main_page">
-        <div id="navbar">
-            <p>Music folder</p>
-        </div>
+    <section id="navbar">
+        <p>Music Folder</p>
+        <!-- <p>Music Player</p> -->
+    </section>
+
+    <section id="music_folder">
         <section id="musicFolder">
             <div id="musicListEdit">
                 <ul>
@@ -88,6 +90,7 @@
                     <p id="unselectAllText" class="selectionableText" onclick="selectionOnTracks(false)" style="display: none;">Unselect all</p>
                     <input type="text" class="inputFieldMusicFolder" id="inputSearchByTitle" placeholder="Search title...">
                     <input type="text" class="inputFieldMusicFolder" id="inputSearchByArtist" placeholder="Search artist...">
+                    <input type="text" class="inputFieldMusicFolder" id="inputSearchByAlbum" placeholder="Search album...">
                 </ul>
             </div>
             <div id="musicBase">
@@ -98,6 +101,7 @@
                         <p class="musicTitle">music title</p>
                         <p class="musicFileName">music file name</p>
                         <p class="musicArtist">music artist</p>
+                        <p class="musicAlbum">music album</p>
                         <p class="fileExt" style="display: none;">mp3</p>
                     </label>
                 </li>
@@ -122,11 +126,12 @@
         </section>
     </section>
 
+    <section id="music_player">
+    </section>
+
     <section id="debug">
         <button id="debug_logout" onclick="logout()">logout</button>
     </section>
-    <script>
-    </script>
 </body>
 
 </html>
