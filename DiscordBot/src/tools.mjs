@@ -22,6 +22,39 @@ export function sleep(milliseconds)
     } while (currentDate - date < milliseconds);
 }
 
+export function deleteTempMessage(server, msg)
+{
+    for(let i=0; i < server.global.messageTemp.length; i++)
+    {
+        if(server.global.messageTemp[i].messageId == msg.id)
+        {
+            server.global.messageTemp.splice(i,1);
+            try
+            {
+                msg.delete();
+            }
+            catch(err)
+            {
+                console.err(`Message id ${msg.id} can't be reach`)
+            }
+            serverSave(server);
+            break;
+        }
+    }
+}
+
+export function sendTempMessage(server, msg, time)
+{
+    let object = {
+        messageId:msg.id,
+        channelId:msg.channel.id
+    };
+    server.global.messageTemp.push(object);
+    serverSave(server);
+    
+    setTimeout(() => deleteTempMessage(server, msg), time);
+}
+
 export function simpleEmbed(server, channel, text, image, needThumbnail, willDelete, time)
 {
     if(needThumbnail)
@@ -42,28 +75,7 @@ export function simpleEmbed(server, channel, text, image, needThumbnail, willDel
 
         if(willDelete)
         {
-            channel.send(messageOption).then(msg => {
-                server.global.messageTemp.push(
-                    {
-                        messageId:msg.id,
-                        channelId:msg.channel.id
-                    }
-                );
-                serverSave(server);
-
-                setTimeout(() => {
-                    for(let i=0; i < server.global.messageTemp.length; i++)
-                    {
-                        if(server.global.messageTemp[i].messageId == msg.id)
-                        {
-                            server.global.messageTemp.splice(i,1);
-                            msg.delete();
-                            serverSave(server);
-                            break;
-                        }
-                    }
-                }, time)
-            });
+            channel.send(messageOption).then(msg => sendTempMessage(server, msg, time));
         }
         else channel.send(messageOption);
     }
@@ -80,27 +92,7 @@ export function simpleEmbed(server, channel, text, image, needThumbnail, willDel
 
         if(willDelete)
         {
-            channel.send(messageOption).then(msg => {
-                let object = {
-                    messageId:msg.id,
-                    channelId:msg.channel.id
-                };
-                server.global.messageTemp.push(object);
-                serverSave(server);
-
-                setTimeout(() => {
-                    for(let i=0; i < server.global.messageTemp.length; i++)
-                    {
-                        if(server.global.messageTemp[i].messageId == msg.id)
-                        {
-                            server.global.messageTemp.splice(i,1);
-                            msg.delete();
-                            serverSave(server);
-                            break;
-                        }
-                    }
-                }, time)
-            });
+            channel.send(messageOption).then(msg => sendTempMessage(server, msg, time));
         }
         else channel.send(messageOption);
     }

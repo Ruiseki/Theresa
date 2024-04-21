@@ -16,7 +16,7 @@ var packageInfo = JSON.parse(FS.readFileSync('package.json'));
 var commandsFile = JSON.parse(FS.readFileSync('src/json/commands.json'));
 
 import { clearMessagesTemps, eventsListeners, runAudioEngine } from './audio.mjs';
-import { clearLogs, findChannel, findUserId, isElementPresentInArray, simpleEmbed } from './tools.mjs';
+import { clearLogs, findChannel, findUserId, isElementPresentInArray, sendTempMessage, simpleEmbed } from './tools.mjs';
 
 dotenv.config();
 export var client;
@@ -32,7 +32,17 @@ export var button = {
         viewMore :      new Discord.ButtonBuilder().setCustomId('viewMore').setLabel('🔎').setStyle('Secondary'),
         loop :          new Discord.ButtonBuilder().setCustomId('loop').setLabel('🔂').setStyle('Secondary'),
         loopQueue :     new Discord.ButtonBuilder().setCustomId('loopQueue').setLabel('🔁').setStyle('Secondary'),
-        replay :        new Discord.ButtonBuilder().setCustomId('replay').setLabel('⏪').setStyle('Secondary')
+        replay :        new Discord.ButtonBuilder().setCustomId('replay').setLabel('⏪').setStyle('Secondary'),
+
+        yt1:            new Discord.ButtonBuilder().setCustomId('yt1').setLabel('1').setStyle('Primary'),
+        yt2:            new Discord.ButtonBuilder().setCustomId('yt2').setLabel('2').setStyle('Primary'),
+        yt3:            new Discord.ButtonBuilder().setCustomId('yt3').setLabel('3').setStyle('Primary'),
+        yt4:            new Discord.ButtonBuilder().setCustomId('yt4').setLabel('4').setStyle('Primary'),
+        yt5:            new Discord.ButtonBuilder().setCustomId('yt5').setLabel('5').setStyle('Primary'),
+        yt6:            new Discord.ButtonBuilder().setCustomId('yt6').setLabel('6').setStyle('Primary'),
+        yt7:            new Discord.ButtonBuilder().setCustomId('yt7').setLabel('7').setStyle('Primary'),
+        yt8:            new Discord.ButtonBuilder().setCustomId('yt8').setLabel('8').setStyle('Primary'),
+        ytBtnNbr: 8
     },
     help: {
         main :          new Discord.ButtonBuilder().setCustomId('main').setLabel('Main Page').setStyle('Primary'),
@@ -309,11 +319,7 @@ function adminCommand(command, args, message)
     else
     {
         message.channel.send(`You don't have acces to admin commands.`)
-        .then(msg => {
-            setTimeout(function() {
-                msg.delete();
-            }, 10000);
-        });
+        .then(msg => sendTempMessage(server, msg, 10000));
     }
 }
 
@@ -1084,11 +1090,13 @@ function objectGenerator(guildId)
             Shema of the user profile object
             {
                 userId,                     // the id of the user who had activate the service
-                voiceTracking: {
+                voiceTracking:
+                {
                     statusMessageId,
                     isActivated,            // if the voice tracking service is activated
-                    allowedUsers:[],        // accepted user. Not everyone can track you
-                    usersAndChannel: [
+                    allowedUsers: [],        // accepted user. Not everyone can track you
+                    usersAndChannel:
+                    [
                         {
                             userId,         // id of a targeted user
                             lastDM,         // time in ms from the last DM to the targeted user
