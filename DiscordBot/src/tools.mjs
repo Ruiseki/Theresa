@@ -166,3 +166,25 @@ export function isUserPresentInVoiceChannel(userId, voiceChannelId)
     if( member.voice.channel && member.voice.channel.id == channel.id ) return true;
     else return false;
 }
+
+export function getParameters(command)
+{
+    let result = {
+        command:null,
+        params: []
+    };
+
+    command = command.split(' ');
+    for(let i = 0; i < command.length; i++)
+    {
+        if(command[i].startsWith('-'))
+        {
+            command[i] = command[i].substring(1, command[i].length).split(':');
+            result.params.push({param:command[i][0], value:command[i][1]});
+            command.splice(i, 1);
+            i--;
+        }
+    }
+    result.command = command.join(' ');
+    return result;
+}

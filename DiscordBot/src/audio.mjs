@@ -2,12 +2,11 @@ import { createReadStream, readdirSync, existsSync, readFileSync } from 'fs';
 import { ActionRowBuilder } from 'discord.js';
 import { createAudioResource } from '@discordjs/voice';
 import NodeID3 from 'node-id3';
-import ytdl from 'ytdl-core';
+import ytdl from '@distube/ytdl-core';
 import yts from 'yt-search';
 
 import { servers, storageLocation, joinVoice, serverSave, button, client } from './theresa.mjs';
-import { reboot, simpleEmbed, getRandomInt, isUserPresentInVoiceChannel, sendTempMessage, deleteTempMessage } from './tools.mjs';
-import { title } from 'process';
+import { reboot, simpleEmbed, getRandomInt, isUserPresentInVoiceChannel, sendTempMessage, deleteTempMessage, getParameters } from './tools.mjs';
 
 const { read } = NodeID3;
 // local music
@@ -16,7 +15,7 @@ export function cmd(message, command, args)
 {
     message.delete();
     servers[message.guild.id].audio.lastMusicTextchannelId = message.channel.id;
-    
+
     if(command == undefined) ;
     else
     {
@@ -65,7 +64,7 @@ export function eventsListeners(server)
                 return; // stop
             }
 
-            
+
             if(server.audio.nextPlayingSong != null)
             {
                 server.audio.currentPlayingSong = server.audio.nextPlayingSong;
@@ -124,8 +123,8 @@ export async function audioMaster(authorMember, channel, command, args)
                     current = true;
                     queuePos = server.audio.currentPlayingSong;
                 }
-                else queuePos = QueueSelectorConverter(servers[channel.guildId], args[0].substring(2));
-                
+                else queuePos = queueSelectorConverter(servers[channel.guildId], args[0].substring(2));
+
                 if(queuePos == null || queuePos == undefined)
                 {
                     error(server, channel, 0, 'Expected value : valid queueSelector (integer or key word that refer to an existing position in the queue)');
@@ -182,7 +181,6 @@ export async function audioMaster(authorMember, channel, command, args)
             video = await yts({ 
                 videoId: music.substring(32, 32 + 11)
             }); // 32 : Size of https://www.youtube.com/watch?v=
-            
         }
         else
         {
@@ -302,7 +300,7 @@ export async function audioMaster(authorMember, channel, command, args)
         artist = tags.artist === undefined ? artist = '<unknown>' : artist = tags.artist;
 
         let text = `**${title}**  :notes:\n*__${artist}__*\n\n*Position : **${queuePos + 1}***\n*requested by ${authorMember.user.globalName}*`;
-        
+
         if(tags.image != undefined)
         {
             thumbnail = tags.image.imageBuffer;
@@ -313,7 +311,7 @@ export async function audioMaster(authorMember, channel, command, args)
             thumbnail = undefined;
             simpleEmbed(server, channel, text, undefined, false, true, 30000);
         }
-        
+
         if(queuePos == server.audio.queue.length)
         {
             server.audio.queue.push({
@@ -375,7 +373,7 @@ export async function newAudioMaster(authorMember, channel, command, args)
 
     if(!authorMember.voice.channel)
     {
-        error(server, channel, 3, "Please connect yourselft in a voice channel first");
+        error(server, channel, 3, 'Please connect yourselft in a voice channel first');
         return;
     }
 
@@ -383,41 +381,34 @@ export async function newAudioMaster(authorMember, channel, command, args)
     // t!audio Eclipse Parade -pos:next -youtube
     // t!audio Eclipse Parade -album
 
-    let params = {};
-    let musicTitle = '';
+    let params = {}, query = [];
 
     params.pos = null;
     params.youtube = false;
-    params.album = false;
+    params.album = null;
     params.all = false;
 
     // Parameters
-    // gettings all words starting by "-" and if they are a command, assign the requested value.
+    // gettings all words starting by '-' and if they are a command, assign the requested value.
     // If not, keep them in the query
     args.splice(0, 0, command);
-    for(let i = 0; i < args.length; i++)
-    {
-        let value = args[i];
-        if(value.startsWith("-") && value.search(/:/))
-        {
-            value = value.split("-")[1].split(":");
-            if(value[0] == "pos" || value[0] == "position") params.pos = value[1];
-            else if(value[0] == "yt" || value[0] == "youtube") params.youtube = true;
-            else if(value[0] == "ab" || value[0] == "album") params.album = true;
-            else if(value[0] == "all") params.all = true;
-            args.splice(i, 1);
-            i--;
-        }
-    }
-    args = args.join(' ');
+    query = getParameters(args.join(' '));
+
+    query.params.forEach(element => {
+        if(element.param == 'yt' || element.param == 'youtube') params.youtube = true;
+        else if(element.param == 'pos' || element.param == 'position') params.pos = element.value;
+        else if(element.param == 'alb' || element.param == 'album') params.album = true;
+        else if(element.param == 'all') params.all = true;
+    });
 
     // Position of the track in the queue
-    let queuePos = params.pos ? QueueSelectorConverter(server, params.pos) : audio.queue.length;
-    if(queuePos < 0) queuePos = 0;
-    if(queuePos > audio.queue.length) queuePos = audio.queue.length;
+    params.pos = params.pos ? queueSelectorConverter(server, params.pos) : audio.queue.length;
+    if(params.pos < 0) params.pos = 0;
+    if(params.pos > audio.queue.length) params.pos = audio.queue.length;
 
     // Music object
     let tracks = [];
+    let embed = {};
 
     // Find music on youtube
     if(params.youtube)
@@ -425,21 +416,21 @@ export async function newAudioMaster(authorMember, channel, command, args)
         let ytQuery = {};
         let videoIdLength = 11; // the length of the id of a video in youtube
 
-        if(args.startsWith('https://www.youtube.com/playlist?list='))   ytQuery.listId = args.substring('https://www.youtube.com/playlist?list='.length);
-        else if(args.startsWith('https://youtube.com/playlist?list='))  ytQuery.listId = args.substring('https://youtube.com/playlist?list='.length);
-        else if(args.startsWith('https://youtu.be/'))                   ytQuery.videoId = args.substring('https://youtu.be/'.length, 'https://youtu.be/'.length + videoIdLength);
-        else if(args.startsWith('https://music.youtube.com/watch?v='))  ytQuery.videoId = args.substring('https://music.youtube.com/watch?v='.length, 'https://music.youtube.com/watch?v='.length + videoIdLength);
-        else if(args.startsWith('https://www.youtube.com/watch?v='))    ytQuery.videoId = args.substring('https://www.youtube.com/watch?v='.length, 'https://www.youtube.com/watch?v='.length + videoIdLength);
-        else if(args.startsWith('https://youtube.com/watch?v='))        ytQuery.videoId = args.substring('https://youtube.com/watch?v='.length, 'https://youtube.com/watch?v='.length + videoIdLength);
-        else ytQuery = args;
+        if(query.command.startsWith('https://www.youtube.com/playlist?list='))   ytQuery.listId = query.command.substring('https://www.youtube.com/playlist?list='.length);
+        else if(query.command.startsWith('https://youtube.com/playlist?list='))  ytQuery.listId = query.command.substring('https://youtube.com/playlist?list='.length);
+        else if(query.command.startsWith('https://youtu.be/'))                   ytQuery.videoId = query.command.substring('https://youtu.be/'.length, 'https://youtu.be/'.length + videoIdLength);
+        else if(query.command.startsWith('https://music.youtube.com/watch?v='))  ytQuery.videoId = query.command.substring('https://music.youtube.com/watch?v='.length, 'https://music.youtube.com/watch?v='.length + videoIdLength);
+        else if(query.command.startsWith('https://www.youtube.com/watch?v='))    ytQuery.videoId = query.command.substring('https://www.youtube.com/watch?v='.length, 'https://www.youtube.com/watch?v='.length + videoIdLength);
+        else if(query.command.startsWith('https://youtube.com/watch?v='))        ytQuery.videoId = query.command.substring('https://youtube.com/watch?v='.length, 'https://youtube.com/watch?v='.length + videoIdLength);
+        else ytQuery = query.command;
 
         let result = await yts(ytQuery);
 
         if(typeof(ytQuery) == 'string')
         {
-            let {videos} = result;
+            let { videos } = result;
             if(videos.length > 8) videos = videos.slice(0, 8);
-            
+
             // Embed buttons
             let firstRow = new ActionRowBuilder()
               .addComponents(
@@ -455,7 +446,7 @@ export async function newAudioMaster(authorMember, channel, command, args)
                 button.audio.yt7,
                 button.audio.yt8
               );
-            
+
             // Embed description
             let desc = '';
             for(let i = 0; i < videos.length; i++)
@@ -467,7 +458,7 @@ export async function newAudioMaster(authorMember, channel, command, args)
                 videoTitle = videoTitle.replace(/~/g, '\\~');
                 desc += `**${i + 1}** ➡️ **${videoTitle}**\n✏️ __${videos[i].author.name}__\n\n`;
             }
-    
+
             let embed = {
                 title: `Result for : ${ytQuery}`,
                 color: '000000',
@@ -477,29 +468,37 @@ export async function newAudioMaster(authorMember, channel, command, args)
                 sendTempMessage(server, msg, 60000);
 
                 // Button actions
-                client.on('interactionCreate', interaction => {
+                const callback = interaction => {
                     if( !interaction.isButton() ) return;
-    
+
                     for(let i = 0; i < button.audio.ytBtnNbr; i++)
                     {
                         if(interaction.customId == `yt${i + 1}`)
                         {
                             deleteTempMessage(server, msg);
-                            newAudioMaster(authorMember, channel, videos[i].url, ['-yt']);
+                            let params_array = [];
+                            query.params.forEach(param => {
+                                let text = `-${param.param}`;
+                                if(param.value) text += `:${param.value}`;
+                                params_array.push(text);
+                            });
+                            newAudioMaster(authorMember, channel, videos[i].url, params_array);
+                            client.removeListener('interactionCreate', callback);
                         }
                     }
-                });
+                };
+
+                let chose = client.on('interactionCreate', callback);
             });
 
             return;
         }
 
-        let embed, videosReady = [];
         if(result.videos)
         {
             let { videos } = result;
 
-            let text = `**${result.title}**  :notes:\n*__${result.url}__*\n\n*Number of songs : ${videos.length}\nPosition : **${queuePos + 1}***\n*requested by ${authorMember.user.globalName}*`;
+            let text = `**${result.title}**  :notes:\n*__${result.url}__*\n\n*Number of songs : ${videos.length}\nPosition : **${params.pos + 1}***\n*requested by ${authorMember.user.globalName}*`;
             embed = {
                 color: '000000',
                 description: text,
@@ -509,8 +508,8 @@ export async function newAudioMaster(authorMember, channel, command, args)
             };
 
             videos.forEach(video => {
-                let {title, url, videoId, thumbnail} = video;
-                videosReady.push({
+                let {title, videoId, thumbnail} = video;
+                tracks.push({
                     title,
                     videoId,
                     url: 'https://youtube.com/watch?v=' + videoId,
@@ -521,8 +520,8 @@ export async function newAudioMaster(authorMember, channel, command, args)
         else
         {
             let {title, url, videoId, thumbnail} = result;
-            let desc = `**${title}**  :notes:\n*__${url}__*\n\n*Position : **${queuePos + 1}***\n*Requested by ${authorMember.user.globalName}*`;
-            
+            let desc = `**${title}**  :notes:\n*__${url}__*\n\n*Position : **${params.pos + 1}***\n*Requested by ${authorMember.user.globalName}*`;
+
             embed = {
                 color: '000000',
                 description: desc,
@@ -531,47 +530,76 @@ export async function newAudioMaster(authorMember, channel, command, args)
                 }
             };
 
-            videosReady.push({
+            tracks.push({
                 title,
                 videoId,
                 url,
                 thumbnail
             });
         }
-
-        channel.send({embeds: [embed]}).then(msg => sendTempMessage(server, msg, 30000));
-        audio.queue.splice(queuePos, 0, ...videosReady);
-
-        if(audio.currentPlayingSong && queuePos == audio.currentPlayingSong) audio.nextPlayingSong = audio.currentPlayingSong;
-        else computeNextPlayingSong(server);
-
-        if(!audio.currentPlayingSong) // play for the first time
-        {
-            audio.currentPlayingSong = 0;
-            runAudioEngine(server, channel.guild);
-        }
-        else if(audio.currentPlayingSong == audio.nextPlayingSong) // when the next song replace the current song
-        {
-            server.audio.Engine.stop();
-        }
-        else if(server.audio.Engine._state.status != 'playing') // when the queue is complete and not reset
-        {
-            runAudioEngine(server, channel.guild);
-        }
-        else queueDisplay(server, 16, true); // when the engine is playing something
-    
-        serverSave(server);
     }
+    else
+    {
+        let query = `
+            SELECT
+                CASE
+                    WHEN isnull(title)
+                    THEN fileNameNoExt
+                    ELSE title
+                END as title,
+                CASE
+                    WHEN isnull(artist)
+                    THEN '<unknown>'
+                    ELSE title
+                END as artist
+            FROM track
+            WHERE ( SELECT id FROM user WHERE discordId = ? )
+        `;
+        if( params.album ) query += `AND album LIKE '%?%'`;
+
+        return;
+    }
+
+    channel.send({embeds: [embed]}).then(msg => sendTempMessage(server, msg, 30000));
+    let del = 0;
+    if(params.pos == audio.currentPlayingSong) del = 1;
+    else if(params.pos < audio.currentPlayingSong)
+    {
+        params.pos++;
+        audio.currentPlayingSong += tracks.length;
+    }
+
+    audio.queue.splice(params.pos, del, ...tracks);
+
+    if(audio.currentPlayingSong && params.pos == audio.currentPlayingSong) audio.nextPlayingSong = audio.currentPlayingSong;
+    else computeNextPlayingSong(server);
+
+    if(audio.currentPlayingSong == null) // play for the first time
+    {
+        audio.currentPlayingSong = 0;
+        runAudioEngine(server, channel.guild);
+    }
+    else if(audio.currentPlayingSong == audio.nextPlayingSong) // when the next song replace the current song
+    {
+        server.audio.Engine.stop();
+    }
+    else if(server.audio.Engine._state.status != 'playing') // when the queue is complete and not reset
+    {
+        runAudioEngine(server, channel.guild);
+    }
+    else queueDisplay(server, 16, true); // when the engine is playing something
+
+    serverSave(server);
 }
 
 export async function runAudioEngine(server, guild)
 {
     server.global.voiceConnection.subscribe(server.audio.Engine);
     computeNextPlayingSong(server);
-    
+
     let voiceChannel = guild.channels.cache.get(server.global.lastVoiceChannelId);
     joinVoice(server, voiceChannel);
-    
+
     if(server.audio.queue[server.audio.currentPlayingSong].url.startsWith('[LOCAL]')) // local file
     {
         // check if the file exist
@@ -597,11 +625,11 @@ export async function runAudioEngine(server, guild)
     else // youtube
     {
         server.audio.resource = createAudioResource(
-            ytdl(server.audio.queue[server.audio.currentPlayingSong].url, {
+            ytdl(server.audio.queue[server.audio.currentPlayingSong].url, { 
                 filter:'audioonly',
                 quality:'highest',
                 highWaterMark:1 << 25
-            }), { 
+            }), {
                 inlineVolume: true
             }
         );
@@ -706,7 +734,7 @@ export function engineMgr(channel, args)
         {
             args.shift();
             args = args.join(' ');
-            let index = QueueSelectorConverter(server, args);
+            let index = queueSelectorConverter(server, args);
             if(index == null)
             {
                 error(server, channel, 0, 'Expected value : valid queue selector');
@@ -741,7 +769,7 @@ export function engineMgr(channel, args)
                 computeNextPlayingSong(server);
                 simpleEmbed(server, channel, '**Loop On 🔂**', undefined, false, true, 1000);
             }
-            
+
             queueDisplay(server, 16, true);
         }
     }
@@ -824,7 +852,7 @@ export async function queueMgr(channel, args)
         if(!args[1]) error(server, channel, 1, 'No argument(s) detected');
         else if(args.length == 2) // single
         {
-            args[1] = QueueSelectorConverter(server, args[1]);
+            args[1] = queueSelectorConverter(server, args[1]);
             if(args[1] == null)
             {
                 error(server, channel, 0, "The argument must be a valid queue selector or an number between 0 and the size of the queue.");
@@ -844,9 +872,9 @@ export async function queueMgr(channel, args)
         }
         else if(args.length == 3) // range
         {
-            args[1] = QueueSelectorConverter(server, args[1]);
-            args[2] = QueueSelectorConverter(server, args[2]);
-            
+            args[1] = queueSelectorConverter(server, args[1]);
+            args[2] = queueSelectorConverter(server, args[2]);
+
             if(args[2] <= args[1])
             {
                 error(server, channel, 0, '2nd argument must be superior to the 1st argument');
@@ -871,7 +899,7 @@ export async function queueMgr(channel, args)
             let needStop = false
             for(let i = 1; i < args.length; i++)
             {
-                args[i] = QueueSelectorConverter(server, args[i]);
+                args[i] = queueSelectorConverter(server, args[i]);
                 if(args[i] == null)
                 {
                     error(server, channel, 0, `\"${args[i]}\" This argument must be a valid queue selector or an number between 0 and the size of the queue.`);
@@ -901,12 +929,12 @@ export async function queueMgr(channel, args)
             return;
         }
 
-        args[1] = QueueSelectorConverter(server, args[1]);
-        args[2] = QueueSelectorConverter(server, args[2]);
+        args[1] = queueSelectorConverter(server, args[1]);
+        args[2] = queueSelectorConverter(server, args[2]);
 
         if(args[1] == null || args[2] == null) error(server, channel, 0, 'The argument must be a valid queue selector or an number between 0 and the size of the queue.')
         else if(args[1] == args[2]) error(server, channel, 0, 'The arguments can\'t have the same value');
-        
+
         let temp = server.audio.queue[args[1]];
         server.audio.queue[args[1]] = server.audio.queue[args[2]];
         server.audio.queue[args[2]] = temp;
@@ -948,7 +976,7 @@ async function miscellaneous(message, args)
         t!a miscellaneous localshuffle | t!a m ls
         t!a m find ka
     */
-    
+
     let server = servers[message.guild.id];
     if(!args[0]) error(server, message.channel, 1, 'Please precise your intention(s).');
     else if(args[0] == 'find' || args[0] == 'f')
@@ -986,17 +1014,24 @@ async function miscellaneous(message, args)
         if(!server.audio.queue[0]) server.audio.currentPlayingSong = 0;
 
         const url = `http://${process.env.apiUrl}:${process.env.apiPort}/musics/random/${message.author.id}`;
-        let userMusics = await fetch(url).then(result => result.json());
-        
-        for(let element of userMusics)
-        element.url = `[LOCAL]${storageLocation}/audio/${message.author.id}/${element.url}`;
-    
-        server.audio.queue.push(...userMusics);
-        
-        if(server.audio.Engine._state.status != 'playing') // playing or adding to the queue
-            runAudioEngine(server, message.guild);
-        else
-            queueDisplay(server, 16, true);
+        fetch(url)
+        .then(result => result.json())
+        .then(userMusics => {
+            if(userMusics?.status == "error")
+            {
+                console.error(userMusics.message);
+                return;
+            }
+            for(let element of userMusics)
+            element.url = `[LOCAL]${storageLocation}/audio/${message.author.id}/${element.url}`;
+
+            server.audio.queue.push(...userMusics);
+
+            if(server.audio.Engine._state.status != 'playing') // playing or adding to the queue
+                runAudioEngine(server, message.guild);
+            else
+                queueDisplay(server, 16, true);
+        });
     }
     else if(args[0] == 'folder' || args[0] == 'fd')
     {
@@ -1021,7 +1056,7 @@ async function miscellaneous(message, args)
                         });
                     }
                 });
-                
+
                 if(server.audio.currentPlayingSong == null) server.audio.currentPlayingSong = 0;
 
                 if(server.audio.Engine._state.status != 'playing') runAudioEngine(server, server.global.guild);
@@ -1059,13 +1094,13 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
     if(server.audio.Engine._state.status == 'paused') text += '**Paused** ⏸';
     else text += '**Playing** ▶';
     text += '\n';
-    
+
     // --------------------------------------------------------------------------------
     // number of song in the queue
-    
+
     text += `*Numbers of song in the queue : **${server.audio.queue.length}***`;
     text += '\n\n';
-    
+
     // --------------------------------------------------------------------------------
     // calculating the index of the first music to be displayed
 
@@ -1105,7 +1140,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
 
         if(i - startAt == nbrOfMusicDisplayed - 1) break;
     }
-    
+
     // --------------------------------------------------------------------------------
     // Embed generator
 
@@ -1167,7 +1202,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
             {
                 // --------------------------------------------------------------------------------
                 // editing the old queue
-    
+
                 let lastQueueMessage = channelOfTheLastQueue.messages.cache.get(server.audio.lastQueue.messageId);
                 lastQueueMessage.edit(messageOption);
             }
@@ -1175,7 +1210,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
             {
                 // --------------------------------------------------------------------------------
                 // deleting the old queue ...
-        
+
                 if(server.audio.lastQueue.channelId != null)
                 {
                     let channelOfTheLastQueue = server.global.guild.channels.cache.get(server.audio.lastQueue.channelId);
@@ -1183,12 +1218,12 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
                     .then(queueMessage => queueMessage.delete())
                     .catch(() => console.error(`Message id ${server.audio.lastQueue.messageId} can't be reach`));
                 }
-                
+
                 // --------------------------------------------------------------------------------
                 // ... and resend it
-    
+
                 let chn = server.global.guild.channels.cache.get(server.audio.lastMusicTextchannelId); // last music channel
-        
+
                 if(isKeep)
                 {
                     chn.send(messageOption)
@@ -1215,7 +1250,7 @@ export async function queueDisplay(server, nbrOfMusicDisplayed, isKeep)
     else
     {
         let chn = server.global.guild.channels.cache.get(server.audio.lastMusicTextchannelId); // last music channel
-        
+
         if(isKeep)
         {
             chn.send(messageOption)
@@ -1259,22 +1294,23 @@ function playlist(message, args)
 {
     let server = servers[message.guild.id];
     if(!args[0]) error(server, message.channel, 1, 'Possible action : *please fill this line of text Ruiseki sama~*')
-    
+
     let user = server.users.find(element => element.userId == message.author.id);
     if(args[0] == 'create') { }
 }
 
-function QueueSelectorConverter(server, arg)
+function queueSelectorConverter(server, arg)
 {
     if(arg == "a" || arg == "after" || arg == 'aft' || arg == "next" || arg == "n")
     {
         if(server.audio.currentPlayingSong == server.audio.queue.length - 1) return null;
         else return server.audio.currentPlayingSong + 1;
     }
+    else if(arg == "c" || arg == "current") return server.audio.currentPlayingSong;
     else if(arg == "p" || arg == "previous" || arg == "befor" || arg == "b")
     {
         if(server.audio.currentPlayingSong == 0) return null;
-        return server.audio.currentPlayingSong; // <- will be inserted, so p = current
+        else return server.audio.currentPlayingSong - 1;
     }
     else if(arg == "f" || arg == "final" || arg == "end" || arg == "e")
     {
@@ -1287,12 +1323,12 @@ function QueueSelectorConverter(server, arg)
             let mach = [], perfectMach = null;
             for(let i = 0; i < server.audio.queue.length; i++)
             {
-                if(server.audio.queue[i].title.toLocaleLowerCase() == arg.toLocaleLowerCase())
+                if(server.audio.queue[i].title.toLowerCase() == arg.toLowerCase())
                 {
                     perfectMach = i;
                     break;
                 }
-                else if( server.audio.queue[i].title.toLocaleLowerCase().startsWith(arg.toLocaleLowerCase()) ) mach.push(i);
+                else if( server.audio.queue[i].title.toLowerCase().startsWith(arg.toLowerCase()) ) mach.push(i);
             }
 
             if(perfectMach == null && mach.length == 0) return null;
@@ -1348,18 +1384,18 @@ function getPathOfFile(targetName, directory)
         let files = readdirSync(path);
         for(let file of files)
         {
-            if(file.toLocaleLowerCase() == (targetName.toLocaleLowerCase()+'.mp3' || targetName.toLocaleLowerCase()+'.wav'))
+            if(file.toLowerCase() == (targetName.toLowerCase()+'.mp3' || targetName.toLowerCase()+'.wav'))
             {
                 array.splice(0,array.length);
                 array.push(path+file);
                 return array;
             }
-            if(file.toLocaleLowerCase().startsWith(targetName.toLocaleLowerCase())) array.push(path+file);
+            if(file.toLowerCase().startsWith(targetName.toLowerCase())) array.push(path+file);
         }
     }
     if(array.length == 0) return undefined;
     else return array;
-    
+
 }
 
 export function clearMessagesTemps(server, guild)

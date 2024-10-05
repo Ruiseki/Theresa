@@ -269,8 +269,6 @@ function adminCommand(command, args, message)
             case 'clear':
                 clear(servers[message.guildId], message, args);
                 break;
-                offline(server, message);
-                break;
             case 'admin':
                 adminMgr(server, message, args);
                 break;
@@ -778,7 +776,8 @@ export async function trackingVoice(server, channel, userAuthor, args)
                         components: [row]
                     });
                     user.voiceTracking.usersAndChannels[targetUserIndex].lastDM = Date.now();
-                    client.on('interactionCreate', i => {
+
+                    let callback = i => {
                         if( !i.isButton() ) return;
 
                         if(i.customId == 'accept')
@@ -789,7 +788,10 @@ export async function trackingVoice(server, channel, userAuthor, args)
                         else if(i.customId == 'refuse') i.message.delete();
 
                         serverSave(server);
-                    });
+                        client.removeListener('interactionCreate', callback);
+                    };
+
+                    client.on('interactionCreate', callback);
                 }
                 else if(targetProfile.voiceTracking.allowedUsers.indexOf(userAuthor.id) == -1) targetProfile.voiceTracking.allowedUsers.push(userAuthor.id);
             }
