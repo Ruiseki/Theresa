@@ -73,10 +73,8 @@ export default class MusicFolder
         document.querySelectorAll('.musicField').forEach(async element => {
             if(element.querySelector('input').checked)
             {
-                let title = element.querySelector('.musicTitle').innerHTML;
-                let artist = element.querySelector('.musicArtist').innerHTML;
-                title = title.replace('&amp;', '&');
-                artist = artist.replace('&amp;', '&');
+                let title = element.querySelector('.musicTitle').innerText;
+                let artist = element.querySelector('.musicArtist').innerText;
 
                 artist = artist == "--unknown--" ? null : artist;
 
