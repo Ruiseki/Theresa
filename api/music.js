@@ -142,7 +142,7 @@ async function musicsRemove(req, res)
     for(let file of req.body.files)
     {
         await removeTrackFromBDD(file, req.body.username, req.body.password); // deleting in the BDD
-        for(let i = 0; i < usersCache[index].musics.length; i++)              //          in the cache
+        for(let i = 0; i < usersCache[index].musics.length; i++)              // deleting in the cache
         {
             if(usersCache[index].musics[i].fileName == file)
             {
