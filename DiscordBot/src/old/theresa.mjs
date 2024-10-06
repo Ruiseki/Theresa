@@ -256,7 +256,7 @@ export function cmd(message, type, command, args)
  *   +----------------------------+
  */
 
-function adminCommand(command, args, message)    
+function adminCommand(command, args, message)
 {
     let isAdmin = false;
     let server = servers[message.guildId];
@@ -281,7 +281,7 @@ function adminCommand(command, args, message)
 
             default:
                 if(message.author.id == '606684737611759628');
-                
+
                 switch(command)
                 {
                     case 'clearlogs':
