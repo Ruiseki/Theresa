@@ -10,8 +10,8 @@ export async function init()
     app.post('/musics', (req, res) =>                                       { musics(req, res); });
     app.get('/musics/:discordId', (req, res) =>                             { getMusics(req, res); })
     app.get('/musics/random/:discordId', (req, res) =>                      { getRandomMusics(req, res); })
-    app.post('/musics/upload', upload.array('musicUploader'), (req, res) => { musicsUpload(req, res); });
-    app.post('/musics/remove', (req, res) =>                                { musicsRemove(req, res) });
+    app.post('/musics/upload', upload.array('musicUploader'), (req, res) => { uploadMusics(req, res); });
+    app.post('/musics/remove', (req, res) =>                                { removeMusics(req, res) });
     app.get('/musics/thumbnail/:discordId/:fileName/', (req, res) =>        { sendThumbnail(req, res); });
 }
 
@@ -29,8 +29,40 @@ async function musics(req, res)
 
 async function getMusics(req, res)
 {
-    let query = 'SELECT title, fileNameNoExt, fileName, artist, album FROM track WHERE ( SELECT id FROM user WHERE discordId = ? )';
+    let query = 
+      'SELECT '
+    + 'CASE '
+        + 'WHEN isnull(title) '
+        + 'THEN fileNameNoExt '
+        + 'ELSE title '
+    + 'END as title, '
+    + 'fileName as url, '
+    + 'CASE '
+        + 'WHEN isnull(artist) '
+        + `THEN '<unknown>' `
+        + 'ELSE artist '
+    + 'END as artist, '
+    + 'CASE '
+        + 'WHEN isnull(album) '
+        + `THEN '<unknown>' `
+        + 'ELSE album '
+    + 'END as album '
+    + 'FROM track '
+    + `WHERE ( SELECT id FROM user WHERE discordId = ? ) `;
+
     let parameters = [req.params.discordId];
+
+    if(req.query.album)
+    {
+        query += `AND album like ? `;
+        query += 'ORDER BY track_nbr ';
+        parameters.push(`%${req.query.album}%`);
+    }
+    if(req.query.artist)
+    {
+        query += `AND artist like ? `;
+        parameters.push(`%${req.query.artist}%`);
+    }
 
     try
     {
@@ -81,7 +113,7 @@ async function getRandomMusics(req, res)
     }
 }
 
-async function musicsUpload(req, res)
+async function uploadMusics(req, res)
 {
     console.log('######\tIncoming musics file');
     console.log(`\t\tUser : ${req.body.username}`);
@@ -126,7 +158,7 @@ async function musicsUpload(req, res)
     res.sendStatus(200);
 }
 
-async function musicsRemove(req, res)
+async function removeMusics(req, res)
 {
     console.log('######\tRemoving file');
     console.log(`\t\tUser : ${req.body.username}`);
@@ -252,7 +284,7 @@ async function trackToBDD(file, username, password)
         fileObject.album  = fileObject.album.replace(/'/g, "\\'");
     } else fileObject.album = null;
 
-    let query = 'INSERT INTO track VALUES ((SELECT id FROM user WHERE username = ? AND password = ?), ?, ?, ?, ?, ?, ?)';
+    let query = 'INSERT INTO track VALUES ((SELECT id FROM user WHERE username = ? AND password = ?), ?, ?, ?, ?, ?, ?, ?, ?)';
     let parameters = [
         username,
         password,
@@ -261,7 +293,9 @@ async function trackToBDD(file, username, password)
         fileObject.extension,
         fileObject.title,
         fileObject.artist,
-        fileObject.album
+        fileObject.album,
+        fileObject.track_number ? fileObject.track_number.split('/')[0] : null,
+        fileObject.track_number && fileObject.track_number.includes('/') ? fileObject.track_number.split('/')[1] : null
     ];
 
     try {
@@ -287,7 +321,8 @@ function fileToObject(file)
         extension,
         title: tags.title,
         artist: tags.artist,
-        album: tags.album
+        album: tags.album,
+        track_number: tags.trackNumber
     });
 }
 
