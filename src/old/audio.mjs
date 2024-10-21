@@ -1,5 +1,5 @@
 import { createReadStream, readdirSync, existsSync, readFileSync } from 'fs';
-import { ActionRowBuilder } from 'discord.js';
+import { ActionRowBuilder, messageLink } from 'discord.js';
 import { createAudioResource } from '@discordjs/voice';
 import NodeID3 from 'node-id3';
 import ytdl from '@distube/ytdl-core';
@@ -386,6 +386,7 @@ export async function newAudioMaster(authorMember, channel, command, args)
     params.pos = null;
     params.youtube = false;
     params.album = null;
+    params.artist = null;
     params.all = false;
 
     // Parameters
@@ -398,6 +399,7 @@ export async function newAudioMaster(authorMember, channel, command, args)
         if(element.param == 'yt' || element.param == 'youtube') params.youtube = true;
         else if(element.param == 'pos' || element.param == 'position') params.pos = element.value;
         else if(element.param == 'alb' || element.param == 'album') params.album = true;
+        else if(element.param == 'art' || element.param == 'artist') params.album = true;
         else if(element.param == 'all') params.all = true;
     });
 
@@ -409,6 +411,7 @@ export async function newAudioMaster(authorMember, channel, command, args)
     // Music object
     let tracks = [];
     let embed = {};
+    let file;
 
     // Find music on youtube
     if(params.youtube)
@@ -488,7 +491,7 @@ export async function newAudioMaster(authorMember, channel, command, args)
                     }
                 };
 
-                let chose = client.on('interactionCreate', callback);
+                client.on('interactionCreate', callback);
             });
 
             return;
@@ -540,27 +543,64 @@ export async function newAudioMaster(authorMember, channel, command, args)
     }
     else
     {
-        let query = `
-            SELECT
-                CASE
-                    WHEN isnull(title)
-                    THEN fileNameNoExt
-                    ELSE title
-                END as title,
-                CASE
-                    WHEN isnull(artist)
-                    THEN '<unknown>'
-                    ELSE title
-                END as artist
-            FROM track
-            WHERE ( SELECT id FROM user WHERE discordId = ? )
-        `;
-        if( params.album ) query += `AND album LIKE '%?%'`;
+        let url = `http://${process.env.apiUrl}:${process.env.apiPort}/musics/${authorMember.id}`;
 
-        return;
+        if(params.album || params.artist)
+        {
+            url += "?";
+            
+            if(params.album) url += `album=${query.command}`;
+            if(params.artist) url += `artist=${query.command}`;
+        }
+            
+        url = url.replace(/ +/g, '%20');
+        await fetch(url)
+        .then(result => result.json())
+        .then(musics => {
+            if(musics?.status == 'error')
+            {
+                console.error(musics.message);
+                return;
+            }
+
+            if(musics.length == 0) return;
+
+            for(let element of musics)
+                element.url = `[LOCAL]${storageLocation}/audio/${authorMember.id}/${element.url}`;
+
+            server.audio.queue.push(...musics);
+
+            if(params.album)
+            {
+                let text = `**Album : ${musics[0].album}**  :notes:\n\n*Number of songs : ${musics.length}\nPosition : **${params.pos + 1}***\n*requested by ${authorMember.user.globalName}*`;
+                
+                embed = {
+                    color: '000000',
+                    description: text,
+                };
+
+                let tags = read(musics[0].url.substring('[LOCAL]'.length));
+                if(tags.image)
+                {
+                    // let attachment = `attachment://${musics[0].album}.${tags.image.mime.split('/')[1]}`.replace(' ', '_');
+                    let attachment = `attachment://file.jpg`;
+                    embed.thumbnail = {
+                        url: attachment
+                    };
+                    file = tags.image.imageBuffer;
+                }
+            }
+            else
+            {
+                // Normal play
+                // WIP
+            }
+        });
+
+        if(server.audio.queue.length == 0) return;
     }
 
-    channel.send({embeds: [embed]}).then(msg => sendTempMessage(server, msg, 30000));
+    channel.send({embeds: [embed], files: [file]}).then(msg => sendTempMessage(server, msg, 30000));
     let del = 0;
     if(params.pos == audio.currentPlayingSong) del = 1;
     else if(params.pos < audio.currentPlayingSong)
@@ -1022,8 +1062,9 @@ async function miscellaneous(message, args)
                 console.error(userMusics.message);
                 return;
             }
+
             for(let element of userMusics)
-            element.url = `[LOCAL]${storageLocation}/audio/${message.author.id}/${element.url}`;
+                element.url = `[LOCAL]${storageLocation}/audio/${message.author.id}/${element.url}`;
 
             server.audio.queue.push(...userMusics);
 
