@@ -2,7 +2,7 @@
 #include <mutex>
 #include <thread>
 
-#include "webSocket.hpp"
+#include "web_socket.hpp"
 
 #ifndef __linux__
     #include <winsock2.h>
@@ -29,7 +29,7 @@ int main()
     listen(sockfd, 1);
 
     fd_set fd;
-    std::mutex listenerLock;
+    std::mutex listener_lock;
 
     struct Client {
         int sockfd;
@@ -42,51 +42,50 @@ int main()
 
     while(true)
     {
-        listenerLock.lock();
+        listener_lock.lock();
 
         FD_ZERO(&fd);
-        int maxSocket = -1;
-        maxSocket = sockfd;
+        int max_socket = -1;
+        max_socket = sockfd;
         FD_SET(sockfd, &fd);
         for(Client client : clients)
-            if(maxSocket < client.sockfd)
+            if(max_socket < client.sockfd)
             {
                 FD_SET(client.sockfd, &fd);
-                maxSocket = client.sockfd;
+                max_socket = client.sockfd;
             }
 
-        if( select(maxSocket + 1, &fd, NULL, NULL, &tv) > 0 )
+        if( select(max_socket + 1, &fd, NULL, NULL, &tv) > 0 )
         {
             if( FD_ISSET(sockfd, &fd) )
             {
                 char buffer[BUFFER_SIZE];
-                int newClientSocket = accept(sockfd, nullptr, nullptr);
-                clients.push_back({newClientSocket});
+                int new_client_socket = accept(sockfd, nullptr, nullptr);
+                clients.push_back({new_client_socket});
 
-                int recvSize = recv(newClientSocket, buffer, BUFFER_SIZE, 0);
-                if(recvSize < BUFFER_SIZE) buffer[recvSize] = '\0';
+                int recv_size = recv(new_client_socket, buffer, BUFFER_SIZE, 0);
+                if(recv_size < BUFFER_SIZE) buffer[recv_size] = '\0';
 
-                std::string handshakeHeader = generateHandshakeHeader(buffer);
-                send(newClientSocket, handshakeHeader.c_str(), handshakeHeader.length(), 0);
+                std::string handshake_header = generate_handshake_header(buffer);
+                send(new_client_socket, handshake_header.c_str(), handshake_header.length(), 0);
             }
 
             for(size_t i = 0; i < clients.size(); i++)
                 if( FD_ISSET(clients[i].sockfd, &fd) )
                 {
-                    DecodedData datas = decodeData(clients[i].sockfd);
-                    if(datas.dataType == OPCODE_TEXT)
+                    DecodedData datas = decode_data(clients[i].sockfd);
+                    if(datas.data_type == OPCODE_TEXT)
                     {
-                        if(datas.textData == "Oui")
+                        if(datas.text_data == "Oui")
                         {
-                            sendEncodedMessage("Non", clients[i].sockfd, false);
+                            send_encoded_message("Non", clients[i].sockfd, false);
                         }
-                        std::cout << datas.textData << std::endl;
-
+                        std::cout << datas.text_data << std::endl;
                     }
                 }
         }
 
-        listenerLock.unlock();
+        listener_lock.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
     return 0;

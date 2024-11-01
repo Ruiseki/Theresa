@@ -23,11 +23,11 @@ FetchContent_MakeAvailable(openssl)
 
 set(CORE_FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/src/webSocketHandler.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/src/web_socket_handler.cpp)
 
 include_directories(${json_SOURCE_DIR}/single_include)
 include_directories(${openssl_SOURCE_DIR}/include/openssl)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 
 add_executable(${PROJECT_NAME} ${CORE_FILES})
 
