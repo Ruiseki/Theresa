@@ -1,13 +1,5 @@
-.DS_Store
-desktop.ini
-Icon?
-.vscode/
-
-## Internal struct
-/storage
-/software
-.env
-
-## Node
-*/node_modules
-package-lock.json
+.vscode
+build
+storage
+node_modules
+api/node_modules

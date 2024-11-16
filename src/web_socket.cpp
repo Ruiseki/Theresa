@@ -1,12 +1,8 @@
 #include <cstring>
 #include <sstream>
-
 #include <openssl/sha.h>
 #include <openssl/evp.h>
-
-#ifndef __linux__
-    #include <winsock2.h>
-#endif
+#include <sys/socket.h>
 
 #include "web_socket.hpp"
 

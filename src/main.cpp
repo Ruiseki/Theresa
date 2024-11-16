@@ -1,23 +1,18 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
 
 #include "web_socket.hpp"
 
-#ifndef __linux__
-    #include <winsock2.h>
-    #include <windows.h>
-    #include <ws2tcpip.h>
-#endif
-
 int main()
 {
-    WSADATA ws;
     sockaddr_in addr;
     int sockfd;
 
     memset(&(addr.sin_zero), 0, 8);
-    WSAStartup(MAKEWORD(2, 2), &ws);
 
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     const char param_value = '1';
