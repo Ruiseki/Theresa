@@ -4,7 +4,7 @@
 #include <openssl/evp.h>
 #include <sys/socket.h>
 
-#include "web_socket.hpp"
+#include "web_socket_mgr.hpp"
 
 std::string c_str_to_base_64(unsigned char const *bytes_to_encode, unsigned int in_len)
 {

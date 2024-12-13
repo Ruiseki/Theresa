@@ -1,5 +1,11 @@
 import { init_ws } from './websocket.js';
-import { init_discord } from './discord.js';
+import { init_discord } from './discord_handler.js';
+
+export var THERESA_PORT = {
+    "MAIN_PORT": 42840,
+    "HTTP_PORT": 80,
+    "WEBSOCKET_PORT": 42841
+};
 
 init_ws();
 init_discord();

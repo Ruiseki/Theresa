@@ -3,3 +3,4 @@ build
 storage
 node_modules
 api/node_modules
+.env

@@ -17,8 +17,19 @@ FetchContent_MakeAvailable(json)
 find_package(OpenSSL)
 
 set(CORE_FILES
-	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/web_socket.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/src/theresa.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/server.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/tools.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/tools_web.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/tools_mysql.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/tools_discord.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/web_handler.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/main_handler.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/gui_handler.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/discord_handler.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/http_mgr.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/socket_mgr.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/web_socket_mgr.cpp)
 
 include_directories(${json_SOURCE_DIR}/single_include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include)

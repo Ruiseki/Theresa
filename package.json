@@ -1,0 +1,24 @@
+{
+  "name": "theresa",
+  "version": "0.6.0",
+  "type": "module",
+  "description": "NodeJS side of Theresa",
+  "main": "src/js/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ruiseki/Theresa.git"
+  },
+  "author": "Ruiseki",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ruiseki/Theresa/issues"
+  },
+  "homepage": "https://github.com/Ruiseki/Theresa#readme",
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7"
+  }
+}
