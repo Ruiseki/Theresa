@@ -10,6 +10,6 @@ struct Socket {
     sockaddr_in addr;
 };
 
-void create_server_socket(int port, Socket *new_Socket);
+void create_server_socket(int port, Socket *new_socket);
 
 #endif // SOCKET_MGR_HPP_INCLUDED

@@ -58,7 +58,8 @@ std::string generate_accept_key(std::string key)
 
 std::string get_client_key(char* client_header)
 {
-    char* truc = std::strstr(client_header, "Sec-WebSocket-Key: ");
+    // char* truc = std::strstr(client_header, "Sec-WebSocket-Key: ");
+    char* truc = std::strstr(client_header, "sec-websocket-key: ");
     std::string key;
     int key_pos = (truc - client_header) + 19;
 

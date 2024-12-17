@@ -4,13 +4,13 @@ export var ws;
 
 export function init_ws()
 {
-    ws = new WebSocket(`ws://127.0.0.1:${THERESA_PORT.WEBSOCKET_PORT}`);
+    let socket = new WebSocket(`ws://127.0.0.1:${THERESA_PORT.WEBSOCKET_PORT}`);
+    
+    socket.addEventListener("error", (err) => console.error(err));
+    socket.addEventListener("open", (evt) => console.log(evt));
+    socket.addEventListener("message", (msg) => console.log(msg));
 
-    /* ws.on('error', console.error);
-    
-    ws.on('open', function open() { });
-    
-    ws.on('message', get_message); */
+    ws = socket;
 }
 
 function get_message(message)
@@ -20,5 +20,8 @@ function get_message(message)
 
 export function send_data(data)
 {
-    ws.send(data);
+    if(typeof(data) == 'object')
+        ws.send(JSON.stringify(data));
+    else
+        ws.send(data);
 }
