@@ -2,12 +2,13 @@
 
 #include "server.hpp"
 
-void process_ws(int /* client_sockfd */, const char /* data */[], size_t /* data_size */)
+void process_ws(int /* client_sockfd */, char data[])
 {
-
+    DecodedWsTrame result;
+    decode_ws_trame((unsigned char*)data, &result);
 }
 
-void process_http(int client_sockfd, const char /* data */[], size_t /* data_size */)
+void process_http(int client_sockfd, char /* data */[], size_t /* data_size */)
 {
     std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello World !";
     send(client_sockfd, response.c_str(), response.size(), 0);
@@ -97,32 +98,22 @@ void listener(Socket sockets[], size_t sockets_size, Client **clients, size_t *c
             Client &client = (*clients)[i];
             if( FD_ISSET(client.sockfd, &fd) )
             {
-                const int buffer_size = 8192;
-                char buffer[buffer_size];
-                std::vector<char> data;
-
-                int recv_result;
-                do
-                {
-                    recv_result = recv(client.sockfd, buffer, buffer_size, 0);
-                    
-                } while(recv_result == buffer_size); // Possible lock when the data size is equal to buffer_size. Need to test
+                char buffer[BUFFER_SIZE];
+                long recv_result = recv(client.sockfd, buffer, BUFFER_SIZE, 0);
 
                 if(recv_result > 0)
                 {
-                    if(recv_result != buffer_size) buffer[recv_result] = '\0';
+                    if(recv_result != BUFFER_SIZE) buffer[recv_result] = '\0';
 
                     switch(client.type)
                     {
                         case TYPE_GLOBAL:
                             break;
                         case TYPE_HTTP:
-                        {
                             process_http(client.sockfd, buffer, recv_result);
                             break;
-                        }
                         case TYPE_WS:
-                            process_ws(client.sockfd, data.data(), data.size());
+                            process_ws(client.sockfd, buffer);
                             break;
                     }
                 }

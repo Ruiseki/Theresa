@@ -6,6 +6,20 @@
 
 #define BUFFER_SIZE 0x1000
 
+#define PAYLOAD_SIZE_CURRENT    125
+#define PAYLOAD_SIZE_16_BITS    126
+#define PAYLOAD_SIZE_64_BITS    127
+
+#define WS_TRAME_POS_FIN        0
+#define WS_TRAME_POS_OPCODE     0
+#define WS_TRAME_POS_MASK       1
+#define WS_TRAME_POS_PAYLOADLEN 1
+
+#define WS_TRAME_MSK_FIN        0x80
+#define WS_TRAME_MSK_OPCODE     0x0F
+#define WS_TRAME_MSK_MASK       0x80
+#define WS_TRAME_MSK_PAYLOADLEN 0x7F
+
 typedef int OPCODE_T;
 #define OPCODE_CONTINUE (OPCODE_T)0x0
 #define OPCODE_TEXT     (OPCODE_T)0x1
@@ -18,22 +32,29 @@ typedef int FIN_T;
 #define FIN_TERMINATE (FIN_T)0x80
 #define FIN_CONTINUE  (FIN_T)0x0
 
-struct DecodedData {
+struct DecodedWsTrame {
     OPCODE_T data_type;
     bool end;
     std::string text_data;
-    std::vector<char> binary_data;
+    unsigned char *binary_data = nullptr;
+    size_t binary_data_length;
+
+    ~DecodedWsTrame()
+    {
+        if(binary_data != nullptr)
+            delete [] binary_data;
+    }
 };
 
 std::string generate_handshake_header(char *client_header);
 
-std::vector<char> encode_data(const char *data, size_t data_size, bool masked);
-std::vector<char> encode_data(const char *data, size_t data_size);
-std::vector<char> encode_data(std::string data, bool masked);
-std::vector<char> encode_data(std::string data);
+std::vector<char> encode_ws_trame(const char *data, size_t data_size, bool masked);
+std::vector<char> encode_ws_trame(const char *data, size_t data_size);
+std::vector<char> encode_ws_trame(std::string data, bool masked);
+std::vector<char> encode_ws_trame(std::string data);
 
-DecodedData decode_data(int sockfd);
-int send_encoded_message(std::string message, int client_socket, bool masked);
-int send_encoded_message(std::string message, int client_socket);
+void decode_ws_trame(unsigned char *data, DecodedWsTrame *result);
+int send_ws_trame(std::string message, int client_socket, bool masked);
+int send_ws_trame(std::string message, int client_socket);
 
 #endif // WEBSOCKET_HPP_INCLUDED
