@@ -1,20 +1,20 @@
 #ifndef SERVER_HPP_INCLUDED
 #define SERVER_HPP_INCLUDED
 
-typedef int THERESA_PORT;
-#define MAIN_PORT       (THERESA_PORT)42840
-#define HTTP_PORT       (THERESA_PORT)8080
-#define WEBSOCKET_PORT  (THERESA_PORT)42841
+typedef int theresa_port;
+#define MAIN_PORT       (theresa_port)42840
+#define HTTP_PORT       (theresa_port)8080
+#define WEBSOCKET_PORT  (theresa_port)42841
 
 typedef int conn_type;
-#define TYPE_GLOBAL 0x0000
-#define TYPE_HTTP   0x0001
-#define TYPE_WS     0x0002
+#define TYPE_GLOBAL (conn_type)0
+#define TYPE_HTTP   (conn_type)1
+#define TYPE_WS     (conn_type)2
 
-struct Client {
-    int sockfd;
-    conn_type type;
-};
+typedef int command_type;
+#define COMMAND_TYPE_DISCORD    (command_type)0
+#define COMMAND_TYPE_APP        (command_type)1
+#define COMMAND_TYPE_WEB        (command_type)2
 
 #include <vector>
 
@@ -22,6 +22,20 @@ struct Client {
 #include "web_socket_mgr.hpp"
 #include "http_mgr.hpp"
 
-void listener(Socket sockets[], size_t sockets_size, Client **clients, size_t *clients_size);
+struct Client {
+    int sockfd;
+    conn_type type;
+};
+
+struct ServerDatas {
+    Socket *sockets = nullptr;
+    Client *clients = nullptr;
+    size_t sockets_size = 0;
+    size_t clients_size = 0;
+};
+
+ServerDatas *get_server_data();
+void init_server_data();
+void listener();
 
 #endif // SERVER_HPP_INCLUDED

@@ -26,14 +26,16 @@ set(CORE_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/web_handler.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/main_handler.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/gui_handler.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/discord_handler.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/http_mgr.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/socket_mgr.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/web_socket_mgr.cpp)
-
+set(DISCORD_FILES
+	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_audio.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_handler.cpp)
+	
 include_directories(${json_SOURCE_DIR}/single_include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 
-add_executable(${PROJECT_NAME} ${CORE_FILES})
+add_executable(${PROJECT_NAME} ${CORE_FILES} ${DISCORD_FILES})
 
 target_link_libraries(${PROJECT_NAME} ssl crypto)

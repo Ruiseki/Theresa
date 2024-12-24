@@ -7,5 +7,17 @@ export var THERESA_PORT = {
     WEBSOCKET_PORT: 42841
 };
 
+export var COMMAND_TYPE = {
+    COMMAND_TYPE_DISCORD: 0,
+    COMMAND_TYPE_APP: 1,
+    COMMAND_TYPE_WEB: 2
+};
+
+export var DISCORD_COMMAND = {
+    DISCORD_COMMAND_STD: 0,
+    DISCORD_COMMAND_GUILD_UPDATE: 1,
+    DISCORD_COMMAND_DELETE_MSG: 2
+};
+
 init_ws();
-// init_discord();
+init_discord();

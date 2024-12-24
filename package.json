@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Ruiseki/Theresa#readme",
   "dependencies": {
     "discord.js": "^14.16.3",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0"
   }
 }

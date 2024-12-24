@@ -1,11 +1,46 @@
+#include <nlohmann/json.hpp>
 #include <cstring>
 
 #include "server.hpp"
+#include "discord.hpp"
+
+using json = nlohmann::json;
+
+ServerDatas server_data;
 
 void process_ws(int /* client_sockfd */, char data[])
 {
     DecodedWsTrame result;
     decode_ws_trame((unsigned char*)data, &result);
+
+    if(result.data_type == OPCODE_TEXT)
+    {
+        json object;
+        try
+        {
+            object = json::parse(result.text_data);
+            
+            if( !object.contains("command_type")
+                || !object.contains("args")
+                || !object.contains("subcommand")) return;
+
+            command_type command = (command_type)object["command_type"];
+            std::string args = object["args"].dump();
+            
+            switch(command)
+            {
+                case COMMAND_TYPE_DISCORD:
+                    execute_discord_command((discord_subcommand)object["subcommand"], args.c_str());
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        catch(const std::exception&)
+        { }
+        
+    }
 }
 
 void process_http(int client_sockfd, char /* data */[], size_t /* data_size */)
@@ -14,11 +49,29 @@ void process_http(int client_sockfd, char /* data */[], size_t /* data_size */)
     send(client_sockfd, response.c_str(), response.size(), 0);
 }
 
-void listener(Socket sockets[], size_t sockets_size, Client **clients, size_t *clients_size)
+void init_server_data()
 {
+    server_data.sockets_size = 3;
+    server_data.sockets = new Socket[server_data.sockets_size];
+    create_server_socket(MAIN_PORT, &server_data.sockets[0]);
+    create_server_socket(HTTP_PORT, &server_data.sockets[1]);
+    create_server_socket(WEBSOCKET_PORT, &server_data.sockets[2]);
+}
 
+ServerDatas *get_server_data()
+{
+    return &server_data;
+}
+
+void listener()
+{
     fd_set fd;
     FD_ZERO(&fd);
+
+    size_t &sockets_size = server_data.sockets_size;
+    size_t &clients_size = server_data.clients_size;
+    Socket *&sockets = server_data.sockets;
+    Client *&clients = server_data.clients;
 
     int max_socket = -1;
     for(size_t i = 0; i < sockets_size; i++)
@@ -27,11 +80,11 @@ void listener(Socket sockets[], size_t sockets_size, Client **clients, size_t *c
         if(max_socket < sockets[i].sockfd)
             max_socket = sockets[i].sockfd;
     }
-    for(size_t i = 0; i < *clients_size; i++)
+    for(size_t i = 0; i < clients_size; i++)
     {
-        FD_SET((*clients)[i].sockfd, &fd);
-        if(max_socket < (*clients)[i].sockfd)
-            max_socket = (*clients)[i].sockfd;
+        FD_SET(clients[i].sockfd, &fd);
+        if(max_socket < clients[i].sockfd)
+            max_socket = clients[i].sockfd;
     }
 
     int result_select = select(max_socket + 1, &fd, NULL, NULL, NULL);
@@ -73,29 +126,29 @@ void listener(Socket sockets[], size_t sockets_size, Client **clients, size_t *c
                         default:
                             break;
                     }
-                    if(*clients != nullptr)
+                    if(clients != nullptr)
                     {
-                        Client *new_clients = new Client[*clients_size + 1];
-                        std::memcpy(new_clients, *clients, sizeof(Client) * *clients_size);
-                        new_clients[*clients_size] = new_client;
-                        ++*clients_size;
-                        delete [] *clients;
-                        *clients = new_clients;
+                        Client *new_clients = new Client[clients_size + 1];
+                        std::memcpy(new_clients, clients, sizeof(Client) * clients_size);
+                        new_clients[clients_size] = new_client;
+                        ++clients_size;
+                        delete [] clients;
+                        clients = new_clients;
                     }
                     else
                     {
-                        *clients = new Client[*clients_size + 1];
-                        (*clients)[0] = new_client;
-                        ++*clients_size;
+                        clients = new Client[clients_size + 1];
+                        clients[0] = new_client;
+                        ++clients_size;
                     }
                 }
             }
         }
         
         // Client sockets
-        for(size_t i = 0; i < *clients_size; i++)
+        for(size_t i = 0; i < clients_size; i++)
         {
-            Client &client = (*clients)[i];
+            Client &client = clients[i];
             if( FD_ISSET(client.sockfd, &fd) )
             {
                 char buffer[BUFFER_SIZE];
@@ -119,19 +172,19 @@ void listener(Socket sockets[], size_t sockets_size, Client **clients, size_t *c
                 }
                 else
                 {
-                    if(*clients_size == 1)
+                    if(clients_size == 1)
                     {
-                        delete [] *clients; *clients = nullptr;
-                        --*clients_size;
+                        delete [] clients; clients = nullptr;
+                        --clients_size;
                     }
                     else
                     {
-                        Client *new_clients = new Client[*clients_size - 1];
-                        std::memcpy(new_clients, *clients, sizeof(Client) * i);
-                        std::memcpy(new_clients + i, *clients, sizeof(Client) * (*clients_size + i - 1));
-                        delete [] *clients;
-                        *clients = new_clients;
-                        --*clients_size;
+                        Client *new_clients = new Client[clients_size - 1];
+                        std::memcpy(new_clients, clients, sizeof(Client) * i);
+                        std::memcpy(new_clients + i, clients, sizeof(Client) * (clients_size + i - 1));
+                        delete [] clients;
+                        clients = new_clients;
+                        --clients_size;
                     }
                     i--;
                 }
