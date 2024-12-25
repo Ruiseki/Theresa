@@ -3,6 +3,7 @@
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "web_socket_mgr.hpp"
 /*
@@ -210,13 +211,14 @@ void decode_ws_trame(unsigned char *data, DecodedWsTrame *result)
     {
         // 16 bits = 2 bytes
         std::memcpy(&payload_size, data + selected_byte, 2);
-        payload_size >>= 8;
+        payload_size = ntohs(payload_size);
         selected_byte += 2;
     }
     else if(payload_size == PAYLOAD_SIZE_64_BITS)
     {
         // 64 bits = 8 bytes
         std::memcpy(&payload_size, data + selected_byte, 8);
+        payload_size = ntohs(payload_size);
         selected_byte += 8;
     }
     // -------------------------------
