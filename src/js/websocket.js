@@ -1,8 +1,12 @@
-import { COMMAND_TYPE, THERESA_PORT } from './main.js';
+import { process_ws_message } from './discord_handler.js';
+import { WEBSOCKET_PORT } from './main.js';
 import WebSocket from 'ws';
 
 export var connected = false;
 
+/**
+ * @type {WebSocket}
+ */
 var ws;
 var connected = false;
 
@@ -13,7 +17,7 @@ function sleep(delay) {
 function connection_to_theresa()
 {
     return new Promise((resolve, reject) => {
-        let socket = new WebSocket('ws://127.0.0.1:' + THERESA_PORT.WEBSOCKET_PORT);
+        let socket = new WebSocket('ws://127.0.0.1:' + WEBSOCKET_PORT);
 
         socket.on('open', () => {
             console.log('Connection ok');
@@ -30,6 +34,9 @@ function connection_to_theresa()
 
 async function connection_handler()
 {
+    /**
+     * @type {WebSocket}
+     */
     let socket;
     while(true)
     {
@@ -46,7 +53,7 @@ async function connection_handler()
             connected = true;
 
             socket.on('message', (evt) => {
-                console.log(evt);
+                process_ws_message(JSON.parse(evt));
             });
 
             socket.on('close', async (evt) => {

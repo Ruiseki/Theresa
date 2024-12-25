@@ -1,26 +1,38 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 
+#include "server.hpp"
 #include "discord.hpp"
 #include "web_socket_mgr.hpp"
 
 using json = nlohmann::json;
+using namespace Discord;
 
-void delete_message(const char *msg_id)
+void delete_message(Message message)
 {
     json delete_message_cmd = {
-        
+        {"test", "test frame for cpp server"},
+        {"subcommand", DISCORD_COMMAND_DELETE_MSG},
+        {"id", std::to_string(message.id)},
+        {"channelId", std::to_string(message.channelId)},
+        {"guildId", std::to_string(message.guildId)}
     };
+    std::string delete_message_cmd_str = delete_message_cmd.dump();
 
-    // send_ws_trame(delete_message_cmd.dump(), );
+    ServerData *server_data = get_server_data();
+
+    for(size_t i = 0; i < server_data->clients_size; i++)
+        if(server_data->clients[i].type == TYPE_WS)
+            send_ws_frame(delete_message_cmd_str, server_data->clients[i].sockfd);
 }
 
-void execute_discord_command(discord_subcommand subcommand, const char *command_str)
+void execute_discord_command(discord_subcommand subcommand, const char *datas_str)
 {
-    json command_json;
+    json datas_json;
+
     try
     {
-        command_json = json::parse(command_str);
+        datas_json = json::parse(datas_str);
     }
     catch(const std::exception&)
     {
@@ -29,26 +41,22 @@ void execute_discord_command(discord_subcommand subcommand, const char *command_
 
     if(subcommand == DISCORD_COMMAND_STD)
     {
-        std::string type = command_json["type"], command = command_json["command"];
-        std::vector<std::string> args = command_json["args"].get<std::vector<std::string>>();
+        std::string type = datas_json["type"], command = datas_json["command"];
+        std::vector<std::string> args = datas_json["args"].get<std::vector<std::string>>();
         std::vector<const char*> args_c_str;
         for(auto element : args)
             args_c_str.push_back(element.c_str());
+        
+        std::string message_str = datas_json["info"].dump();
+        Discord::Message message(message_str.c_str());
 
-        DiscordInfo info;
-        info.channel_id = command_json["info"].contains("channel_id") && !command_json["info"]["channel_id"].is_null()  ? command_json["info"]["channel_id"]   : "";
-        info.guild_id   = command_json["info"].contains("guild_id") && !command_json["info"]["guild_id"].is_null()      ? command_json["info"]["guild_id"]     : "";
-        info.nickname   = command_json["info"].contains("nickname") && !command_json["info"]["nickname"].is_null()      ? command_json["info"]["nickname"]     : "";
-        info.user_id    = command_json["info"].contains("user_id") && !command_json["info"]["user_id"].is_null()        ? command_json["info"]["user_id"]      : "";
-        info.username   = command_json["info"].contains("username") && !command_json["info"]["username"].is_null()      ? command_json["info"]["username"]     : "";
-
-        std::cout << command_str << std::endl;
-
-        if(command == "a" || command == "audio")
-            audio_cmd(command.c_str(), args_c_str.data(), &info);
+        if(type == "a" || type == "audio")
+            audio_cmd(command.c_str(), args_c_str.data(), &message);
         else
         {
             // global commands
         }
+
+        delete_message(message);
     }
 }
