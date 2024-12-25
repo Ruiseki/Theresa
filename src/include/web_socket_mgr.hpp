@@ -10,15 +10,15 @@
 #define PAYLOAD_SIZE_16_BITS    126
 #define PAYLOAD_SIZE_64_BITS    127
 
-#define WS_TRAME_POS_FIN        0
-#define WS_TRAME_POS_OPCODE     0
-#define WS_TRAME_POS_MASK       1
-#define WS_TRAME_POS_PAYLOADLEN 1
+#define WS_FRAME_POS_FIN        0
+#define WS_FRAME_POS_OPCODE     0
+#define WS_FRAME_POS_MASK       1
+#define WS_FRAME_POS_PAYLOADLEN 1
 
-#define WS_TRAME_MSK_FIN        0x80
-#define WS_TRAME_MSK_OPCODE     0x0F
-#define WS_TRAME_MSK_MASK       0x80
-#define WS_TRAME_MSK_PAYLOADLEN 0x7F
+#define WS_FRAME_MSK_FIN        0x80
+#define WS_FRAME_MSK_OPCODE     0x0F
+#define WS_FRAME_MSK_MASK       0x80
+#define WS_FRAME_MSK_PAYLOADLEN 0x7F
 
 typedef int OPCODE_T;
 #define OPCODE_CONTINUE (OPCODE_T)0x0
@@ -32,14 +32,14 @@ typedef int FIN_T;
 #define FIN_TERMINATE (FIN_T)0x80
 #define FIN_CONTINUE  (FIN_T)0x0
 
-struct DecodedWsTrame {
+struct DecodedWsFrame {
     OPCODE_T data_type;
     bool end;
-    std::string text_data;
+    std::string text_data = "";
     unsigned char *binary_data = nullptr;
-    size_t binary_data_length;
+    size_t binary_data_length = 0;
 
-    ~DecodedWsTrame()
+    ~DecodedWsFrame()
     {
         if(binary_data != nullptr)
             delete [] binary_data;
@@ -48,13 +48,13 @@ struct DecodedWsTrame {
 
 std::string generate_handshake_header(char *client_header);
 
-std::vector<char> encode_ws_trame(const char *data, size_t data_size, bool masked);
-std::vector<char> encode_ws_trame(const char *data, size_t data_size);
-std::vector<char> encode_ws_trame(std::string data, bool masked);
-std::vector<char> encode_ws_trame(std::string data);
+void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, bool masked, unsigned char **ws_frame, size_t *frame_size);
+void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, unsigned char **ws_frame, size_t *frame_size);
+void encode_ws_frame(std::string data, bool masked, unsigned char **ws_frame, size_t *frame_size);
+void encode_ws_frame(std::string data, unsigned char **ws_frame, size_t *frame_size);
 
-void decode_ws_trame(unsigned char *data, DecodedWsTrame *result);
-int send_ws_trame(std::string message, int client_socket, bool masked);
-int send_ws_trame(std::string message, int client_socket);
+void decode_ws_frame(unsigned char *data, DecodedWsFrame *result);
+int send_ws_frame(std::string message, int client_socket, bool masked);
+int send_ws_frame(std::string message, int client_socket);
 
 #endif // WEBSOCKET_HPP_INCLUDED

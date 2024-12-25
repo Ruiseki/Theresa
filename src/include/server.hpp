@@ -27,14 +27,14 @@ struct Client {
     conn_type type;
 };
 
-struct ServerDatas {
+struct ServerData {
     Socket *sockets = nullptr;
     Client *clients = nullptr;
     size_t sockets_size = 0;
     size_t clients_size = 0;
 };
 
-ServerDatas *get_server_data();
+ServerData *get_server_data();
 void init_server_data();
 void listener();
 

@@ -6,12 +6,12 @@
 
 using json = nlohmann::json;
 
-ServerDatas server_data;
+ServerData server_data;
 
 void process_ws(int /* client_sockfd */, char data[])
 {
-    DecodedWsTrame result;
-    decode_ws_trame((unsigned char*)data, &result);
+    DecodedWsFrame result;
+    decode_ws_frame((unsigned char*)data, &result);
 
     if(result.data_type == OPCODE_TEXT)
     {
@@ -21,16 +21,16 @@ void process_ws(int /* client_sockfd */, char data[])
             object = json::parse(result.text_data);
             
             if( !object.contains("command_type")
-                || !object.contains("args")
+                || !object.contains("datas")
                 || !object.contains("subcommand")) return;
 
             command_type command = (command_type)object["command_type"];
-            std::string args = object["args"].dump();
+            std::string datas = object["datas"].dump();
             
             switch(command)
             {
                 case COMMAND_TYPE_DISCORD:
-                    execute_discord_command((discord_subcommand)object["subcommand"], args.c_str());
+                    execute_discord_command((discord_subcommand)object["subcommand"], datas.c_str());
                     break;
 
                 default:
@@ -58,7 +58,7 @@ void init_server_data()
     create_server_socket(WEBSOCKET_PORT, &server_data.sockets[2]);
 }
 
-ServerDatas *get_server_data()
+ServerData *get_server_data()
 {
     return &server_data;
 }

@@ -117,78 +117,50 @@ std::string generate_handshake_header(char *client_header)
     return handshake_header;
 }
 
-std::vector<char> encode_ws_trame(const char *data, size_t data_size, bool masked)
+void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, bool masked, unsigned char **ws_frame, size_t *frame_size)
 {
-    std::vector<char> ws_trame;
- 
-    ws_trame.push_back(char(FIN_TERMINATE | OPCODE_TEXT)); //1000 0001
-    
-    if(data_size < 126)
-    {
-        if(masked)
-            ws_trame.push_back(char(data_size & 0x7F) | 0x80);
-        else
-            ws_trame.push_back(char(data_size & 0x7F));
-    }
-    else if(data_size < 65535)
-    {
-        if(masked)
-            ws_trame.push_back(char(126) | 0x80);
-        else
-            ws_trame.push_back(char(126));
+    *frame_size = 2; // Size of the frame in bytes.
 
-        for(int i = 0; i < 16; i += 8)
-            ws_trame.push_back(char(data_size >> i));
-    }
-    else
-    {
-        if(masked)
-            ws_trame.push_back(char(127) | 0x80);
-        else
-            ws_trame.push_back(char(127));
+    if(data_size > 0xFFFF)      *frame_size += 8;
+    else if(data_size >= 0x7E)  *frame_size += 2;
+    if(masked) *frame_size += 4;
+    *frame_size += data_size;
+    *ws_frame = new unsigned char[*frame_size];
+    for(size_t i = 0; i < data_size; i++)
+        (*ws_frame)[i] = 0;
 
-        for(int i = 0; i < 64; i+= 8)
-            ws_trame.push_back(char(data_size >> i));
-    }
+    (*ws_frame)[WS_FRAME_POS_FIN]          += FIN_TERMINATE;
+    (*ws_frame)[WS_FRAME_POS_OPCODE]       += data_type;
+    (*ws_frame)[WS_FRAME_POS_MASK]         += masked ? 0x80 : 0;
+    (*ws_frame)[WS_FRAME_POS_PAYLOADLEN]   += data_size > 0xFFFF
+                                            ? PAYLOAD_SIZE_64_BITS
+                                            : data_size >= 0x7E
+                                                ? PAYLOAD_SIZE_16_BITS
+                                                : data_size;
 
     if(masked)
     {
-        unsigned char mask[4];
-        char *masked_data = new char[data_size];;
-        for(int i = 0; i < 4; i++){
-            mask[i] = std::rand() % 255;
-            ws_trame.push_back(mask[i]);
-        }
-        for (size_t i = 0; i < data_size; i++) {
-            masked_data[i] ^= mask[i % 4];  // Apply masking
-            ws_trame.push_back(masked_data[i]);
-        }       
+        for(int i = 0; i < 4; i++)
+            (*ws_frame)[WS_FRAME_POS_MASK + i] = std::rand() % 255;
+
+        for(size_t i = 0; i < data_size; i++)
+            (*ws_frame)[*frame_size - data_size + i] ^= (*ws_frame)[WS_FRAME_POS_MASK + (i % 4)];  // Apply masking
     }
     else
-    {
         for(size_t i = 0; i < data_size; i++)
-            ws_trame.push_back(data[i]);
-    }
-
-    return ws_trame;
+            (*ws_frame)[*frame_size - data_size + i] = data[i];
 }
 
-std::vector<char> encode_ws_trame(const char *data, size_t data_size)
-{
-    return encode_ws_trame(data, data_size, false);
-}
+void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, unsigned char **ws_frame, size_t *frame_size)
+{ encode_ws_frame(data_type, data, data_size, false, ws_frame, frame_size); }
 
-std::vector<char> encode_ws_trame(std::string data, bool masked)
-{
-    return encode_ws_trame(data.c_str(), data.size(), masked);
-}
+void encode_ws_frame(std::string data, bool masked, unsigned char **ws_frame, size_t *frame_size)
+{ encode_ws_frame(OPCODE_TEXT, (unsigned char*)data.c_str(), data.size(), masked, ws_frame, frame_size); }
 
-std::vector<char> encode_ws_trame(std::string data)
-{
-    return encode_ws_trame(data, false);
-}
+void encode_ws_frame(std::string data, unsigned char **ws_frame, size_t *frame_size)
+{ encode_ws_frame(data, false, ws_frame, frame_size); }
 
-void decode_ws_trame(unsigned char *data, DecodedWsTrame *result)
+void decode_ws_frame(unsigned char *ws_frame, DecodedWsFrame *result)
 {
     unsigned long payload_size;
     int selected_byte; // for keeping track of where we are in *data
@@ -197,12 +169,11 @@ void decode_ws_trame(unsigned char *data, DecodedWsTrame *result)
     // First 2 bytes
     // FIN, RSVx, opcode, MASKED, Payload len
     // -------------------------------
-    result->end =       data[WS_TRAME_POS_FIN]          & WS_TRAME_MSK_FIN;
-    result->data_type = data[WS_TRAME_POS_OPCODE]       & WS_TRAME_MSK_OPCODE;
-    is_masked =         data[WS_TRAME_POS_MASK]         & WS_TRAME_MSK_MASK;
-    payload_size =      data[WS_TRAME_POS_PAYLOADLEN]   & WS_TRAME_MSK_PAYLOADLEN;
+    result->end =       ws_frame[WS_FRAME_POS_FIN]          & WS_FRAME_MSK_FIN;
+    result->data_type = ws_frame[WS_FRAME_POS_OPCODE]       & WS_FRAME_MSK_OPCODE;
+    is_masked =         ws_frame[WS_FRAME_POS_MASK]         & WS_FRAME_MSK_MASK;
+    payload_size =      ws_frame[WS_FRAME_POS_PAYLOADLEN]   & WS_FRAME_MSK_PAYLOADLEN;
     // -------------------------------
-
 
     // Paylaod size
     // -------------------------------
@@ -210,52 +181,51 @@ void decode_ws_trame(unsigned char *data, DecodedWsTrame *result)
     if(payload_size == PAYLOAD_SIZE_16_BITS)
     {
         // 16 bits = 2 bytes
-        std::memcpy(&payload_size, data + selected_byte, 2);
+        std::memcpy(&payload_size, ws_frame + selected_byte, 2);
         payload_size = ntohs(payload_size);
         selected_byte += 2;
     }
     else if(payload_size == PAYLOAD_SIZE_64_BITS)
     {
         // 64 bits = 8 bytes
-        std::memcpy(&payload_size, data + selected_byte, 8);
+        std::memcpy(&payload_size, ws_frame + selected_byte, 8);
         payload_size = ntohs(payload_size);
         selected_byte += 8;
     }
     // -------------------------------
-
 
     // Get the payload
     // -------------------------------
     if(is_masked)
     {
         unsigned char mask[4];
-        std::memcpy(mask, data + selected_byte, 4);
+        std::memcpy(mask, ws_frame + selected_byte, 4);
         selected_byte += 4;
 
         // Unmask the datas
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers#exchanging_data_frames
         for (unsigned long i = 0; i < payload_size; ++i)
-            data[selected_byte + i] ^= mask[i % 4];
+            ws_frame[selected_byte + i] ^= mask[i % 4];
     }
 
     if(result->data_type == OPCODE_TEXT)
-        result->text_data.assign((char*)data + selected_byte, payload_size);
+        result->text_data.assign((char*)ws_frame + selected_byte, payload_size);
     else if(result->data_type == OPCODE_BINARY)
     {
         result->binary_data = new unsigned char[payload_size];
-        std::memcpy(result->binary_data, data + selected_byte, payload_size);
+        std::memcpy(result->binary_data, ws_frame + selected_byte, payload_size);
         result->binary_data_length = payload_size;
     }
     // -------------------------------
 }
 
-int send_ws_trame(std::string message, int client_socket, bool masked)
+int send_ws_frame(std::string message, int client_socket, bool masked)
 {
-    std::vector<char> encoded_message = encode_ws_trame(message, masked);
-    return send(client_socket, encoded_message.data(), encoded_message.size(), 0);
+    unsigned char *ws_frame;
+    size_t frame_size;
+    encode_ws_frame(message, masked, &ws_frame, &frame_size);
+    return send(client_socket, ws_frame, frame_size, 0);
 }
 
-int send_ws_trame(std::string message, int client_socket)
-{
-    return send_ws_trame(message, client_socket, true);
-}
+int send_ws_frame(std::string message, int client_socket)
+{ return send_ws_frame(message, client_socket, false); }
