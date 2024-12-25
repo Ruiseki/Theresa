@@ -139,10 +139,11 @@ void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_
                                                 ? PAYLOAD_SIZE_16_BITS
                                                 : data_size;
     
+    size_t big_endian_size = ntohs(data_size);
     if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_16_BITS)
-        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &data_size, 2);
+        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 2);
     else if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_64_BITS)
-        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &data_size, 8);
+        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 8);
 
     if(masked)
     {
