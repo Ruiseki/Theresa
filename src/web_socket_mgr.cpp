@@ -130,6 +130,9 @@ void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_
     for(size_t i = 0; i < *frame_size; i++)
         frame[i] = 0;
 
+    // First 2 bytes
+    // FIN, RSVx, opcode, MASKED, Payload len
+    // -------------------------------
     frame[WS_FRAME_POS_FIN]          += FIN_TERMINATE;
     frame[WS_FRAME_POS_OPCODE]       += data_type;
     frame[WS_FRAME_POS_MASK]         += masked ? 0x80 : 0;
@@ -138,24 +141,35 @@ void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_
                                             : data_size >= 0x7E
                                                 ? PAYLOAD_SIZE_16_BITS
                                                 : data_size;
+    // -------------------------------
     
+    // Paylaod size
+    // -------------------------------
     size_t big_endian_size = ntohs(data_size);
     if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_16_BITS)
+        // 16 bits = 2 bytes
         std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 2);
     else if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_64_BITS)
+        // 64 bits = 8 bytes
         std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 8);
+    // -------------------------------
 
+    // Masking and set the payload
+    // -------------------------------
     if(masked)
     {
         for(int i = 0; i < 4; i++)
             frame[WS_FRAME_POS_MASK + i] = std::rand() % 255;
 
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers#exchanging_data_frames
+        // Mask the datas
         for(size_t i = 0; i < data_size; i++)
-            frame[*frame_size - data_size + i] ^= frame[WS_FRAME_POS_MASK + (i % 4)];  // Apply masking
+            frame[*frame_size - data_size + i] ^= frame[WS_FRAME_POS_MASK + (i % 4)];
     }
     else
         for(size_t i = 0; i < data_size; i++)
             frame[*frame_size - data_size + i] = data[i];
+    // -------------------------------
 }
 
 void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, unsigned char **ws_frame, size_t *frame_size)
