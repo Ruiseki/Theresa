@@ -1,4 +1,3 @@
-import { resolveSKUId } from 'discord.js';
 import { COMMAND_TYPE, THERESA_PORT } from './main.js';
 import WebSocket from 'ws';
 
@@ -31,11 +30,12 @@ function connection_to_theresa()
 
 async function connection_handler()
 {
+    let socket;
     while(true)
     {
         if(!socket)
         {
-            var socket = await connection_to_theresa()
+            socket = await connection_to_theresa()
             .catch(async (err) => {
                 await sleep(1000);
             });
@@ -44,13 +44,19 @@ async function connection_handler()
         if(socket)
         {
             connected = true;
-            socket.on('close', (evt) => {
+
+            socket.on('message', (evt) => {
+                console.log(evt);
+            });
+
+            socket.on('close', async (evt) => {
                 console.log('Connection lost');
                 connected = false;
                 connection_handler();
             });
 
-            return socket;
+            ws = socket;
+            return;
         }
     }
 }
@@ -58,7 +64,7 @@ async function connection_handler()
 export async function init_ws()
 {
     console.log("Connecting to Theresa...");
-    ws = await connection_handler()
+    await connection_handler()
     .catch(err => {});
 }
 
@@ -71,7 +77,7 @@ export function send_data(data, command_type, subcommand)
         data = {
             command_type,
             subcommand,
-            args: data
+            datas: data
         };
         ws.send(JSON.stringify(data));
     }
