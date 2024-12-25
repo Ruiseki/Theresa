@@ -120,35 +120,41 @@ std::string generate_handshake_header(char *client_header)
 void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, bool masked, unsigned char **ws_frame, size_t *frame_size)
 {
     *frame_size = 2; // Size of the frame in bytes.
+    unsigned char *&frame = *ws_frame;
 
     if(data_size > 0xFFFF)      *frame_size += 8;
     else if(data_size >= 0x7E)  *frame_size += 2;
     if(masked) *frame_size += 4;
     *frame_size += data_size;
-    *ws_frame = new unsigned char[*frame_size];
-    for(size_t i = 0; i < data_size; i++)
-        (*ws_frame)[i] = 0;
+    frame = new unsigned char[*frame_size];
+    for(size_t i = 0; i < *frame_size; i++)
+        frame[i] = 0;
 
-    (*ws_frame)[WS_FRAME_POS_FIN]          += FIN_TERMINATE;
-    (*ws_frame)[WS_FRAME_POS_OPCODE]       += data_type;
-    (*ws_frame)[WS_FRAME_POS_MASK]         += masked ? 0x80 : 0;
-    (*ws_frame)[WS_FRAME_POS_PAYLOADLEN]   += data_size > 0xFFFF
+    frame[WS_FRAME_POS_FIN]          += FIN_TERMINATE;
+    frame[WS_FRAME_POS_OPCODE]       += data_type;
+    frame[WS_FRAME_POS_MASK]         += masked ? 0x80 : 0;
+    frame[WS_FRAME_POS_PAYLOADLEN]   += data_size > 0xFFFF
                                             ? PAYLOAD_SIZE_64_BITS
                                             : data_size >= 0x7E
                                                 ? PAYLOAD_SIZE_16_BITS
                                                 : data_size;
+    
+    if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_16_BITS)
+        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &data_size, 2);
+    else if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_64_BITS)
+        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &data_size, 8);
 
     if(masked)
     {
         for(int i = 0; i < 4; i++)
-            (*ws_frame)[WS_FRAME_POS_MASK + i] = std::rand() % 255;
+            frame[WS_FRAME_POS_MASK + i] = std::rand() % 255;
 
         for(size_t i = 0; i < data_size; i++)
-            (*ws_frame)[*frame_size - data_size + i] ^= (*ws_frame)[WS_FRAME_POS_MASK + (i % 4)];  // Apply masking
+            frame[*frame_size - data_size + i] ^= frame[WS_FRAME_POS_MASK + (i % 4)];  // Apply masking
     }
     else
         for(size_t i = 0; i < data_size; i++)
-            (*ws_frame)[*frame_size - data_size + i] = data[i];
+            frame[*frame_size - data_size + i] = data[i];
 }
 
 void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, unsigned char **ws_frame, size_t *frame_size)
