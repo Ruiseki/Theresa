@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cstdint>
 #include <sstream>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
@@ -135,7 +136,7 @@ void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_
     // -------------------------------
     frame[WS_FRAME_POS_FIN]          += FIN_TERMINATE;
     frame[WS_FRAME_POS_OPCODE]       += data_type;
-    frame[WS_FRAME_POS_MASK]         += masked ? 0x80 : 0;
+    frame[WS_FRAME_POS_MASKD]         += masked ? 0x80 : 0;
     frame[WS_FRAME_POS_PAYLOADLEN]   += data_size > 0xFFFF
                                             ? PAYLOAD_SIZE_64_BITS
                                             : data_size >= 0x7E
@@ -159,12 +160,12 @@ void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_
     if(masked)
     {
         for(int i = 0; i < 4; i++)
-            frame[WS_FRAME_POS_MASK + i] = std::rand() % 255;
+            frame[WS_FRAME_POS_MASKD + i] = std::rand() % 255;
 
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers#exchanging_data_frames
         // Mask the datas
         for(size_t i = 0; i < data_size; i++)
-            frame[*frame_size - data_size + i] ^= frame[WS_FRAME_POS_MASK + (i % 4)];
+            frame[*frame_size - data_size + i] ^= frame[WS_FRAME_POS_MASKD + (i % 4)]; // meh
     }
     else
         for(size_t i = 0; i < data_size; i++)
@@ -181,19 +182,21 @@ void encode_ws_frame(std::string data, bool masked, unsigned char **ws_frame, si
 void encode_ws_frame(std::string data, unsigned char **ws_frame, size_t *frame_size)
 { encode_ws_frame(data, false, ws_frame, frame_size); }
 
-void decode_ws_frame(unsigned char *ws_frame, DecodedWsFrame *result)
+void decode_ws_frame(unsigned char *ws_frame_buffer, DecodedWsFrame *result)
 {
-    unsigned long payload_size;
-    int selected_byte; // for keeping track of where we are in *data
+    unsigned long long payload_size;
+    int selected_byte;  // for keeping track of where we are in *data
+    int mask_pos;       // position of the mask is variable because of the paylaod size
     bool is_masked;
+    unsigned char *ws_frame;
 
     // First 2 bytes
     // FIN, RSVx, opcode, MASKED, Payload len
     // -------------------------------
-    result->end =       ws_frame[WS_FRAME_POS_FIN]          & WS_FRAME_MSK_FIN;
-    result->data_type = ws_frame[WS_FRAME_POS_OPCODE]       & WS_FRAME_MSK_OPCODE;
-    is_masked =         ws_frame[WS_FRAME_POS_MASK]         & WS_FRAME_MSK_MASK;
-    payload_size =      ws_frame[WS_FRAME_POS_PAYLOADLEN]   & WS_FRAME_MSK_PAYLOADLEN;
+    result->end =       ws_frame_buffer[WS_FRAME_POS_FIN]          & WS_FRAME_MSK_FIN;
+    result->data_type = ws_frame_buffer[WS_FRAME_POS_OPCODE]       & WS_FRAME_MSK_OPCODE;
+    is_masked =         ws_frame_buffer[WS_FRAME_POS_MASKD]        & WS_FRAME_MSK_MASK;
+    payload_size =      ws_frame_buffer[WS_FRAME_POS_PAYLOADLEN]   & WS_FRAME_MSK_PAYLOADLEN;
     // -------------------------------
 
     // Paylaod size
@@ -202,31 +205,61 @@ void decode_ws_frame(unsigned char *ws_frame, DecodedWsFrame *result)
     if(payload_size == PAYLOAD_SIZE_16_BITS)
     {
         // 16 bits = 2 bytes
-        std::memcpy(&payload_size, ws_frame + selected_byte, 2);
+        std::memcpy(&payload_size, ws_frame_buffer + selected_byte, 2);
         payload_size = ntohs(payload_size);
         selected_byte += 2;
     }
     else if(payload_size == PAYLOAD_SIZE_64_BITS)
     {
         // 64 bits = 8 bytes
-        std::memcpy(&payload_size, ws_frame + selected_byte, 8);
-        payload_size = ntohs(payload_size);
+        std::memcpy(&payload_size, ws_frame_buffer + selected_byte, 8);
+        #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+            payload_size = __bswap_64(payload_size);
+        #endif
         selected_byte += 8;
     }
+    // -------------------------------
+
+    // If masked, payload is 4 bytes next
+    // -------------------------------
+    mask_pos = selected_byte;
+    if(is_masked)
+        selected_byte += 4;
+    // -------------------------------
+
+    // Get the full frame
+    // -------------------------------
+    ws_frame = new unsigned char[selected_byte + payload_size];
+    if(selected_byte + payload_size > WS_BUFFER_SIZE)
+    {
+        std::memcpy(ws_frame, ws_frame_buffer, WS_BUFFER_SIZE);
+        unsigned long long recvd_bytes = WS_BUFFER_SIZE;
+
+        while(recvd_bytes != selected_byte + payload_size)
+        {
+            ssize_t recv_result = recv(result->sender, ws_frame + recvd_bytes, WS_BUFFER_SIZE, 0);
+
+            if(recv_result <= 0)
+            {
+                result->binary_data_length = -1;
+                return;
+            }
+
+            recvd_bytes += recv_result;
+        }
+    }
+    else
+        std::memcpy(ws_frame, ws_frame_buffer, selected_byte + payload_size);
     // -------------------------------
 
     // Get the payload
     // -------------------------------
     if(is_masked)
     {
-        unsigned char mask[4];
-        std::memcpy(mask, ws_frame + selected_byte, 4);
-        selected_byte += 4;
-
         // Unmask the datas
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers#exchanging_data_frames
         for (unsigned long i = 0; i < payload_size; ++i)
-            ws_frame[selected_byte + i] ^= mask[i % 4];
+            ws_frame[selected_byte + i] ^= ws_frame[mask_pos + (i % 4)];
     }
 
     if(result->data_type == OPCODE_TEXT)
@@ -238,6 +271,17 @@ void decode_ws_frame(unsigned char *ws_frame, DecodedWsFrame *result)
         result->binary_data_length = payload_size;
     }
     // -------------------------------
+
+    delete [] ws_frame;
+}
+
+void decode_ws_frame(DecodedWsFrame *result)
+{
+    unsigned char buffer[WS_BUFFER_SIZE];
+    if( recv(result->sender, buffer, WS_BUFFER_SIZE, 0) <= 0 )
+        result->binary_data_length = -1;
+    else
+        decode_ws_frame(buffer, result);
 }
 
 int send_ws_frame(std::string message, int client_socket, bool masked)

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#define BUFFER_SIZE 0x1000
+#define WS_BUFFER_SIZE 0x1000
 
 #define PAYLOAD_SIZE_CURRENT    125
 #define PAYLOAD_SIZE_16_BITS    126
@@ -12,7 +12,7 @@
 
 #define WS_FRAME_POS_FIN        0
 #define WS_FRAME_POS_OPCODE     0
-#define WS_FRAME_POS_MASK       1
+#define WS_FRAME_POS_MASKD      1
 #define WS_FRAME_POS_PAYLOADLEN 1
 
 #define WS_FRAME_MSK_FIN        0x80
@@ -37,7 +37,8 @@ struct DecodedWsFrame {
     bool end;
     std::string text_data = "";
     unsigned char *binary_data = nullptr;
-    size_t binary_data_length = 0;
+    ssize_t binary_data_length = 0;
+    int sender = -1;
 
     ~DecodedWsFrame()
     {
@@ -54,6 +55,7 @@ void encode_ws_frame(std::string data, bool masked, unsigned char **ws_frame, si
 void encode_ws_frame(std::string data, unsigned char **ws_frame, size_t *frame_size);
 
 void decode_ws_frame(unsigned char *data, DecodedWsFrame *result);
+void decode_ws_frame(DecodedWsFrame *result);
 int send_ws_frame(std::string message, int client_socket, bool masked);
 int send_ws_frame(std::string message, int client_socket);
 
