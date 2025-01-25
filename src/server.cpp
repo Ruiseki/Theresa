@@ -1,5 +1,6 @@
 #include <nlohmann/json.hpp>
 #include <cstring>
+#include <iostream>
 
 #include "server.hpp"
 #include "discord.hpp"
@@ -8,29 +9,46 @@ using json = nlohmann::json;
 
 ServerData server_data;
 
-void process_ws(int /* client_sockfd */, char data[])
+void get_js_ws_sockets(int **sockets, size_t *sockets_size)
+{
+    std::vector<int> v_sockets;
+    for(size_t i = 0; i < server_data.clients_size; i++)
+        if(server_data.clients[i].type == TYPE_WS)
+            v_sockets.push_back(server_data.clients[i].sockfd);
+
+    *sockets = new int[v_sockets.size()];
+    for(size_t i = 0; i < v_sockets.size(); i++)
+        (*sockets)[i] = v_sockets[i];
+    *sockets_size = v_sockets.size();
+}
+
+void process_ws(int client_sockfd, char *data)
 {
     DecodedWsFrame result;
+    result.sender = client_sockfd;
     decode_ws_frame((unsigned char*)data, &result);
+
+    if(result.binary_data_length == -1) return; // error
 
     if(result.data_type == OPCODE_TEXT)
     {
+        std::cout << client_sockfd << " -> text[" << result.text_data.size() << "]" << std::endl;
         json object;
         try
         {
             object = json::parse(result.text_data);
-            
+
             if( !object.contains("command_type")
                 || !object.contains("datas")
                 || !object.contains("subcommand")) return;
 
             command_type command = (command_type)object["command_type"];
             std::string datas = object["datas"].dump();
-            
+
             switch(command)
             {
                 case COMMAND_TYPE_DISCORD:
-                    execute_discord_command((discord_subcommand)object["subcommand"], datas.c_str());
+                    execute_discord_command((Discord::subcommand)object["subcommand"], datas.c_str());
                     break;
 
                 default:
@@ -39,8 +57,10 @@ void process_ws(int /* client_sockfd */, char data[])
         }
         catch(const std::exception&)
         { }
-        
+
     }
+    else if(result.data_type == OPCODE_BINARY)
+        std::cout << client_sockfd << " -> binary[" << result.binary_data_length << "]" << std::endl;
 }
 
 void process_http(int client_sockfd, char /* data */[], size_t /* data_size */)
@@ -49,7 +69,7 @@ void process_http(int client_sockfd, char /* data */[], size_t /* data_size */)
     send(client_sockfd, response.c_str(), response.size(), 0);
 }
 
-void init_server_data()
+void init_sockets()
 {
     server_data.sockets_size = 3;
     server_data.sockets = new Socket[server_data.sockets_size];
@@ -116,8 +136,8 @@ void listener()
                         {
                             new_client.type = TYPE_WS;
                             // send appropriate header immediatly
-                            char buffer[BUFFER_SIZE];
-                            long result = recv(new_client.sockfd, buffer, BUFFER_SIZE, 0);
+                            char buffer[WS_BUFFER_SIZE];
+                            long result = recv(new_client.sockfd, buffer, WS_BUFFER_SIZE, 0);
                             buffer[result] = '\0';
                             std::string response_header = generate_handshake_header(buffer);
                             send(new_client.sockfd, response_header.c_str(), response_header.size(), 0);
@@ -151,12 +171,12 @@ void listener()
             Client &client = clients[i];
             if( FD_ISSET(client.sockfd, &fd) )
             {
-                char buffer[BUFFER_SIZE];
-                long recv_result = recv(client.sockfd, buffer, BUFFER_SIZE, 0);
+                char buffer[WS_BUFFER_SIZE];
+                ssize_t recv_result = recv(client.sockfd, buffer, WS_BUFFER_SIZE, 0);
 
                 if(recv_result > 0)
                 {
-                    if(recv_result != BUFFER_SIZE) buffer[recv_result] = '\0';
+                    if(recv_result != WS_BUFFER_SIZE) buffer[recv_result] = '\0';
 
                     switch(client.type)
                     {

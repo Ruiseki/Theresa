@@ -1,7 +1,7 @@
-import { BaseGuildTextChannel, channelLink, Client, GatewayIntentBits, Guild, GuildChannel, GuildChannelManager, GuildManager, Message } from "discord.js";
-import { send_data } from "./websocket.js";
+import { BaseGuildTextChannel, Client, GatewayIntentBits, Guild, Message } from "discord.js";
+import { send_data, sleep } from "./websocket.js";
 import dotenv from 'dotenv';
-import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_DELETE_MSG, DISCORD_COMMAND_STD } from "./main.js";
+import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_DELETE_MSG, DISCORD_COMMAND_GET_CHANNELS, DISCORD_COMMAND_GET_GUILDS, DISCORD_COMMAND_GET_USERS, DISCORD_COMMAND_STD, DISCORD_COMMAND_UPDATE } from "./main.js";
 dotenv.config();
 
 /**
@@ -9,6 +9,7 @@ dotenv.config();
  */
 export var client;
 export var prefix = 't!';
+var client_ready = false;
 
 export async function init_discord()
 {
@@ -30,8 +31,35 @@ export async function init_discord()
 
     await client.login(process.env.key);
 
-    client.once('ready', () => {});
+    client.once('ready', () => {
+        console.log('Discord client is ready');
+        client_ready = true
+    });
     client.on('messageCreate', process_discord_message);
+}
+
+export async function theresa_connected()
+{
+    await wait_for_client_ready();
+    send_guild_update();
+}
+
+async function wait_for_client_ready()
+{
+    return new Promise(async (resolve) => {
+        while(!client_ready)
+            await sleep(100);
+        resolve();
+    });
+}
+
+function send_guild_update()
+{
+    send_data({
+        guilds: [...client.guilds.cache.values()],
+        channels: [...client.channels.cache.values()],
+        users: [...client.users.cache.values()]
+    }, COMMAND_TYPE_DISCORD, DISCORD_COMMAND_UPDATE);
 }
 
 /**
@@ -56,17 +84,46 @@ function process_discord_message(message_event)
 }
 
 /**
- * @param {{id: number, guildId: number, channelId: number, subcommand: import("./main.js").discord_subcommand}} data 
+ * @param {{subcommand: import("./main.js").discord_subcommand, info: object}} data 
  */
 export function process_ws_message(data)
 {
-    if(data.subcommand == DISCORD_COMMAND_DELETE_MSG)
+    if(data.subcommand == DISCORD_COMMAND_STD)
     {
-        let guild = get_guild(data.guildId);
-        let channel = get_channel(guild, data.channelId);
-        let message = get_message(channel, data.id);
+        
+    }
+    else if(data.subcommand == DISCORD_COMMAND_DELETE_MSG)
+    {
+        let guild = get_guild(data.info.guildId);
+        let channel = get_channel(guild, data.info.channelId);
+        let message = get_message(channel, data.info.id);
         if(message.deletable)
             message.delete();
+    }
+    else if(data.subcommand == DISCORD_COMMAND_GET_GUILDS)
+    {
+        send_data({
+            guilds: [...client.guilds.cache.values()]
+        }, COMMAND_TYPE_DISCORD, DISCORD_COMMAND_GET_GUILDS);
+    }
+    else if(data.subcommand == DISCORD_COMMAND_GET_CHANNELS)
+        {
+        let guild = get_guild(data.info?.guildId);
+        let channels;
+        if(guild)
+            channels = get_channels(guild);
+        else
+            channels = get_all_channel();
+
+        send_data({
+            channels
+        }, COMMAND_TYPE_DISCORD, DISCORD_COMMAND_GET_CHANNELS);
+    }
+    else if(data.subcommand == DISCORD_COMMAND_GET_USERS)
+    {
+        send_data({
+            users: [...client.users.cache.values()]
+        }, COMMAND_TYPE_DISCORD, DISCORD_COMMAND_GET_GUILDS);
     }
 }
 
@@ -82,6 +139,19 @@ function get_guild(guildId)
 
 /**
  * 
+ * @return {Array<import("discord.js").Channel> | null}
+ */
+function get_all_channel()
+{
+    let channels = [];
+    client.channels.cache.each(channel => {
+        channels.push(channel)
+    });
+    return channels;
+}
+
+/**
+ * 
  * @param {Guild} guild 
  * @param {number} channelId 
  * @returns {Channel | null}
@@ -89,6 +159,16 @@ function get_guild(guildId)
 function get_channel(guild, channelId)
 {
     return guild.channels.cache.each(() => {}).get(channelId);
+}
+
+/**
+ * 
+ * @param {Guild} guild 
+ * @returns {Array<import("discord.js").Channel> | null}
+ */
+function get_channels(guild)
+{
+    return [...guild.channels.cache.values()];
 }
 
 /**

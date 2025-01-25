@@ -17,12 +17,9 @@ FetchContent_MakeAvailable(json)
 find_package(OpenSSL)
 
 set(CORE_FILES
-	${CMAKE_CURRENT_SOURCE_DIR}/src/theresa.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/common.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/server.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/tools.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/tools_web.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/tools_mysql.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/tools_discord.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/web_handler.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/main_handler.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/gui_handler.cpp
@@ -30,6 +27,8 @@ set(CORE_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/socket_mgr.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/web_socket_mgr.cpp)
 set(DISCORD_FILES
+	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_global.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_tool.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_audio.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_classes.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_handler.cpp)

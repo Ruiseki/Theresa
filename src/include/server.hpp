@@ -34,8 +34,9 @@ struct ServerData {
     size_t clients_size = 0;
 };
 
+void get_js_ws_sockets(int **sockets, size_t *sockets_size);
 ServerData *get_server_data();
-void init_server_data();
+void init_sockets();
 void listener();
 
 #endif // SERVER_HPP_INCLUDED

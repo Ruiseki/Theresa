@@ -1,5 +1,5 @@
-import { process_ws_message } from './discord_handler.js';
-import { WEBSOCKET_PORT } from './main.js';
+import { process_ws_message, theresa_connected } from './discord_handler.js';
+import { DISCORD_COMMAND_STR, WEBSOCKET_PORT } from './main.js';
 import WebSocket from 'ws';
 
 export var connected = false;
@@ -10,7 +10,12 @@ export var connected = false;
 var ws;
 var connected = false;
 
-function sleep(delay) {
+/**
+ * 
+ * @param {number} delay in ms
+ * @returns
+ */
+export function sleep(delay) {
     return new Promise((resolve) => setTimeout(resolve, delay));
 }
 
@@ -21,6 +26,7 @@ function connection_to_theresa()
 
         socket.on('open', () => {
             console.log('Connection ok');
+            theresa_connected();
             resolve(socket);
         });
         socket.on('error', (err) => {
@@ -86,7 +92,9 @@ export function send_data(data, command_type, subcommand)
             subcommand,
             datas: data
         };
-        ws.send(JSON.stringify(data));
+        let data_str = JSON.stringify(data);
+        console.log(`-> ${DISCORD_COMMAND_STR[subcommand]} text[${data_str.length / 1000}ko]`);
+        ws.send(data_str);
     }
     else
         ws.send(data);
