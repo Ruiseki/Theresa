@@ -30,7 +30,6 @@ set(DISCORD_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_global.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_tool.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_audio.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_classes.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_handler.cpp)
 	
 include_directories(${json_SOURCE_DIR}/single_include)

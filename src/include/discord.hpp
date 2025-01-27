@@ -2,6 +2,7 @@
 #define DISCORD_HPP_INCLUDED
 
 #include <vector>
+#include <algorithm>
 
 #include "socket_mgr.hpp"
 #include "string"
@@ -10,7 +11,7 @@ namespace Discord
 {
     typedef unsigned long long discord_id;
     typedef int subcommand;
-    typedef int channel_type;
+    typedef int channel_t;
     typedef unsigned long command;
 
     #define PREFIX (char*)"t!"
@@ -62,94 +63,184 @@ namespace Discord
         LOCAL
     };
 
-    class User;
-    class Guild;
-    class GuildMember;
-    class Message;
-    class Channel;
+    struct User;
+    struct Guild;
+    struct GuildMember;
+    struct Message;
+    struct Channel;
     class Track;
+    class DiscordServer;
 
-    class Guild
+    struct discord_datas
     {
-        public:
-            Guild(const char *json_data);
-            discord_id id, ownerId;
-            int memberCount;
-            std::string name;
-            std::vector<GuildMember> members;
-            std::vector<Channel*> channels;
-
-            bool operator==(const discord_id x) const
-            { return id == x; }
-            bool operator==(const Guild &x) const
-            { return id == x.id; }
-            bool operator==(const Guild *x) const
-            { return id == x->id; }
+        std::vector<User> users;
+        std::vector<Guild> guilds;
+        std::vector<GuildMember> guild_members;
+        std::vector<Channel> channels;
+        std::vector<Message> messages;
+        std::vector<DiscordServer> servers;
+        std::vector<Track> tracks;
     };
 
-    class User
-    {
-        public:
-            User(const char *json_data);
-            discord_id id;
-            std::string globalName;
+    User* find_user(std::vector<User> *array, discord_id id);
+    GuildMember* find_guildMember(std::vector<GuildMember> *array, discord_id id, discord_id guildId);
+    Guild* find_guild(std::vector<Guild> *array, discord_id id);
+    Channel* find_channel(std::vector<Channel> *array, discord_id id);
+    Message* find_message(std::vector<Message> *array, discord_id id);
 
-            bool operator==(const discord_id x) const
-            { return id == x; }
-            bool operator==(const User &x) const
-            { return id == x.id; }
-            bool operator==(const User *x) const
-            { return id == x->id; }
+    struct GuildMember
+    {
+        Guild *guild = nullptr;
+        User *user = nullptr;
+        discord_id id, guildId;
+        std::string nickname;
+
+        void save(std::vector<GuildMember> *guild_members)
+        {
+            auto it = std::find(guild_members->begin(), guild_members->end(), this);
+                if(it == guild_members->end())
+                    guild_members->push_back(*this);
+                else
+                    *it = *this;
+        }
+        void set_ptrs(std::vector<Guild> *guilds, std::vector<User> *users)
+        {
+            guild = find_guild(guilds, guildId);
+            user = find_user(users, id);
+        }
+
+        bool operator==(const GuildMember &x) const
+        { return id == x.id && guildId == x.guildId; }
+        bool operator==(const GuildMember *x) const
+        { return id == x->id && guildId == x->guildId; }
     };
 
-    class GuildMember
+    struct Guild
     {
-        public:
-            Guild *guild;
-            User *user;
-            GuildMember(const char *json_data);
-            discord_id id;
-            std::string nickname;
+        discord_id id, ownerId;
+        User* owner = nullptr;
+        int memberCount;
+        std::string name;
+        std::vector<discord_id> membersIds, channelsIds;
+        std::vector<GuildMember*> members;
+        std::vector<Channel*> channels;
 
-            bool operator==(const GuildMember &x) const
-            { return user->id == x.user->id && guild->id == x.guild->id; }
-            bool operator==(const GuildMember *x) const
-            { return user->id == x->user->id && guild->id == x->guild->id; }
+        void save(std::vector<Guild> *guilds)
+        {
+            auto it = std::find(guilds->begin(), guilds->end(), id);
+            if(it == guilds->end())
+                guilds->push_back(*this);
+            else
+                *it = *this;
+        }
+        void set_ptrs(std::vector<User> *users, std::vector<GuildMember> *guild_members, std::vector<Channel> *channels)
+        {
+            owner = find_user(users, ownerId);
+
+            members.clear();
+            this->channels.clear();
+
+            for(discord_id memberId : membersIds)
+            {
+                GuildMember *member = find_guildMember(guild_members, memberId, id);
+                this->members.push_back(member);
+            }
+            for(discord_id channelId : channelsIds)
+                this->channels.push_back(find_channel(channels, channelId));
+        }
+
+        bool operator==(const discord_id x) const
+        { return id == x; }
+        bool operator==(const Guild &x) const
+        { return id == x.id; }
+        bool operator==(const Guild *x) const
+        { return id == x->id; }
     };
 
-    class Channel
+    struct User
     {
-        public:
-            Channel(const char *json_data);
-            discord_id id, guildId;
-            std::string name;
-            Guild *guild;
-            channel_type type;
+        discord_id id;
+        std::string username;
 
-            bool operator==(const discord_id x) const
-            { return id == x; }
-            bool operator==(const Channel &x) const
-            { return id == x.id; }
-            bool operator==(const Channel *x) const
-            { return id == x->id; }
+        void save(std::vector<User> *users)
+        {
+            auto it = std::find(users->begin(), users->end(), id);
+            if(it == users->end())
+                users->push_back(*this);
+            else
+                *it = *this;
+        }
+
+        bool operator==(const discord_id x) const
+        { return id == x; }
+        bool operator==(const User &x) const
+        { return id == x.id; }
+        bool operator==(const User *x) const
+        { return id == x->id; }
     };
 
-    class Message
+    struct Channel
     {
-        public:
-            Message(const char *json_data);
-            discord_id id;
-            Guild *guild;
-            User *author;
-            discord_id guildId, channelId;
-            std::string content;
+        discord_id id, guildId;
+        std::string name;
+        Guild *guild = nullptr;
+        channel_t type;
 
-            bool operator==(const discord_id x) const
-            { return id == x; }
-            bool operator==(const Message &x) const
-            { return id == x.id && guild->id == x.guild->id; }
-            bool operator==(const Message *x) const
-            { return id == x->id && guild->id == x->guild->id; }
+        void save(std::vector<Channel> *channels)
+        {
+            auto it = std::find(channels->begin(), channels->end(), id);
+            if(it == channels->end())
+                channels->push_back(*this);
+            else
+                *it = *this;
+        }
+        void set_ptrs(std::vector<Guild> *guilds)
+        {
+            guild = find_guild(guilds, guildId);
+        }
+
+        bool operator==(const discord_id x) const
+        { return id == x; }
+        bool operator==(const Channel &x) const
+        { return id == x.id; }
+        bool operator==(const Channel *x) const
+        { return id == x->id; }
+    };
+
+    struct Message
+    {
+        discord_id id, guildId, channelId, authorId;
+        Guild *guild = nullptr;
+        User *author = nullptr;
+        Channel *channel = nullptr;
+        std::string content;
+
+        void save(std::vector<Message> *messages)
+        {
+            auto it = std::find(messages->begin(), messages->end(), id);
+            if(it == messages->end())
+                messages->push_back(*this);
+            else
+                *it = *this;
+        }
+        void unsave(std::vector<Message> *messages)
+        {
+            auto it = std::find(messages->begin(), messages->end(), id);
+            if(it != messages->end()) messages->erase(it);
+        }
+        void set_ptrs(std::vector<Guild> *guilds, std::vector<User> *users, std::vector<Channel> *channels)
+        {
+            guild = find_guild(guilds, guildId);
+            author = find_user(users, authorId);
+            channel = find_channel(channels, channelId);
+        }
+
+        bool operator==(const discord_id x) const
+        { return id == x; }
+        bool operator==(const Message &x) const
+        { return id == x.id && guild->id == x.guild->id; }
+        bool operator==(const Message *x) const
+        { return id == x->id && guild->id == x->guild->id; }
     };
 
     class DiscordServer {
@@ -178,25 +269,20 @@ namespace Discord
             std::string url, title, author;
     };
 
-    std::vector<User> *get_users();
-    std::vector<Guild> *get_guilds();
-    std::vector<Channel> *get_channels();
-    std::vector<Message> *get_messages();
-    std::vector<DiscordServer> *get_servers();
-
-    void link_all_objects(const char *update_str);
     void restore_data(char *backup_json);
 }
 
 // Tools
 Discord::command str_to_command(const char *command);
 void send_to_js(const char *msg);
+std::vector<Discord::User> *get_users();
+std::vector<Discord::Guild> *get_guilds();
+std::vector<Discord::Channel> *get_channels();
+std::vector<Discord::Message> *get_messages();
+std::vector<Discord::DiscordServer> *get_servers();
 
 // Handler
 void execute_discord_command(Discord::subcommand subcommand, const char *command);
-
-// tool function
-void delete_message(Discord::discord_id msg_id);
 
 // Global
 void global_cmd(Discord::Message *msg);

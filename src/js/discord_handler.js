@@ -97,7 +97,7 @@ export function process_ws_message(data)
         let guild = get_guild(data.info.guildId);
         let channel = get_channel(guild, data.info.channelId);
         let message = get_message(channel, data.info.id);
-        if(message.deletable)
+        if(message?.deletable)
             message.delete();
     }
     else if(data.subcommand == DISCORD_COMMAND_GET_GUILDS)
