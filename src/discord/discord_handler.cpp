@@ -53,7 +53,7 @@ void execute_discord_command(subcommand subcommand, const char *datas_str)
         return;
     }
 
-    if(subcommand == COMMAND_STD)
+    if(subcommand == STD)
     {
         const char  *type =      datas_json["type"].is_null() ? nullptr : datas_json["type"].get<std::string>().c_str(),
                     *command =   datas_json["command"].is_null() ? nullptr : datas_json["command"].get<std::string>().c_str();
@@ -66,7 +66,7 @@ void execute_discord_command(subcommand subcommand, const char *datas_str)
         std::string message_str = datas_json["info"].dump();
         Message message;
         message.id = std::stoull(datas_json["info"]["id"].get<std::string>());
-        message.authorId = std::stoull(datas_json["info"]["author"].get<std::string>());
+        message.authorId = std::stoull(datas_json["info"]["authorId"].get<std::string>());
         message.channelId = std::stoull(datas_json["info"]["channelId"].get<std::string>());
         message.guildId = std::stoull(datas_json["info"]["guildId"].get<std::string>());
         message.content = datas_json["info"]["content"];

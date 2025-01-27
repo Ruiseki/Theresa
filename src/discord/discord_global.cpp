@@ -22,15 +22,18 @@ void global_cmd(Discord::Message *msg)
     command cmd = str_to_command(args[0].c_str());
 
     json order = {
-        {"task", cmd}
+        {"subcommand", STD},
+        {"info", {
+            {"task", cmd}
+        }}
     };
     switch(cmd)
     {
         case JOIN_VOICE:
         {
-            order["user_id"] = msg->author->id;
-            order["guild_id"] = msg->guildId;
-            // send_to_js(order.dump().c_str());
+            order["info"]["user"] = std::to_string(msg->author->id);
+            order["info"]["guild"] = std::to_string(msg->guildId);
+            send_to_js(order.dump().c_str());
             break;
         }
 

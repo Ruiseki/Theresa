@@ -17,7 +17,7 @@ namespace Discord
     #define PREFIX (char*)"t!"
     #define PREFIX_LENGTH 2
 
-    #define COMMAND_STD     (Discord::subcommand)0
+    #define STD             (Discord::subcommand)0
     #define UPDATE          (Discord::subcommand)1
     #define DELETE_MSG      (Discord::subcommand)2
     #define GET_CHANNEL     (Discord::subcommand)3

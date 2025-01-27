@@ -19,34 +19,42 @@ export const COMMAND_TYPE_WEB = 2;
 
 /** @typedef {number} discord_subcommand */
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_STD = 0;
+export const DISCORD_SUBCOMMAND_STD = 0;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_UPDATE = 1;
+export const DISCORD_SUBCOMMAND_UPDATE = 1;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_DELETE_MSG = 2;
+export const DISCORD_SUBCOMMAND_DELETE_MSG = 2;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_GET_CHANNEL = 3;
+export const DISCORD_SUBCOMMAND_GET_CHANNEL = 3;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_GET_CHANNELS = 4;
+export const DISCORD_SUBCOMMAND_GET_CHANNELS = 4;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_GET_USER = 5;
+export const DISCORD_SUBCOMMAND_GET_USER = 5;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_GET_USERS = 6;
+export const DISCORD_SUBCOMMAND_GET_USERS = 6;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_GET_GUILD = 7;
+export const DISCORD_SUBCOMMAND_GET_GUILD = 7;
 /** @constant {discord_subcommand} */
-export const DISCORD_COMMAND_GET_GUILDS = 8;
+export const DISCORD_SUBCOMMAND_GET_GUILDS = 8;
 
-export const DISCORD_COMMAND_STR = [
-    "DISCORD_COMMAND_STD",
-    "DISCORD_COMMAND_UPDATE",
-    "DISCORD_COMMAND_DELETE_MSG",
-    "DISCORD_COMMAND_GET_CHANNEL",
-    "DISCORD_COMMAND_GET_CHANNELS",
-    "DISCORD_COMMAND_GET_USER",
-    "DISCORD_COMMAND_GET_USERS",
-    "DISCORD_COMMAND_GET_GUILD",
-    "DISCORD_COMMAND_GET_GUILDS"
+/** @typedef {number} discord_command */
+/** @constant {discord_command} */
+export const DISCORD_COMMAND_JOIN_VOICE = 0x00000000;
+/** @constant {discord_command} */
+export const DISCORD_COMMAND_LEAVE_VOICE = 0x00000001;
+/** @constant {discord_command} */
+export const DISCORD_COMMAND_UNKNOWN = 0xffffffff;
+
+export const DISCORD_SUBCOMMAND_STR = [
+    "DISCORD_SUBCOMMAND_STD",
+    "DISCORD_SUBCOMMAND_UPDATE",
+    "DISCORD_SUBCOMMAND_DELETE_MSG",
+    "DISCORD_SUBCOMMAND_GET_CHANNEL",
+    "DISCORD_SUBCOMMAND_GET_CHANNELS",
+    "DISCORD_SUBCOMMAND_GET_USER",
+    "DISCORD_SUBCOMMAND_GET_USERS",
+    "DISCORD_SUBCOMMAND_GET_GUILD",
+    "DISCORD_SUBCOMMAND_GET_GUILDS"
 ];
 
 init_ws();

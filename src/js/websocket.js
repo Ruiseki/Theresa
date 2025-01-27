@@ -1,5 +1,5 @@
 import { process_ws_message, theresa_connected } from './discord_handler.js';
-import { DISCORD_COMMAND_STR, WEBSOCKET_PORT } from './main.js';
+import { DISCORD_SUBCOMMAND_STR, WEBSOCKET_PORT } from './main.js';
 import WebSocket from 'ws';
 
 export var connected = false;
@@ -59,6 +59,7 @@ async function connection_handler()
             connected = true;
 
             socket.on('message', (evt) => {
+                console.log(`<- text[${evt.length / 1000}ko]`);
                 process_ws_message(JSON.parse(evt));
             });
 
@@ -93,7 +94,7 @@ export function send_data(data, command_type, subcommand)
             datas: data
         };
         let data_str = JSON.stringify(data);
-        console.log(`-> ${DISCORD_COMMAND_STR[subcommand]} text[${data_str.length / 1000}ko]`);
+        console.log(`-> ${DISCORD_SUBCOMMAND_STR[subcommand]} text[${data_str.length / 1000}ko]`);
         ws.send(data_str);
     }
     else
