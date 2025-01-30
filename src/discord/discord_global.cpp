@@ -31,15 +31,35 @@ void global_cmd(Discord::Message *msg)
     {
         case JOIN_VOICE:
         {
-            order["info"]["user"] = std::to_string(msg->author->id);
-            order["info"]["guild"] = std::to_string(msg->guildId);
+            auto members = get_guild_members();
+            GuildMember member_cmp;
+            member_cmp.userId = msg->authorId;
+            member_cmp.guildId = msg->guildId;
+
+            auto it = std::find(members->begin(), members->end(), member_cmp);
+            if(it->voice.channel == nullptr)
+            {
+                /* send a message for the error */
+                return;
+            }
+
+            order["info"]["guild"] = std::to_string(msg->guild->id);
+            order["info"]["channel"] = std::to_string(it->voice.channelId);
             send_to_js(order.dump().c_str());
             break;
         }
-
         case LEAVE_VOICE:
+            order["info"]["guild"] = std::to_string(msg->guild->id);
+            send_to_js(order.dump().c_str());
             break;
         default:
             break;
     }
 }
+
+/*
+    To do :
+        - Faire join voice et leave voice
+        - Tester et vérifier la méthode
+        - Upscaler
+*/

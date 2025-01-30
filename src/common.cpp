@@ -14,20 +14,10 @@ void init_save_folder(char *save_folder_path)
     
     if(dir == nullptr)
     {
-        if(mkdir(save_folder_path, 755) == 0)
-        ;
+        if(mkdir(save_folder_path, 755) == 0) ;
         else ;
     }
-    else
-    {
-        
-    }
-
-    /*
-        To do :
-            - Verifier si la structure du dossier de backup est correct
-            - Parser chaque json de chaque serveur didi et mettre a jours servers (ne pas oublier de relink après UPDATE)
-     */
+    else ;
 
 }
 

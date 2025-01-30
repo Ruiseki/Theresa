@@ -68,6 +68,8 @@ namespace Discord
     struct GuildMember;
     struct Message;
     struct Channel;
+    struct VoiceState;
+
     class Track;
     class DiscordServer;
 
@@ -88,40 +90,12 @@ namespace Discord
     Channel* find_channel(std::vector<Channel> *array, discord_id id);
     Message* find_message(std::vector<Message> *array, discord_id id);
 
-    struct GuildMember
-    {
-        Guild *guild = nullptr;
-        User *user = nullptr;
-        discord_id id, guildId;
-        std::string nickname;
-
-        void save(std::vector<GuildMember> *guild_members)
-        {
-            auto it = std::find(guild_members->begin(), guild_members->end(), this);
-                if(it == guild_members->end())
-                    guild_members->push_back(*this);
-                else
-                    *it = *this;
-        }
-        void set_ptrs(std::vector<Guild> *guilds, std::vector<User> *users)
-        {
-            guild = find_guild(guilds, guildId);
-            user = find_user(users, id);
-        }
-
-        bool operator==(const GuildMember &x) const
-        { return id == x.id && guildId == x.guildId; }
-        bool operator==(const GuildMember *x) const
-        { return id == x->id && guildId == x->guildId; }
-    };
-
     struct Guild
     {
         discord_id id, ownerId;
         User* owner = nullptr;
         int memberCount;
         std::string name;
-        std::vector<discord_id> membersIds, channelsIds;
         std::vector<GuildMember*> members;
         std::vector<Channel*> channels;
 
@@ -133,20 +107,11 @@ namespace Discord
             else
                 *it = *this;
         }
-        void set_ptrs(std::vector<User> *users, std::vector<GuildMember> *guild_members, std::vector<Channel> *channels)
+        void set_ptrs(std::vector<User> *users)
         {
             owner = find_user(users, ownerId);
-
             members.clear();
             this->channels.clear();
-
-            for(discord_id memberId : membersIds)
-            {
-                GuildMember *member = find_guildMember(guild_members, memberId, id);
-                this->members.push_back(member);
-            }
-            for(discord_id channelId : channelsIds)
-                this->channels.push_back(find_channel(channels, channelId));
         }
 
         bool operator==(const discord_id x) const
@@ -157,10 +122,50 @@ namespace Discord
         { return id == x->id; }
     };
 
+    struct VoiceState
+    {
+        Channel *channel = nullptr;
+        discord_id channelId;
+        std::string sessionId;
+        bool selfMute, serverMute, selfDeaf, serverDeaf, selfVideo;
+        bool streaming, suppress;
+    };
+
+    struct GuildMember
+    {
+        Guild *guild = nullptr;
+        User *user = nullptr;
+        VoiceState voice;
+        discord_id userId, guildId;
+        std::string nickname, displayName;
+
+        void save(std::vector<GuildMember> *guild_members)
+        {
+            auto it = std::find(guild_members->begin(), guild_members->end(), this);
+                if(it == guild_members->end())
+                    guild_members->push_back(*this);
+                else
+                    *it = *this;
+        }
+        void set_ptrs(std::vector<Guild> *guilds, std::vector<User> *users, std::vector<Channel> *channels)
+        {
+            guild = find_guild(guilds, guildId);
+            guild->members.push_back(this);
+
+            user = find_user(users, userId);
+            voice.channel = find_channel(channels, voice.channelId);
+        }
+
+        bool operator==(const GuildMember &x) const
+        { return userId == x.userId && guildId == x.guildId; }
+        bool operator==(const GuildMember *x) const
+        { return userId == x->userId && guildId == x->guildId; }
+    };
+
     struct User
     {
         discord_id id;
-        std::string username;
+        std::string username, globalName;
 
         void save(std::vector<User> *users)
         {
@@ -197,6 +202,7 @@ namespace Discord
         void set_ptrs(std::vector<Guild> *guilds)
         {
             guild = find_guild(guilds, guildId);
+            guild->channels.push_back(this);
         }
 
         bool operator==(const discord_id x) const
@@ -279,6 +285,7 @@ std::vector<Discord::User> *get_users();
 std::vector<Discord::Guild> *get_guilds();
 std::vector<Discord::Channel> *get_channels();
 std::vector<Discord::Message> *get_messages();
+std::vector<Discord::GuildMember> *get_guild_members();
 std::vector<Discord::DiscordServer> *get_servers();
 
 // Handler

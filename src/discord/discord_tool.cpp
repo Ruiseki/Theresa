@@ -28,7 +28,7 @@ User* Discord::find_user(std::vector<User> *array, discord_id id)
 GuildMember* Discord::find_guildMember(std::vector<GuildMember> *array, discord_id id, discord_id guildId)
 {
     GuildMember g;
-    g.id = id;
+    g.userId = id;
     g.guildId = guildId;
     auto it = std::find(array->begin(), array->end(), g);
     if(it == array->end()) return nullptr;

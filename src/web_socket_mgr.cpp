@@ -118,6 +118,16 @@ std::string generate_handshake_header(char *client_header)
     return handshake_header;
 }
 
+unsigned long long swap_endian_64(unsigned long long value)
+{
+    unsigned long long result = 0;
+
+    for (size_t i = 0; i < 8; i++)
+        reinterpret_cast<uint8_t*>(&result)[i] = reinterpret_cast<uint8_t*>(&value)[8 - 1 - i];
+
+    return result;
+}
+
 void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, bool masked, unsigned char **ws_frame, size_t *frame_size)
 {
     *frame_size = 2; // Size of the frame in bytes.
@@ -214,7 +224,7 @@ void decode_ws_frame(unsigned char *ws_frame_buffer, DecodedWsFrame *result)
         // 64 bits = 8 bytes
         std::memcpy(&payload_size, ws_frame_buffer + selected_byte, 8);
         #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-            payload_size = __bswap_64(payload_size);
+            payload_size = swap_endian_64(payload_size);
         #endif
         selected_byte += 8;
     }

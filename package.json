@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/Ruiseki/Theresa#readme",
   "dependencies": {
+    "@discordjs/voice": "^0.18.0",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.7",
     "ws": "^8.18.0"

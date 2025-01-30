@@ -1,8 +1,8 @@
-import { BaseGuildTextChannel, Client, GatewayIntentBits, Guild, Message, User } from "discord.js";
+import { BaseGuildTextChannel, Client, GatewayIntentBits, Guild, GuildMember, Message, User, VoiceState } from "discord.js";
 import { send_data, sleep } from "./websocket.js";
 import dotenv from 'dotenv';
-import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_SUBCOMMAND_DELETE_MSG, DISCORD_SUBCOMMAND_GET_CHANNELS, DISCORD_SUBCOMMAND_GET_GUILDS, DISCORD_SUBCOMMAND_GET_USERS, DISCORD_SUBCOMMAND_STD, DISCORD_SUBCOMMAND_UPDATE } from "./main.js";
-import { join_voice } from "./discord_global.js";
+import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_SUBCOMMAND_DELETE_MSG, DISCORD_SUBCOMMAND_GET_CHANNELS, DISCORD_SUBCOMMAND_GET_GUILDS, DISCORD_SUBCOMMAND_GET_USERS, DISCORD_SUBCOMMAND_STD, DISCORD_SUBCOMMAND_UPDATE } from "./main.js";
+import { join_voice, leave_voice } from "./discord_global.js";
 dotenv.config();
 
 /**
@@ -11,9 +11,7 @@ dotenv.config();
 export var client;
 export var prefix = 't!';
 var client_ready = false;
-/**
- * @type {{voice_connection: any}[]}
- */
+
 export var servers = [];
 
 export async function init_discord()
@@ -22,7 +20,7 @@ export async function init_discord()
         intents: [
             GatewayIntentBits.Guilds,
             GatewayIntentBits.GuildMembers,
-            GatewayIntentBits.GuildEmojisAndStickers,
+            GatewayIntentBits.GuildExpressions,
             GatewayIntentBits.GuildInvites,
             GatewayIntentBits.GuildVoiceStates,
             GatewayIntentBits.GuildPresences,
@@ -38,7 +36,13 @@ export async function init_discord()
 
     client.once('ready', () => {
         console.log('Discord client is ready');
-        client_ready = true
+        client_ready = true;
+        client.guilds.cache.each(guild => {
+            servers[guild.id] = {
+                voice: null,
+                audio_engine: null
+            };
+        })
     });
     client.on('messageCreate', process_discord_message);
 }
@@ -60,11 +64,23 @@ async function wait_for_client_ready()
 
 function send_guild_update()
 {
-    send_data({
+    /** @type {{guilds: Guild[], channels: Channel[], users: User[], guild_members: GuildMember[], voice_states: VoiceState[]}} */
+    let data = {
         guilds: [...client.guilds.cache.values()],
         channels: [...client.channels.cache.values()],
-        users: [...client.users.cache.values()]
-    }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_UPDATE);
+        users: [...client.users.cache.values()],
+        guild_members: []
+    };
+    
+    for(let guild of data.guilds)
+        for(let member of guild.members.cache.values())
+        {
+            let member_json = member.toJSON();
+            member_json.voice = member.voice.toJSON();
+            data.guild_members.push(member_json);
+        }
+
+    send_data(data, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_UPDATE);
 }
 
 /**
@@ -98,10 +114,15 @@ export function process_ws_message(data)
         switch(data.info.task)
         {
             case DISCORD_COMMAND_JOIN_VOICE:
-                data.info.user = get_user(data.info.user);
                 data.info.guild = get_guild(data.info.guild);
-                join_voice(data.info.user, data.info.guild);
+                data.info.channel = get_channel(data.info.guild, data.info.channel);
+                join_voice(data.info.guild, data.info.channel);
                 break;
+            case DISCORD_COMMAND_LEAVE_VOICE:
+                data.info.guild = get_guild(data.info.guild);
+                leave_voice(data.info.guild);
+                break;
+
         }
     }
     else if(data.subcommand == DISCORD_SUBCOMMAND_DELETE_MSG)
@@ -119,7 +140,7 @@ export function process_ws_message(data)
         }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_GET_GUILDS);
     }
     else if(data.subcommand == DISCORD_SUBCOMMAND_GET_CHANNELS)
-        {
+    {
         let guild = get_guild(data.info?.guildId);
         let channels;
         if(guild)

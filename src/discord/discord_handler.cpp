@@ -21,8 +21,12 @@ std::vector<Channel> *get_channels()
 std::vector<Message> *get_messages()
 { return &datas.messages; }
 
+std::vector<GuildMember> *get_guild_members()
+{ return &datas.guild_members; }
+
 std::vector<DiscordServer> *get_servers()
 { return &datas.servers; }
+
 
 void delete_message(Message *message)
 {
@@ -62,7 +66,7 @@ void execute_discord_command(subcommand subcommand, const char *datas_str)
         std::vector<const char*> args_c_str;
         for(auto element : args)
             args_c_str.push_back(element.c_str());
-        
+
         std::string message_str = datas_json["info"].dump();
         Message message;
         message.id = std::stoull(datas_json["info"]["id"].get<std::string>());
@@ -96,19 +100,6 @@ void execute_discord_command(subcommand subcommand, const char *datas_str)
             guild.name = guild_json["name"];
             guild.memberCount = (int)guild_json["memberCount"];
 
-            for(std::string memberId : guild_json["members"])
-            {
-                GuildMember guild_member;
-                guild_member.guildId = guild.id;
-                guild_member.id = std::stoull(memberId);
-                guild_member.nickname = "";
-                guild_member.save(&datas.guild_members);
-
-                guild.membersIds.push_back(guild_member.id);
-            }
-            for(std::string channelId : guild_json["channels"])
-                guild.channelsIds.push_back(std::stoull(channelId));
-
             guild.save(&datas.guilds);
         }
         for(json channel_json : datas_json["channels"])
@@ -125,14 +116,35 @@ void execute_discord_command(subcommand subcommand, const char *datas_str)
             User user;
             user.id = std::stoull(user_json["id"].get<std::string>());
             user.username = user_json["username"];
+            user.globalName = user_json["globalName"].is_null() ? "" : user_json["globalName"];
             user.save(&datas.users);
+        }
+        for(json member_json : datas_json["guild_members"])
+        {
+            GuildMember member;
+            member.displayName = member_json["displayName"];
+            member.nickname = member_json["nickname"].is_null() ? "" : member_json["nickname"];
+            member.guildId = std::stoull(member_json["guildId"].get<std::string>());
+            member.userId = std::stoull(member_json["userId"].get<std::string>());
+
+            member.voice.channelId = member_json["voice"]["channel"].is_null() ? 0 : std::stoull(member_json["voice"]["channel"].get<std::string>());
+            member.voice.selfMute = member_json["voice"]["selfMute"].is_null() ? false : (bool)member_json["voice"]["selfMute"];
+            member.voice.selfDeaf = member_json["voice"]["selfDeaf"].is_null() ? false : (bool)member_json["voice"]["selfDeaf"];
+            member.voice.selfVideo = member_json["voice"]["selfVideo"].is_null() ? false : (bool)member_json["voice"]["selfVideo"];
+            member.voice.serverMute = member_json["voice"]["serverMute"].is_null() ? false : (bool)member_json["voice"]["serverMute"];
+            member.voice.serverDeaf = member_json["voice"]["serverDeaf"].is_null() ? false : (bool)member_json["voice"]["serverDeaf"];
+            member.voice.streaming = member_json["voice"]["streaming"].is_null() ? false : (bool)member_json["voice"]["streaming"];
+            member.voice.sessionId = member_json["voice"]["sessionId"].is_null() ? "" : member_json["voice"]["sessionId"];
+            member.voice.suppress = member_json["voice"]["suppress"].is_null() ? false : (bool)member_json["voice"]["suppress"];
+
+            member.save(&datas.guild_members);
         }
 
         for(auto &guild : datas.guilds)
-            guild.set_ptrs(&datas.users, &datas.guild_members, &datas.channels);
+            guild.set_ptrs(&datas.users);
         for(auto &channel : datas.channels)
             channel.set_ptrs(&datas.guilds);
         for(auto &guild_member : datas.guild_members)
-            guild_member.set_ptrs(&datas.guilds, &datas.users);
+            guild_member.set_ptrs(&datas.guilds, &datas.users, &datas.channels);
     }
 }
