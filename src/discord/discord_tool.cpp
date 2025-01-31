@@ -1,6 +1,8 @@
+#include <cstring>
+
+#include "common.hpp"
 #include "discord.hpp"
 #include "server.hpp"
-#include <cstring>
 using namespace Discord;
 
 command str_to_command(const char *command)
@@ -10,12 +12,15 @@ command str_to_command(const char *command)
     else return UNKNOWN;
 }
 
-void send_to_js(const char *msg)
+void send_to_js(const char *msg, size_t msg_size)
 {
     ServerData *server_data = get_server_data();
     for(size_t i = 0; i < server_data->clients_size; i++)
         if(server_data->clients[i].type == TYPE_WS)
+        {
+            wlog_server_ws_data(true, true, server_data->clients[i].sockfd, OPCODE_TEXT, msg_size, msg);
             send_ws_frame(msg, server_data->clients[i].sockfd);
+        }
 }
 
 User* Discord::find_user(std::vector<User> *array, discord_id id)

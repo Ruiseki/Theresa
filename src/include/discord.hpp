@@ -280,7 +280,7 @@ namespace Discord
 
 // Tools
 Discord::command str_to_command(const char *command);
-void send_to_js(const char *msg);
+void send_to_js(const char *msg, size_t msg_size);
 std::vector<Discord::User> *get_users();
 std::vector<Discord::Guild> *get_guilds();
 std::vector<Discord::Channel> *get_channels();

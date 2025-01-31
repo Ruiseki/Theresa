@@ -1,9 +1,9 @@
 #include <nlohmann/json.hpp>
 #include <cstring>
-#include <iostream>
 
 #include "server.hpp"
 #include "discord.hpp"
+#include "common.hpp"
 
 using json = nlohmann::json;
 
@@ -32,7 +32,7 @@ void process_ws(int client_sockfd, char *data)
 
     if(result.data_type == OPCODE_TEXT)
     {
-        std::cout << client_sockfd << " -> text[" << result.text_data.size() << "]" << std::endl;
+        wlog_server_ws_data(true, false, result.sender, result.data_type, result.text_data.size(), result.text_data.c_str());
         json object;
         try
         {
@@ -60,7 +60,7 @@ void process_ws(int client_sockfd, char *data)
 
     }
     else if(result.data_type == OPCODE_BINARY)
-        std::cout << client_sockfd << " -> binary[" << result.binary_data_length << "]" << std::endl;
+        wlog_server_ws_data(true, false, result.sender, result.data_type, result.binary_data_length, nullptr);
 }
 
 void process_http(int client_sockfd, char /* data */[], size_t /* data_size */)

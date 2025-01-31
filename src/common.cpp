@@ -5,6 +5,7 @@
 
 #include "common.hpp"
 #include "discord.hpp"
+#include "web_socket_mgr.hpp"
 
 void init_save_folder(char *save_folder_path)
 {
@@ -15,13 +16,13 @@ void init_save_folder(char *save_folder_path)
     if(dir == nullptr)
     {
         if(mkdir(save_folder_path, 755) == 0) ;
-        else ;
+        else {}
     }
-    else ;
+    else {}
 
 }
 
-void wlog(bool time, char *content)
+void wlog(bool time, const char *content)
 {
     std::string content_str = "";
     if(time)
@@ -36,5 +37,21 @@ void wlog(bool time, char *content)
 
     content_str += content;
 
-    std::ofstream(LOG_FILE_PATH, std::ios::app) << content;
+    std::ofstream(LOG_FILE, std::ios::app) << content << std::endl;
+}
+
+void wlog_server_ws_data(bool time, bool is_data_sended, int sockfd, OPCODE_T data_type, ssize_t msg_size, const char *msg)
+{
+    std::string content = std::to_string(sockfd);
+    content += is_data_sended ? " <- " : " -> ";
+
+    if(data_type == OPCODE_TEXT && msg_size < 200)
+        content += msg;
+    else
+        content +=  data_type == OPCODE_TEXT 
+                        ? "text[" + std::to_string(msg_size) + "]"
+                    : data_type == OPCODE_BINARY
+                        ? "binary[" + std::to_string(msg_size) + "]" : "error";
+
+    wlog(time, content.c_str());
 }

@@ -1,5 +1,4 @@
 #include <nlohmann/json.hpp>
-#include <iostream>
 
 #include "discord.hpp"
 #include "web_socket_mgr.hpp"
@@ -41,7 +40,7 @@ void delete_message(Message *message)
     std::string delete_message_cmd_str = delete_message_cmd.dump();
     message->unsave(&datas.messages);
 
-    send_to_js(delete_message_cmd_str.c_str());
+    send_to_js(delete_message_cmd_str.c_str(), delete_message_cmd_str.size());
 }
 
 void execute_discord_command(subcommand subcommand, const char *datas_str)

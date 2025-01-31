@@ -45,12 +45,12 @@ void global_cmd(Discord::Message *msg)
 
             order["info"]["guild"] = std::to_string(msg->guild->id);
             order["info"]["channel"] = std::to_string(it->voice.channelId);
-            send_to_js(order.dump().c_str());
+            send_to_js(order.dump().c_str(), order.dump().size());
             break;
         }
         case LEAVE_VOICE:
             order["info"]["guild"] = std::to_string(msg->guild->id);
-            send_to_js(order.dump().c_str());
+            send_to_js(order.dump().c_str(), order.dump().size());
             break;
         default:
             break;
@@ -59,7 +59,7 @@ void global_cmd(Discord::Message *msg)
 
 /*
     To do :
-        - Faire join voice et leave voice
-        - Tester et vérifier la méthode
-        - Upscaler
+        - Update les states de tous les vectors
+        - Upscaler la methode de production des commandes (et améliorer la mainteance ! je suis sur qu'il y a mieux)
+        - Voir pour l'audio
 */
