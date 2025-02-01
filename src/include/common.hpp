@@ -3,7 +3,7 @@
 
 #include "web_socket_mgr.hpp"
 
-#define LOG_FILE_PATH (char*)"/home/ruiseki/.theresa/"
+#define LOG_FILE_PATH (std::string) std::getenv("HOME") + "/.theresa/"
 #define LOG_FILE (std::string)LOG_FILE_PATH + "theresa_main_server.log"
 
 void init_save_folder(char *backup_path);

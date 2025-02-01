@@ -36,7 +36,6 @@ void wlog(bool time, const char *content)
     }
 
     content_str += content;
-
     std::ofstream(LOG_FILE, std::ios::app) << content << std::endl;
 }
 
@@ -45,13 +44,20 @@ void wlog_server_ws_data(bool time, bool is_data_sended, int sockfd, OPCODE_T da
     std::string content = std::to_string(sockfd);
     content += is_data_sended ? " <- " : " -> ";
 
+    std::string msg_size_str = std::to_string((double)((double)msg_size / 1000));
+    for(int i = msg_size_str.size() - 1; i >= 0; i--)
+    {
+        if(msg_size_str[i] == '0') msg_size_str.pop_back();
+        else break;
+    }
+
     if(data_type == OPCODE_TEXT && msg_size < 200)
         content += msg;
     else
         content +=  data_type == OPCODE_TEXT 
-                        ? "text[" + std::to_string(msg_size) + "]"
+                        ? "text[" + msg_size_str + "ko]"
                     : data_type == OPCODE_BINARY
-                        ? "binary[" + std::to_string(msg_size) + "]" : "error";
+                        ? "binary[" + msg_size_str + "ko]" : "error";
 
     wlog(time, content.c_str());
 }

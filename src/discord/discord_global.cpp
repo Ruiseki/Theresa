@@ -4,6 +4,31 @@
 using json = nlohmann::json;
 using namespace Discord;
 
+void join_voice(Channel *channel)
+{
+    json order = {
+        {"subcommand", STD},
+        {"info", {
+            {"task", JOIN_VOICE},
+            {"guild", std::to_string(channel->guild->id)},
+            {"channel", std::to_string(channel->id)}
+        }}
+    };
+    send_to_js(order.dump().c_str(), order.dump().size());
+}
+
+void leave_voice(Guild *guild)
+{
+    json order = {
+        {"subcommand", STD},
+        {"info", {
+            {"task", LEAVE_VOICE},
+            {"guild", std::to_string(guild->id)},
+        }}
+    };
+    send_to_js(order.dump().c_str(), order.dump().size());
+}
+
 void global_cmd(Discord::Message *msg)
 {
     std::vector<std::string> args;
@@ -19,15 +44,7 @@ void global_cmd(Discord::Message *msg)
     }
     if(buffer != "") args.push_back(buffer);
 
-    command cmd = str_to_command(args[0].c_str());
-
-    json order = {
-        {"subcommand", STD},
-        {"info", {
-            {"task", cmd}
-        }}
-    };
-    switch(cmd)
+    switch(str_to_command(args[0].c_str()))
     {
         case JOIN_VOICE:
         {
@@ -43,14 +60,11 @@ void global_cmd(Discord::Message *msg)
                 return;
             }
 
-            order["info"]["guild"] = std::to_string(msg->guild->id);
-            order["info"]["channel"] = std::to_string(it->voice.channelId);
-            send_to_js(order.dump().c_str(), order.dump().size());
+            join_voice(it->voice.channel);
             break;
         }
         case LEAVE_VOICE:
-            order["info"]["guild"] = std::to_string(msg->guild->id);
-            send_to_js(order.dump().c_str(), order.dump().size());
+            leave_voice(msg->guild);
             break;
         default:
             break;

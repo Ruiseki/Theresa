@@ -60,3 +60,19 @@ Message* Discord::find_message(std::vector<Message> *array, discord_id id)
     if(it == array->end()) return nullptr;
     else return &*it;
 }
+
+void Discord::get_members_in_voice_channel(Channel *channel, GuildMember ***members, int *members_size)
+{
+    std::vector<GuildMember*> member_in_voice_channel;
+    std::vector<GuildMember> *v_members = get_guild_members();
+
+    for(size_t i = 0; i < v_members->size(); i++)
+        if( v_members->at(i).guild == channel->guild
+            && v_members->at(i).voice.channel == channel)
+            member_in_voice_channel.push_back(&v_members->at(i));
+
+    *members_size = member_in_voice_channel.size();
+    *members = new GuildMember*[*members_size];
+    for(int i = 0; i < *members_size; i++)
+        (*members)[i] = member_in_voice_channel[i];
+}

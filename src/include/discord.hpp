@@ -16,6 +16,7 @@ namespace Discord
 
     #define PREFIX (char*)"t!"
     #define PREFIX_LENGTH 2
+    #define BOT_ID 762501363086524416
 
     #define STD             (Discord::subcommand)0
     #define UPDATE          (Discord::subcommand)1
@@ -90,6 +91,8 @@ namespace Discord
     Guild* find_guild(std::vector<Guild> *array, discord_id id);
     Channel* find_channel(std::vector<Channel> *array, discord_id id);
     Message* find_message(std::vector<Message> *array, discord_id id);
+
+    void get_members_in_voice_channel(Channel *channel, GuildMember ***members, int *members_size);
 
     struct Guild
     {
@@ -294,6 +297,8 @@ void execute_discord_command(Discord::subcommand subcommand, const char *command
 
 // Global
 void global_cmd(Discord::Message *msg);
+void join_voice(Discord::Channel *channel);
+void leave_voice(Discord::Guild *guild);
 
 // Audio
 void audio_cmd(const char *cmd_str, const char **args, Discord::Message *msg);

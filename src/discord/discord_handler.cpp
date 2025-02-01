@@ -72,16 +72,43 @@ void standard(json *datas_json)
 
 void update(json *datas_json)
 {
+    // voice event
     if(datas_json->contains("old_state") && datas_json->contains("new_state"))
     {
         GuildMember member;
         json new_state = datas_json->at("new_state");
         member.guildId = std::stoull(new_state["guild"].get<std::string>());
         member.userId = std::stoull(new_state["id"].get<std::string>());
+
         auto member_it = std::find(datas.guild_members.begin(), datas.guild_members.end(), member);
         member_it->voice.channelId = new_state["channel"].is_null() ? 0 : std::stoull(new_state["channel"].get<std::string>());
         member_it->voice.sessionId = new_state["sessionId"];
         member_it->set_ptrs(&datas.guilds, &datas.users, &datas.channels);
+
+        // connection event
+        if(member_it->voice.channel != nullptr)
+        {
+            // auto join her creator
+            if(member_it->user->username == "ruisekisama")
+                join_voice(member_it->voice.channel);
+        }
+        // disconnection event
+        else
+        {
+            // leave with her creator
+            if(member_it->user->username == "ruisekisama")
+                leave_voice(member_it->guild);
+
+            GuildMember **members;
+            int members_size;
+            Channel *channel = find_channel(&datas.channels, std::stoull(datas_json->at("old_state")["channel"].get<std::string>()));
+            get_members_in_voice_channel(channel, &members, &members_size);
+
+            if(members_size == 1 && members[0]->userId == BOT_ID)
+                leave_voice(member_it->guild);
+
+            delete [] members;
+        }
     }
 }
 

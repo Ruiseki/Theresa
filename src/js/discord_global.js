@@ -23,5 +23,6 @@ export function join_voice(guild, channel)
  */
 export function leave_voice(guild)
 {
-    servers[guild.id].voice.destroy();
+    servers[guild.id].voice?.destroy();
+    servers[guild.id].voice = null;
 }
