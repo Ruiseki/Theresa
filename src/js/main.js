@@ -23,19 +23,21 @@ export const DISCORD_SUBCOMMAND_STD = 0;
 /** @constant {discord_subcommand} */
 export const DISCORD_SUBCOMMAND_UPDATE = 1;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_DELETE_MSG = 2;
+export const DISCORD_SUBCOMMAND_UPDATE_ALL = 2;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_CHANNEL = 3;
+export const DISCORD_SUBCOMMAND_DELETE_MSG = 3;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_CHANNELS = 4;
+export const DISCORD_SUBCOMMAND_GET_CHANNEL = 4;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_USER = 5;
+export const DISCORD_SUBCOMMAND_GET_CHANNELS = 5;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_USERS = 6;
+export const DISCORD_SUBCOMMAND_GET_USER = 6;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_GUILD = 7;
+export const DISCORD_SUBCOMMAND_GET_USERS = 7;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_GUILDS = 8;
+export const DISCORD_SUBCOMMAND_GET_GUILD = 8;
+/** @constant {discord_subcommand} */
+export const DISCORD_SUBCOMMAND_GET_GUILDS = 9;
 
 /** @typedef {number} discord_command */
 /** @constant {discord_command} */
@@ -48,6 +50,7 @@ export const DISCORD_COMMAND_UNKNOWN = 0xffffffff;
 export const DISCORD_SUBCOMMAND_STR = [
     "DISCORD_SUBCOMMAND_STD",
     "DISCORD_SUBCOMMAND_UPDATE",
+    "DISCORD_SUBCOMMAND_UPDATE_ALL",
     "DISCORD_SUBCOMMAND_DELETE_MSG",
     "DISCORD_SUBCOMMAND_GET_CHANNEL",
     "DISCORD_SUBCOMMAND_GET_CHANNELS",

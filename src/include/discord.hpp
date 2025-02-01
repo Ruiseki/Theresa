@@ -19,13 +19,14 @@ namespace Discord
 
     #define STD             (Discord::subcommand)0
     #define UPDATE          (Discord::subcommand)1
-    #define DELETE_MSG      (Discord::subcommand)2
-    #define GET_CHANNEL     (Discord::subcommand)3
-    #define GET_CHANNELS    (Discord::subcommand)4
-    #define GET_USER        (Discord::subcommand)5
-    #define GET_USERS       (Discord::subcommand)6
-    #define GET_GUILD       (Discord::subcommand)7
-    #define GET_GUILDS      (Discord::subcommand)8
+    #define UPDATE_ALL      (Discord::subcommand)2
+    #define DELETE_MSG      (Discord::subcommand)3
+    #define GET_CHANNEL     (Discord::subcommand)4
+    #define GET_CHANNELS    (Discord::subcommand)5
+    #define GET_USER        (Discord::subcommand)6
+    #define GET_USERS       (Discord::subcommand)7
+    #define GET_GUILD       (Discord::subcommand)8
+    #define GET_GUILDS      (Discord::subcommand)9
 
     #define GUILDTEXT           (Discord::channel_type)0
     #define DM                  (Discord::channel_type)1

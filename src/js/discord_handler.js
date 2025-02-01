@@ -1,7 +1,7 @@
 import { BaseGuildTextChannel, Client, GatewayIntentBits, Guild, GuildMember, Message, User, VoiceState } from "discord.js";
 import { send_data, sleep } from "./websocket.js";
 import dotenv from 'dotenv';
-import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_SUBCOMMAND_DELETE_MSG, DISCORD_SUBCOMMAND_GET_CHANNELS, DISCORD_SUBCOMMAND_GET_GUILDS, DISCORD_SUBCOMMAND_GET_USERS, DISCORD_SUBCOMMAND_STD, DISCORD_SUBCOMMAND_UPDATE } from "./main.js";
+import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_SUBCOMMAND_DELETE_MSG, DISCORD_SUBCOMMAND_GET_CHANNELS, DISCORD_SUBCOMMAND_GET_GUILDS, DISCORD_SUBCOMMAND_GET_USERS, DISCORD_SUBCOMMAND_STD, DISCORD_SUBCOMMAND_UPDATE, DISCORD_SUBCOMMAND_UPDATE_ALL } from "./main.js";
 import { join_voice, leave_voice } from "./discord_global.js";
 dotenv.config();
 
@@ -45,6 +45,18 @@ export async function init_discord()
         })
     });
     client.on('messageCreate', process_discord_message);
+    client.on('interactionCreate', () => {});
+
+    // sending update
+    client.on('voiceStateUpdate', 
+        /**
+         * 
+         * @param {VoiceState} old_state 
+         * @param {VoiceState} new_state 
+         */
+        (old_state, new_state) => {
+            send_data({old_state: old_state.toJSON(), new_state: new_state.toJSON()}, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_UPDATE);
+    })
 }
 
 export async function theresa_connected()
@@ -80,7 +92,7 @@ function send_guild_update()
             data.guild_members.push(member_json);
         }
 
-    send_data(data, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_UPDATE);
+    send_data(data, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_UPDATE_ALL);
 }
 
 /**
