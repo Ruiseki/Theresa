@@ -19,7 +19,6 @@ void init_save_folder(char *save_folder_path)
         else {}
     }
     else {}
-
 }
 
 void wlog(bool time, const char *content)
@@ -36,7 +35,7 @@ void wlog(bool time, const char *content)
     }
 
     content_str += content;
-    std::ofstream(LOG_FILE, std::ios::app) << content << std::endl;
+    std::ofstream(LOG_FILE, std::ios::app) << content_str << std::endl;
 }
 
 void wlog_server_ws_data(bool time, bool is_data_sended, int sockfd, OPCODE_T data_type, ssize_t msg_size, const char *msg)

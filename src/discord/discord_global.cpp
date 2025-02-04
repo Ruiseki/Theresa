@@ -4,6 +4,26 @@
 using json = nlohmann::json;
 using namespace Discord;
 
+void send_message(Discord::Channel *channel, std::string message, int delete_after_ms)
+{
+    json order = {
+        {"subcommand", SEND_MSG},
+        {"info", {
+            {"guild", std::to_string(channel->guild->id)},
+            {"channel", std::to_string(channel->id)},
+            {"message", message},
+            {"lifetime", delete_after_ms}
+        }}
+    };
+
+    send_to_js(order.dump().c_str(), order.dump().size());
+}
+
+void send_message(Discord::Channel *channel, std::string message)
+{
+    send_message(channel, message, -1);
+}
+
 void join_voice(Channel *channel)
 {
     json order = {
@@ -67,6 +87,7 @@ void global_cmd(Discord::Message *msg)
             leave_voice(msg->guild);
             break;
         default:
+            send_message(msg->channel, build_embed_message("**❌ Unknown command**"), 3000);
             break;
     }
 }

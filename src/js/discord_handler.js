@@ -1,7 +1,7 @@
-import { BaseGuildTextChannel, Client, GatewayIntentBits, Guild, GuildMember, Message, User, VoiceState } from "discord.js";
+import { BaseGuildTextChannel, Client, Colors, GatewayIntentBits, Guild, GuildMember, Message, User, VoiceState } from "discord.js";
 import { send_data, sleep } from "./websocket.js";
 import dotenv from 'dotenv';
-import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_SUBCOMMAND_DELETE_MSG, DISCORD_SUBCOMMAND_GET_CHANNELS, DISCORD_SUBCOMMAND_GET_GUILDS, DISCORD_SUBCOMMAND_GET_USERS, DISCORD_SUBCOMMAND_STD, DISCORD_SUBCOMMAND_UPDATE, DISCORD_SUBCOMMAND_UPDATE_ALL } from "./main.js";
+import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_EVENT_MSG_SENDED, DISCORD_SUBCOMMAND_DELETE_MSG, DISCORD_SUBCOMMAND_EVENT, DISCORD_SUBCOMMAND_GET_CHANNELS, DISCORD_SUBCOMMAND_GET_GUILDS, DISCORD_SUBCOMMAND_GET_USERS, DISCORD_SUBCOMMAND_SEND_MSG, DISCORD_SUBCOMMAND_STD, DISCORD_SUBCOMMAND_UPDATE, DISCORD_SUBCOMMAND_UPDATE_ALL } from "./main.js";
 import { join_voice, leave_voice } from "./discord_global.js";
 dotenv.config();
 
@@ -119,7 +119,7 @@ function process_discord_message(message_event)
 /**
  * @param {{subcommand: import("./main.js").discord_subcommand, info: object}} data 
  */
-export function process_ws_message(data)
+export async function process_ws_message(data)
 {
     if(data.subcommand == DISCORD_SUBCOMMAND_STD)
     {
@@ -134,8 +134,20 @@ export function process_ws_message(data)
                 data.info.guild = get_guild(data.info.guild);
                 leave_voice(data.info.guild);
                 break;
-
         }
+    }
+    else if(data.subcommand == DISCORD_SUBCOMMAND_SEND_MSG)
+    {
+        let channel = get_channel(get_guild(data.info.guild), data.info.channel);
+        let msg = JSON.parse(data.info.message)
+        console.log(data.info.message);
+        channel.send(msg).then(msg => {
+            send_data({
+                event: DISCORD_EVENT_MSG_SENDED,
+                message: msg,
+                lifetime: data.info.lifetime
+            }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_EVENT);
+        });
     }
     else if(data.subcommand == DISCORD_SUBCOMMAND_DELETE_MSG)
     {

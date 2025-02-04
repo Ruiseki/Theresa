@@ -1,4 +1,5 @@
 #include <nlohmann/json.hpp>
+#include <thread>
 
 #include "discord.hpp"
 #include "web_socket_mgr.hpp"
@@ -176,6 +177,33 @@ void update_all(json *datas_json)
         guild_member.set_ptrs(&datas.guilds, &datas.users, &datas.channels);
 }
 
+void event_mgr(json *datas_json)
+{
+    Message message;
+    message.id = std::stoull( datas_json->at("message")["id"].get<std::string>() );
+    message.authorId = std::stoull( datas_json->at("message")["authorId"].get<std::string>() );
+    message.channelId = std::stoull( datas_json->at("message")["channelId"].get<std::string>() );
+    message.guildId = std::stoull( datas_json->at("message")["guildId"].get<std::string>() );
+    message.set_ptrs(&datas.guilds, &datas.users, &datas.channels);
+    message.save(&datas.messages);
+
+    int ms = datas_json->at("lifetime").is_null() ? -1 : (int)datas_json->at("lifetime");
+
+    if(ms != 0)
+    {
+
+        auto delete_after_ms = [&](Message message, int ms) -> void
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+
+            auto it = std::find(datas.messages.begin(), datas.messages.end(), message);
+            delete_message(&*it);
+        };
+
+        std::thread(delete_after_ms, message, ms).detach();
+    }
+}
+
 void execute_discord_command(subcommand subcommand, const char *datas_str)
 {
     json datas_json;
@@ -196,6 +224,9 @@ void execute_discord_command(subcommand subcommand, const char *datas_str)
         break;
     case UPDATE_ALL:
         update_all(&datas_json);
+        break;
+    case EVENT:
+        event_mgr(&datas_json);
         break;
     default:
         standard(&datas_json);

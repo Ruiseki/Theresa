@@ -1,8 +1,11 @@
 #include <cstring>
+#include <nlohmann/json.hpp>
 
 #include "common.hpp"
 #include "discord.hpp"
 #include "server.hpp"
+
+using json = nlohmann::json;
 using namespace Discord;
 
 command str_to_command(const char *command)
@@ -21,6 +24,36 @@ void send_to_js(const char *msg, size_t msg_size)
             wlog_server_ws_data(true, true, server_data->clients[i].sockfd, OPCODE_TEXT, msg_size, msg);
             send_ws_frame(msg, server_data->clients[i].sockfd);
         }
+}
+
+std::string build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size)
+{
+    json msg = {
+        {"embeds", {
+                {{"color", "000"}}
+            }
+        },
+    };
+    
+    std::string debug = msg.dump();
+    if(title != nullptr) msg["embeds"][0]["title"] = title;
+    if(content != nullptr) msg["embeds"][0]["description"] = content;
+
+    if(buffer != nullptr || url != nullptr)
+    {
+        msg["embeds"][0]["thumbnail"] = {"url", nullptr};
+        msg["embeds"][0]["thumbnail"]["url"] = url == nullptr ? "attachment://file.jpg" : url;
+        if(buffer != nullptr)
+            for(size_t i = 0; i < buffer_size; i++)
+                msg["files"].push_back(buffer[i]);
+    }
+
+    return (char*)msg.dump().c_str();
+}
+
+std::string build_embed_message(const char *content)
+{
+    return build_embed_message(nullptr, content, nullptr, nullptr, -1);
 }
 
 User* Discord::find_user(std::vector<User> *array, discord_id id)

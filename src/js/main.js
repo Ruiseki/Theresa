@@ -21,23 +21,31 @@ export const COMMAND_TYPE_WEB = 2;
 /** @constant {discord_subcommand} */
 export const DISCORD_SUBCOMMAND_STD = 0;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_UPDATE = 1;
+export const DISCORD_SUBCOMMAND_EVENT = 1;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_UPDATE_ALL = 2;
+export const DISCORD_SUBCOMMAND_UPDATE = 2;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_DELETE_MSG = 3;
+export const DISCORD_SUBCOMMAND_UPDATE_ALL = 3;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_CHANNEL = 4;
+export const DISCORD_SUBCOMMAND_SEND_MSG = 4;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_CHANNELS = 5;
+export const DISCORD_SUBCOMMAND_DELETE_MSG = 5;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_USER = 6;
+export const DISCORD_SUBCOMMAND_GET_CHANNEL = 6;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_USERS = 7;
+export const DISCORD_SUBCOMMAND_GET_CHANNELS = 7;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_GUILD = 8;
+export const DISCORD_SUBCOMMAND_GET_USER = 8;
 /** @constant {discord_subcommand} */
-export const DISCORD_SUBCOMMAND_GET_GUILDS = 9;
+export const DISCORD_SUBCOMMAND_GET_USERS = 9;
+/** @constant {discord_subcommand} */
+export const DISCORD_SUBCOMMAND_GET_GUILD = 10;
+/** @constant {discord_subcommand} */
+export const DISCORD_SUBCOMMAND_GET_GUILDS = 11;
+
+/** @typedef {number} discord_event */
+/** @constant {discord_event} */
+export const DISCORD_EVENT_MSG_SENDED = 0;
 
 /** @typedef {number} discord_command */
 /** @constant {discord_command} */
