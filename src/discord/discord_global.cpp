@@ -7,7 +7,7 @@ using namespace Discord;
 void send_message(Discord::Channel *channel, std::string message, int delete_after_ms)
 {
     json order = {
-        {"subcommand", SEND_MSG},
+        {"main_command", SEND_MSG},
         {"info", {
             {"guild", std::to_string(channel->guild->id)},
             {"channel", std::to_string(channel->id)},
@@ -27,7 +27,7 @@ void send_message(Discord::Channel *channel, std::string message)
 void join_voice(Channel *channel)
 {
     json order = {
-        {"subcommand", STD},
+        {"main_command", STD},
         {"info", {
             {"task", JOIN_VOICE},
             {"guild", std::to_string(channel->guild->id)},
@@ -40,7 +40,7 @@ void join_voice(Channel *channel)
 void leave_voice(Guild *guild)
 {
     json order = {
-        {"subcommand", STD},
+        {"main_command", STD},
         {"info", {
             {"task", LEAVE_VOICE},
             {"guild", std::to_string(guild->id)},

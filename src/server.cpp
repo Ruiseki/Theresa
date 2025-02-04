@@ -40,7 +40,7 @@ void process_ws(int client_sockfd, char *data)
 
             if( !object.contains("command_type")
                 || !object.contains("datas")
-                || !object.contains("subcommand")) return;
+                || !object.contains("main_command")) return;
 
             command_type command = (command_type)object["command_type"];
             std::string datas = object["datas"].dump();
@@ -48,7 +48,7 @@ void process_ws(int client_sockfd, char *data)
             switch(command)
             {
                 case COMMAND_TYPE_DISCORD:
-                    execute_discord_command((Discord::subcommand)object["subcommand"], datas.c_str());
+                    execute_discord_command((Discord::main_command)object["main_command"], datas.c_str());
                     break;
 
                 default:

@@ -1,7 +1,7 @@
-import { BaseGuildTextChannel, Client, Colors, GatewayIntentBits, Guild, GuildMember, Message, User, VoiceState } from "discord.js";
+import { BaseGuildTextChannel, Client, GatewayIntentBits, Guild, GuildMember, Message, User, VoiceState } from "discord.js";
 import { send_data, sleep } from "./websocket.js";
 import dotenv from 'dotenv';
-import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_EVENT_MSG_SENDED, DISCORD_SUBCOMMAND_DELETE_MSG, DISCORD_SUBCOMMAND_EVENT, DISCORD_SUBCOMMAND_GET_CHANNELS, DISCORD_SUBCOMMAND_GET_GUILDS, DISCORD_SUBCOMMAND_GET_USERS, DISCORD_SUBCOMMAND_SEND_MSG, DISCORD_SUBCOMMAND_STD, DISCORD_SUBCOMMAND_UPDATE, DISCORD_SUBCOMMAND_UPDATE_ALL } from "./main.js";
+import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_EVENT_MSG_SENDED, DISCORD_EVENT_VOICE_STATE, DISCORD_MAIN_COMMAND_DELETE_MSG, DISCORD_MAIN_COMMAND_EVENT, DISCORD_MAIN_COMMAND_GET_CHANNELS, DISCORD_MAIN_COMMAND_GET_GUILDS, DISCORD_MAIN_COMMAND_GET_USERS, DISCORD_MAIN_COMMAND_SEND_MSG, DISCORD_MAIN_COMMAND_STD, DISCORD_MAIN_COMMAND_UPDATE, DISCORD_MAIN_COMMAND_UPDATE_ALL } from "./main.js";
 import { join_voice, leave_voice } from "./discord_global.js";
 dotenv.config();
 
@@ -44,19 +44,9 @@ export async function init_discord()
             };
         })
     });
-    client.on('messageCreate', process_discord_message);
+    client.on('messageCreate', process_discord_message_event);
     client.on('interactionCreate', () => {});
-
-    // sending update
-    client.on('voiceStateUpdate', 
-        /**
-         * 
-         * @param {VoiceState} old_state 
-         * @param {VoiceState} new_state 
-         */
-        (old_state, new_state) => {
-            send_data({old_state: old_state.toJSON(), new_state: new_state.toJSON()}, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_UPDATE);
-    })
+    client.on('voiceStateUpdate', (old_state, new_state) => process_discord_voice_event(old_state, new_state));
 }
 
 export async function theresa_connected()
@@ -83,7 +73,7 @@ function send_guild_update()
         users: [...client.users.cache.values()],
         guild_members: []
     };
-    
+
     for(let guild of data.guilds)
         for(let member of guild.members.cache.values())
         {
@@ -92,13 +82,13 @@ function send_guild_update()
             data.guild_members.push(member_json);
         }
 
-    send_data(data, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_UPDATE_ALL);
+    send_data(data, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_UPDATE_ALL);
 }
 
 /**
  * @param {Message} message_event
  */
-function process_discord_message(message_event)
+function process_discord_message_event(message_event)
 {
     // no guild or no prefix
     if( message_event.guild == null
@@ -113,15 +103,28 @@ function process_discord_message(message_event)
         type,
         command,
         info: message_event
-    }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_STD);
+    }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_STD);
 }
 
 /**
- * @param {{subcommand: import("./main.js").discord_subcommand, info: object}} data 
+ * @param {VoiceState} old_state
+ * @param {VoiceState} new_state
+ */
+function process_discord_voice_event(old_state, new_state)
+{
+    send_data({
+        event: DISCORD_EVENT_VOICE_STATE,
+        old_state: old_state.toJSON(),
+        new_state: new_state.toJSON()
+    }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_EVENT);
+}
+
+/**
+ * @param {{main_command: import("./main.js").discord_main_command, info: object}} data 
  */
 export async function process_ws_message(data)
 {
-    if(data.subcommand == DISCORD_SUBCOMMAND_STD)
+    if(data.main_command == DISCORD_MAIN_COMMAND_STD)
     {
         switch(data.info.task)
         {
@@ -136,20 +139,19 @@ export async function process_ws_message(data)
                 break;
         }
     }
-    else if(data.subcommand == DISCORD_SUBCOMMAND_SEND_MSG)
+    else if(data.main_command == DISCORD_MAIN_COMMAND_SEND_MSG)
     {
         let channel = get_channel(get_guild(data.info.guild), data.info.channel);
         let msg = JSON.parse(data.info.message)
-        console.log(data.info.message);
         channel.send(msg).then(msg => {
             send_data({
                 event: DISCORD_EVENT_MSG_SENDED,
                 message: msg,
                 lifetime: data.info.lifetime
-            }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_EVENT);
+            }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_EVENT);
         });
     }
-    else if(data.subcommand == DISCORD_SUBCOMMAND_DELETE_MSG)
+    else if(data.main_command == DISCORD_MAIN_COMMAND_DELETE_MSG)
     {
         let guild = get_guild(data.info.guildId);
         let channel = get_channel(guild, data.info.channelId);
@@ -157,13 +159,13 @@ export async function process_ws_message(data)
         if(message?.deletable)
             message.delete();
     }
-    else if(data.subcommand == DISCORD_SUBCOMMAND_GET_GUILDS)
+    else if(data.main_command == DISCORD_MAIN_COMMAND_GET_GUILDS)
     {
         send_data({
             guilds: [...client.guilds.cache.values()]
-        }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_GET_GUILDS);
+        }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_GUILDS);
     }
-    else if(data.subcommand == DISCORD_SUBCOMMAND_GET_CHANNELS)
+    else if(data.main_command == DISCORD_MAIN_COMMAND_GET_CHANNELS)
     {
         let guild = get_guild(data.info?.guildId);
         let channels;
@@ -174,13 +176,13 @@ export async function process_ws_message(data)
 
         send_data({
             channels
-        }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_GET_CHANNELS);
+        }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_CHANNELS);
     }
-    else if(data.subcommand == DISCORD_SUBCOMMAND_GET_USERS)
+    else if(data.main_command == DISCORD_MAIN_COMMAND_GET_USERS)
     {
         send_data({
             users: [...client.users.cache.values()]
-        }, COMMAND_TYPE_DISCORD, DISCORD_SUBCOMMAND_GET_GUILDS);
+        }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_GUILDS);
     }
 }
 

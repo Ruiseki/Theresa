@@ -28,6 +28,7 @@ set(CORE_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/web_socket_mgr.cpp)
 set(DISCORD_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_global.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_event.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_tool.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_audio.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_handler.cpp)

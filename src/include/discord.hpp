@@ -10,8 +10,8 @@
 namespace Discord
 {
     typedef unsigned long long discord_id;
-    typedef int subcommand;
-    typedef int event;
+    typedef int main_command;
+    typedef int event_t;
     typedef int channel_t;
     typedef unsigned long command;
 
@@ -19,18 +19,18 @@ namespace Discord
     #define PREFIX_LENGTH 2
     #define BOT_ID 762501363086524416
 
-    #define STD             (Discord::subcommand)0
-    #define EVENT           (Discord::subcommand)1
-    #define UPDATE          (Discord::subcommand)2
-    #define UPDATE_ALL      (Discord::subcommand)3
-    #define SEND_MSG        (Discord::subcommand)4
-    #define DELETE_MSG      (Discord::subcommand)5
-    #define GET_CHANNEL     (Discord::subcommand)6
-    #define GET_CHANNELS    (Discord::subcommand)7
-    #define GET_USER        (Discord::subcommand)8
-    #define GET_USERS       (Discord::subcommand)9
-    #define GET_GUILD       (Discord::subcommand)10
-    #define GET_GUILDS      (Discord::subcommand)11
+    #define STD             (Discord::main_command)0
+    #define EVENT           (Discord::main_command)1
+    #define UPDATE          (Discord::main_command)2
+    #define UPDATE_ALL      (Discord::main_command)3
+    #define SEND_MSG        (Discord::main_command)4
+    #define DELETE_MSG      (Discord::main_command)5
+    #define GET_CHANNEL     (Discord::main_command)6
+    #define GET_CHANNELS    (Discord::main_command)7
+    #define GET_USER        (Discord::main_command)8
+    #define GET_USERS       (Discord::main_command)9
+    #define GET_GUILD       (Discord::main_command)10
+    #define GET_GUILDS      (Discord::main_command)11
 
     #define GUILDTEXT           (Discord::channel_type)0
     #define DM                  (Discord::channel_type)1
@@ -47,7 +47,8 @@ namespace Discord
     #define GUILDMEDIA          (Discord::channel_type)16
 
     // event
-    #define MSG_SENDED          (Discord::event)0
+    #define MSG_SENDED          (Discord::event_t)0
+    #define VOICE_STATE         (Discord::event_t)1
 
     // Global cmd
     #define JOIN_VOICE          (Discord::command)0x00000000
@@ -288,7 +289,7 @@ namespace Discord
     void restore_data(char *backup_json);
 }
 
-// Tools
+// tools
 Discord::command str_to_command(const char *command);
 void send_to_js(const char *msg, size_t msg_size);
 std::string build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size);
@@ -300,17 +301,22 @@ std::vector<Discord::Message> *get_messages();
 std::vector<Discord::GuildMember> *get_guild_members();
 std::vector<Discord::DiscordServer> *get_servers();
 
-// Handler
-void execute_discord_command(Discord::subcommand subcommand, const char *command);
+// event handlers
+void voice_event(const char *datas_str);
+void message_event(const char *datas_str);
 
-// Global
+// main handlers
+void execute_discord_command(Discord::main_command main_command, const char *command);
+
+// global
+void delete_message(Discord::Message *message);
 void global_cmd(Discord::Message *msg);
 void send_message(Discord::Channel *channel, std::string message, int delete_after_ms);
 void send_message(Discord::Channel *channel, std::string message);
 void join_voice(Discord::Channel *channel);
 void leave_voice(Discord::Guild *guild);
 
-// Audio
+// audio
 void audio_cmd(const char *cmd_str, const char **args, Discord::Message *msg);
 
 #endif // DISCORD_HPP_INCLUDED
