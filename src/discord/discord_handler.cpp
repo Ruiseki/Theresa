@@ -8,39 +8,23 @@ using namespace Discord;
 
 discord_datas datas;
 
-std::vector<User> *get_users()
+std::vector<User> *Discord::get_users()
 { return &datas.users; }
 
-std::vector<Guild> *get_guilds()
+std::vector<Guild> *Discord::get_guilds()
 { return &datas.guilds; }
 
-std::vector<Channel> *get_channels()
+std::vector<Channel> *Discord::get_channels()
 { return &datas.channels; }
 
-std::vector<Message> *get_messages()
+std::vector<Message> *Discord::get_messages()
 { return &datas.messages; }
 
-std::vector<GuildMember> *get_guild_members()
+std::vector<GuildMember> *Discord::get_guild_members()
 { return &datas.guild_members; }
 
-std::vector<DiscordServer> *get_servers()
+std::vector<DiscordServer> *Discord::get_servers()
 { return &datas.servers; }
-
-void delete_message(Message *message)
-{
-    json delete_message_cmd = {
-        {"main_command", DELETE_MSG},
-        {"info", {
-            {"id", std::to_string(message->id)},
-            {"channelId", std::to_string(message->channelId)},
-            {"guildId", std::to_string(message->guildId)}
-        }}
-    };
-    std::string delete_message_cmd_str = delete_message_cmd.dump();
-    message->unsave(&datas.messages);
-
-    send_to_js(delete_message_cmd_str.c_str(), delete_message_cmd_str.size());
-}
 
 void standard(json *datas_json)
 {
@@ -70,7 +54,7 @@ void standard(json *datas_json)
         global_cmd(&message);
 }
 
-void update(json *datas_json)
+void update(json */* datas_json */)
 { }
 
 void update_all(json *datas_json)

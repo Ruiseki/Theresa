@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "common.hpp"
 #include "socket_mgr.hpp"
 #include "string"
 
@@ -18,19 +19,20 @@ namespace Discord
     #define PREFIX (char*)"t!"
     #define PREFIX_LENGTH 2
     #define BOT_ID 762501363086524416
+    #define DISCORD_BACKUP_DIR (std::string)(STORAGE_DIR + "discord_guilds/")
 
-    #define STD             (Discord::main_command)0
-    #define EVENT           (Discord::main_command)1
-    #define UPDATE          (Discord::main_command)2
-    #define UPDATE_ALL      (Discord::main_command)3
-    #define SEND_MSG        (Discord::main_command)4
-    #define DELETE_MSG      (Discord::main_command)5
-    #define GET_CHANNEL     (Discord::main_command)6
-    #define GET_CHANNELS    (Discord::main_command)7
-    #define GET_USER        (Discord::main_command)8
-    #define GET_USERS       (Discord::main_command)9
-    #define GET_GUILD       (Discord::main_command)10
-    #define GET_GUILDS      (Discord::main_command)11
+    #define STD                 (Discord::main_command)0
+    #define EVENT               (Discord::main_command)1
+    #define UPDATE              (Discord::main_command)2
+    #define UPDATE_ALL          (Discord::main_command)3
+    #define SEND_MSG            (Discord::main_command)4
+    #define DELETE_MSG          (Discord::main_command)5
+    #define GET_CHANNEL         (Discord::main_command)6
+    #define GET_CHANNELS        (Discord::main_command)7
+    #define GET_USER            (Discord::main_command)8
+    #define GET_USERS           (Discord::main_command)9
+    #define GET_GUILD           (Discord::main_command)10
+    #define GET_GUILDS          (Discord::main_command)11
 
     #define GUILDTEXT           (Discord::channel_type)0
     #define DM                  (Discord::channel_type)1
@@ -79,8 +81,8 @@ namespace Discord
     struct Channel;
     struct VoiceState;
 
-    class Track;
-    class DiscordServer;
+    struct Track;
+    struct DiscordServer;
 
     struct discord_datas
     {
@@ -90,7 +92,6 @@ namespace Discord
         std::vector<Channel> channels;
         std::vector<Message> messages;
         std::vector<DiscordServer> servers;
-        std::vector<Track> tracks;
     };
 
     User* find_user(std::vector<User> *array, discord_id id);
@@ -98,8 +99,6 @@ namespace Discord
     Guild* find_guild(std::vector<Guild> *array, discord_id id);
     Channel* find_channel(std::vector<Channel> *array, discord_id id);
     Message* find_message(std::vector<Message> *array, discord_id id);
-
-    void get_members_in_voice_channel(Channel *channel, GuildMember ***members, int *members_size);
 
     struct Guild
     {
@@ -260,63 +259,60 @@ namespace Discord
         { return id == x->id && guild->id == x->guild->id; }
     };
 
-    class DiscordServer {
-        public:
-            DiscordServer();
-            DiscordServer(std::string guild_id);
-
-            Guild *guild;
-            Channel *last_text_channel, *last_voice_channel, *last_queue_channel;
-
-            std::vector<Message*> temp_messages;
-            std::vector<User*> admins;
-            std::vector<Track> queue;
-            std::vector<Track>::iterator current_track, next_track;
-
-            AUDIO_ENGINE_STATE audio_engine_state;
-            bool next_track_leave;
+    struct Track {
+        TRACK_TYPE type;
+        std::string url, title, author;
     };
 
-    class Track {
-        public:
-            Track();
-            Track(std::string url);
+    struct DiscordServer {
+        Guild *guild = nullptr;
+        Channel *last_text_channel = nullptr, *last_voice_channel = nullptr, *last_queue_channel = nullptr;
 
-            TRACK_TYPE type;
-            std::string url, title, author;
+        std::vector<Message*> temp_messages;
+        std::vector<User*> admins;
+        std::vector<Track> queue;
+        std::vector<Track>::iterator current_track = queue.end(), next_track = queue.end();
+
+        AUDIO_ENGINE_STATE audio_engine_state;
+        bool next_track_leave;
     };
 
-    void restore_data(char *backup_json);
+    // data and saves
+    // std::vector<> get_saves();
+    void get_save(discord_id guild_id);
+    void set_save(const char *save_str);
+
+    // tools
+    void get_members_in_voice_channel(Channel *channel, GuildMember ***members, int *members_size);
+    Discord::command str_to_command(const char *command);
+    void send_to_js(const char *msg, size_t msg_size);
+    std::string build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size);
+    std::string build_embed_message(const char *content);
+    std::vector<Discord::User> *get_users();
+    std::vector<Discord::Guild> *get_guilds();
+    std::vector<Discord::Channel> *get_channels();
+    std::vector<Discord::Message> *get_messages();
+    std::vector<Discord::GuildMember> *get_guild_members();
+    std::vector<Discord::DiscordServer> *get_servers();
+
+    // event handlers
+    void voice_event(const char *datas_str);
+    void message_event(const char *datas_str);
+
+
+    // global
+    void delete_message(Discord::Message *message);
+    void global_cmd(Discord::Message *msg);
+    void send_message(Discord::Channel *channel, std::string message, int delete_after_ms);
+    void send_message(Discord::Channel *channel, std::string message);
+    void join_voice(Discord::Channel *channel);
+    void leave_voice(Discord::Guild *guild);
+
+    // audio
+    void audio_cmd(const char *cmd_str, const char **args, Discord::Message *msg);
 }
-
-// tools
-Discord::command str_to_command(const char *command);
-void send_to_js(const char *msg, size_t msg_size);
-std::string build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size);
-std::string build_embed_message(const char *content);
-std::vector<Discord::User> *get_users();
-std::vector<Discord::Guild> *get_guilds();
-std::vector<Discord::Channel> *get_channels();
-std::vector<Discord::Message> *get_messages();
-std::vector<Discord::GuildMember> *get_guild_members();
-std::vector<Discord::DiscordServer> *get_servers();
-
-// event handlers
-void voice_event(const char *datas_str);
-void message_event(const char *datas_str);
 
 // main handlers
 void execute_discord_command(Discord::main_command main_command, const char *command);
-
-// global
-void delete_message(Discord::Message *message);
-void global_cmd(Discord::Message *msg);
-void send_message(Discord::Channel *channel, std::string message, int delete_after_ms);
-void send_message(Discord::Channel *channel, std::string message);
-void join_voice(Discord::Channel *channel);
-void leave_voice(Discord::Guild *guild);
-
-// audio
-void audio_cmd(const char *cmd_str, const char **args, Discord::Message *msg);
 
 #endif // DISCORD_HPP_INCLUDED

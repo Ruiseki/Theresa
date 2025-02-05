@@ -8,14 +8,30 @@
 using json = nlohmann::json;
 using namespace Discord;
 
-command str_to_command(const char *command)
+void Discord::delete_message(Message *message)
+{
+    json delete_message_cmd = {
+        {"main_command", DELETE_MSG},
+        {"info", {
+            {"id", std::to_string(message->id)},
+            {"channelId", std::to_string(message->channelId)},
+            {"guildId", std::to_string(message->guildId)}
+        }}
+    };
+    std::string delete_message_cmd_str = delete_message_cmd.dump();
+    message->unsave(get_messages());
+
+    send_to_js(delete_message_cmd_str.c_str(), delete_message_cmd_str.size());
+}
+
+command Discord::str_to_command(const char *command)
 {
          if(strcmp(command, "join") == 0) return JOIN_VOICE;
     else if(strcmp(command, "leave") == 0) return LEAVE_VOICE;
     else return UNKNOWN;
 }
 
-void send_to_js(const char *msg, size_t msg_size)
+void Discord::send_to_js(const char *msg, size_t msg_size)
 {
     ServerData *server_data = get_server_data();
     for(size_t i = 0; i < server_data->clients_size; i++)
@@ -26,7 +42,7 @@ void send_to_js(const char *msg, size_t msg_size)
         }
 }
 
-std::string build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size)
+std::string Discord::build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size)
 {
     json msg = {
         {"embeds", {
@@ -35,7 +51,6 @@ std::string build_embed_message(const char *title, const char *content, const ch
         },
     };
     
-    std::string debug = msg.dump();
     if(title != nullptr) msg["embeds"][0]["title"] = title;
     if(content != nullptr) msg["embeds"][0]["description"] = content;
 
@@ -51,7 +66,7 @@ std::string build_embed_message(const char *title, const char *content, const ch
     return (char*)msg.dump().c_str();
 }
 
-std::string build_embed_message(const char *content)
+std::string Discord::build_embed_message(const char *content)
 {
     return build_embed_message(nullptr, content, nullptr, nullptr, -1);
 }

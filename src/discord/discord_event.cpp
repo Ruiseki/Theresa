@@ -6,7 +6,7 @@
 using namespace Discord;
 using json = nlohmann::json;
 
-void voice_event(const char *datas_str)
+void Discord::voice_event(const char *datas_str)
 {
     json datas_json = json::parse(datas_str);
 
@@ -49,7 +49,7 @@ void voice_event(const char *datas_str)
     }
 }
 
-void message_event(const char *datas_str)
+void Discord::message_event(const char *datas_str)
 {
     json datas_json = json::parse(datas_str);
     

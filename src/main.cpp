@@ -6,11 +6,9 @@
 #include "common.hpp"
 #include "server.hpp"
 
-int main(/* int argc, char **argv */)
+int main()
 {
-    // char *save_folder_path = argc >= 1 ? argv[0] : nullptr;
-
-    // init_save_folder(save_folder_path);
+    init_save_folder();
     init_sockets();
 
     while(true) listener();

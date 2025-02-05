@@ -4,7 +4,7 @@
 using json = nlohmann::json;
 using namespace Discord;
 
-void send_message(Discord::Channel *channel, std::string message, int delete_after_ms)
+void Discord::send_message(Discord::Channel *channel, std::string message, int delete_after_ms)
 {
     json order = {
         {"main_command", SEND_MSG},
@@ -19,12 +19,12 @@ void send_message(Discord::Channel *channel, std::string message, int delete_aft
     send_to_js(order.dump().c_str(), order.dump().size());
 }
 
-void send_message(Discord::Channel *channel, std::string message)
+void Discord::send_message(Discord::Channel *channel, std::string message)
 {
     send_message(channel, message, -1);
 }
 
-void join_voice(Channel *channel)
+void Discord::join_voice(Channel *channel)
 {
     json order = {
         {"main_command", STD},
@@ -37,7 +37,7 @@ void join_voice(Channel *channel)
     send_to_js(order.dump().c_str(), order.dump().size());
 }
 
-void leave_voice(Guild *guild)
+void Discord::leave_voice(Guild *guild)
 {
     json order = {
         {"main_command", STD},
@@ -49,7 +49,7 @@ void leave_voice(Guild *guild)
     send_to_js(order.dump().c_str(), order.dump().size());
 }
 
-void global_cmd(Discord::Message *msg)
+void Discord::global_cmd(Discord::Message *msg)
 {
     std::vector<std::string> args;
     std::string buffer = "";

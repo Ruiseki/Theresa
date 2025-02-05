@@ -3,22 +3,49 @@
 #include <sys/stat.h>
 #include <chrono>
 
+#include "tool.hpp"
 #include "common.hpp"
 #include "discord.hpp"
 #include "web_socket_mgr.hpp"
 
-void init_save_folder(char *save_folder_path)
+void init_save_folder()
 {
-    if(save_folder_path == nullptr) return;
-
-    DIR *dir = opendir(save_folder_path);
+    std::string backup_path = DISCORD_BACKUP_DIR;
+    DIR *dir = opendir(backup_path.c_str());
     
     if(dir == nullptr)
     {
-        if(mkdir(save_folder_path, 755) == 0) ;
-        else {}
+        if(mkdir(backup_path.c_str(), 755) == 0)
+            dir = opendir(backup_path.c_str());
+        else
+        {
+            return;
+        }
     }
-    else {}
+
+    struct dirent *entry;
+    while((entry = readdir(dir)) != nullptr)
+    {
+        std::string guild_dir_path = backup_path + entry->d_name + "/";
+        DIR *guild_dir = opendir(guild_dir_path.c_str());
+        struct dirent *guild_dir_entry;
+        while((guild_dir_entry = readdir(guild_dir)) != nullptr)
+        {
+            auto splited = split(guild_dir_entry->d_name, '.');
+            if(splited.size() > 0 && splited[splited.size() - 1] == "json")
+            {
+                std::string backup_path = guild_dir_path + guild_dir_entry->d_name;
+                std::string line, file_content = "";
+                std::ifstream backup_file(backup_path);
+                while(std::getline(backup_file, line))
+                    file_content += line;
+                
+                // Discord::get_saves(file_content.c_str());
+            }
+        }
+        closedir(guild_dir);
+    }
+    closedir(dir);
 }
 
 void wlog(bool time, const char *content)
