@@ -10,7 +10,7 @@ dotenv.config();
  */
 export var client;
 export var prefix = 't!';
-var client_ready = false;
+var discord_client_ready = false;
 
 export var servers = [];
 
@@ -36,7 +36,7 @@ export async function init_discord()
 
     client.once('ready', () => {
         console.log('Discord client is ready');
-        client_ready = true;
+        discord_client_ready = true;
         client.guilds.cache.each(guild => {
             servers[guild.id] = {
                 voice: null,
@@ -49,7 +49,7 @@ export async function init_discord()
     client.on('voiceStateUpdate', (old_state, new_state) => process_discord_voice_event(old_state, new_state));
 }
 
-export async function theresa_connected()
+export async function wait_for_discord_client()
 {
     await wait_for_client_ready();
     send_guild_update();
@@ -58,7 +58,7 @@ export async function theresa_connected()
 async function wait_for_client_ready()
 {
     return new Promise(async (resolve) => {
-        while(!client_ready)
+        while(!discord_client_ready)
             await sleep(100);
         resolve();
     });
@@ -250,3 +250,4 @@ function get_message(channel, messageId)
 {
     return channel.messages.cache.each(() => {}).get(messageId);
 }
+

@@ -1,5 +1,7 @@
 #include <nlohmann/json.hpp>
+
 #include "discord.hpp"
+#include "tool.hpp"
 
 using json = nlohmann::json;
 using namespace Discord;
@@ -51,19 +53,7 @@ void Discord::leave_voice(Guild *guild)
 
 void Discord::global_cmd(Discord::Message *msg)
 {
-    std::vector<std::string> args;
-    std::string buffer = "";
-    for(size_t i = PREFIX_LENGTH; i < msg->content.size(); i++)
-    {
-        if(msg->content[i] == ' ')
-        {
-            args.push_back(buffer);
-            buffer = "";
-        }
-        else buffer += msg->content[i];
-    }
-    if(buffer != "") args.push_back(buffer);
-
+    std::vector<std::string> args = split(msg->content, ' ');
     switch(str_to_command(args[0].c_str()))
     {
         case JOIN_VOICE:
@@ -94,7 +84,5 @@ void Discord::global_cmd(Discord::Message *msg)
 
 /*
     To do :
-        - Update les states de tous les vectors
         - Upscaler la methode de production des commandes (et améliorer la mainteance ! je suis sur qu'il y a mieux)
-        - Voir pour l'audio
 */

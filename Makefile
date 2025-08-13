@@ -13,11 +13,11 @@ SRC_DIR = src
 SRC_DISCORD_DIR = $(SRC_DIR)/discord
 SOURCE_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 SOURCE_DISCORD_FILES := $(wildcard $(SRC_DISCORD_DIR)/*.cpp)
- 
+
 OBJ_DIR := $(BUILD_DIR)/obj
 OBJ_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCE_FILES))
 OBJ_FILES += $(patsubst $(SRC_DISCORD_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCE_DISCORD_FILES))
- 
+
 INCLUDE_PATH = -Iinclude
 INCLUDE_PATH += -Ideps
 

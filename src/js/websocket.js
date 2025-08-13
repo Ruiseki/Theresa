@@ -1,4 +1,4 @@
-import { process_ws_message, theresa_connected } from './discord_handler.js';
+import { process_ws_message, wait_for_discord_client } from './discord_handler.js';
 import { DISCORD_MAIN_COMMAND_STR, WEBSOCKET_PORT } from './main.js';
 import WebSocket from 'ws';
 
@@ -15,18 +15,19 @@ var connected = false;
  * @param {number} delay in ms
  * @returns
  */
-export function sleep(delay) {
+export function sleep(delay)
+{
     return new Promise((resolve) => setTimeout(resolve, delay));
 }
 
-function connection_to_theresa()
+function connection_to_main_server()
 {
     return new Promise((resolve, reject) => {
         let socket = new WebSocket('ws://127.0.0.1:' + WEBSOCKET_PORT);
 
         socket.on('open', () => {
-            console.log('Connection ok');
-            theresa_connected();
+            console.log('Connected to main server');
+            wait_for_discord_client();
             resolve(socket);
         });
         socket.on('error', (err) => {
@@ -48,7 +49,7 @@ async function connection_handler()
     {
         if(!socket)
         {
-            socket = await connection_to_theresa()
+            socket = await connection_to_main_server()
             .catch(async (err) => {
                 await sleep(1000);
             });
@@ -64,7 +65,7 @@ async function connection_handler()
             });
 
             socket.on('close', async (evt) => {
-                console.log('Connection lost');
+                console.log('Connection to the main server lost');
                 connected = false;
                 connection_handler();
             });
@@ -77,9 +78,8 @@ async function connection_handler()
 
 export async function init_ws()
 {
-    console.log("Connecting to Theresa...");
-    await connection_handler()
-    .catch(err => {});
+    console.log("Connecting to main server...");
+    await connection_handler();
 }
 
 export function send_data(data, command_type, main_command)
@@ -100,3 +100,4 @@ export function send_data(data, command_type, main_command)
     else
         ws.send(data);
 }
+

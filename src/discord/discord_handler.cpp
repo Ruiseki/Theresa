@@ -49,7 +49,7 @@ void standard(json *datas_json)
     delete_message(&message);
 
     if(type == "a" || type == "audio")
-        audio_cmd(command.c_str(), args_c_str.data(), &message);
+        audio_cmd(command.c_str(), args_c_str.data(), args_c_str.size(), &message);
     else
         global_cmd(&message);
 }

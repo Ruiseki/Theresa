@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "common.hpp"
-#include "socket_mgr.hpp"
 #include "string"
 
 namespace Discord
@@ -19,7 +18,7 @@ namespace Discord
     #define PREFIX (char*)"t!"
     #define PREFIX_LENGTH 2
     #define BOT_ID 762501363086524416
-    #define DISCORD_BACKUP_DIR (std::string)(STORAGE_DIR + "discord_guilds/")
+    #define DISCORD_BACKUP_DIR (std::string)(STORAGE_DIR + "/discord_guilds")
 
     #define STD                 (Discord::main_command)0
     #define EVENT               (Discord::main_command)1
@@ -309,7 +308,7 @@ namespace Discord
     void leave_voice(Discord::Guild *guild);
 
     // audio
-    void audio_cmd(const char *cmd_str, const char **args, Discord::Message *msg);
+    void audio_cmd(const char *cmd_str, const char **argv, int argc, Discord::Message *msg);
 }
 
 // main handlers

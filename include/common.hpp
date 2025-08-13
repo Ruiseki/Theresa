@@ -3,10 +3,11 @@
 
 #include "web_socket_mgr.hpp"
 
-#define MAIN_DIR (std::string) std::getenv("HOME") + "/.theresa/"
-#define LOG_FILE_DIR (std::string)(MAIN_DIR + "logs/")
-#define LOG_FILE (std::string)(LOG_FILE_DIR + "theresa_main_server.log")
-#define STORAGE_DIR (std::string)(MAIN_DIR + "storage/")
+#define MAIN_DIR (std::string)std::getenv("HOME") + "/.theresa"
+#define LOG_FILE_DIR (std::string)(MAIN_DIR + "/logs")
+#define LOG_FILE (std::string)(LOG_FILE_DIR + "/theresa_main_server.log")
+#define STORAGE_DIR (std::string)(MAIN_DIR + "/storage")
+#define AUDIO_DIR (std::string)(STORAGE_DIR + "/audio")
 
 void init_save_folder();
 

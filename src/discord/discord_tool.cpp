@@ -26,8 +26,9 @@ void Discord::delete_message(Message *message)
 
 command Discord::str_to_command(const char *command)
 {
-         if(strcmp(command, "join") == 0) return JOIN_VOICE;
-    else if(strcmp(command, "leave") == 0) return LEAVE_VOICE;
+    const char *command_splited = command + PREFIX_LENGTH;
+         if(strcmp(command_splited, "join") == 0) return JOIN_VOICE;
+    else if(strcmp(command_splited, "leave") == 0) return LEAVE_VOICE;
     else return UNKNOWN;
 }
 

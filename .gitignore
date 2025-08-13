@@ -1,7 +1,8 @@
 .vscode
+.env
+.cache
 build
 storage
 node_modules
 api/node_modules
-.env
 package-lock.json
