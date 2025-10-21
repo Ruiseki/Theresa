@@ -34,7 +34,7 @@ void audio_stream(const char *file_path)
     }
 }
 
-void Discord::audio_cmd(const char */* command */, const char **/* argv */, int /* argc */, Discord::Message *message)
+void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int /* argc */, Discord::Message *message)
 {
     // get parameters and query
     Cli_parameter *params;
@@ -65,7 +65,7 @@ void Discord::audio_cmd(const char */* command */, const char **/* argv */, int 
     while((entry = readdir(music_dir)) != nullptr)
         if( strcmp(entry->d_name, ".") != 0
             && strcmp(entry->d_name, "..") != 0) files.push_back(entry->d_name);
-    
+
     for(size_t i = 0; i < files.size(); i++)
     {
         if(!str_start_with(files[i].c_str(), query.c_str(), false))
@@ -84,7 +84,7 @@ void Discord::audio_cmd(const char */* command */, const char **/* argv */, int 
     delete [] params;
 }
 
-/* 
+/*
     To do :
         - Les fichiers audio ont été filtrer, maintenant il faut faire le system de queue. Mais avant pourquoi pas tester d'envoyer l'audio au JS et de lire sur discord
 */

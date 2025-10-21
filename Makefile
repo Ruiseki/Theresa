@@ -21,15 +21,17 @@ OBJ_FILES += $(patsubst $(SRC_DISCORD_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCE_DISCORD
 INCLUDE_PATH = -Iinclude
 INCLUDE_PATH += -Ideps
 
+THERESAD_BIN = $(BIN_DIR)/theresad
+
 all: $(BUILD_DIR) bin
 
-bin: $(BIN_DIR)/theresa
+bin: $(THERESAD_BIN)
 
 clean:
 	@rm -rf $(BUILD_DIR)
 
-$(BIN_DIR)/theresa: $(OBJ_FILES) | $(BIN_DIR)
-	@echo "[building main programm] theresa"
+$(THERESAD_BIN): $(OBJ_FILES) | $(BIN_DIR)
+	@echo "[building daemon] theresad"
 	@$(CXX) -o $@ $(OBJ_FILES) -lssl -lcrypto
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)

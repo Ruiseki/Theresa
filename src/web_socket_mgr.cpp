@@ -104,7 +104,7 @@ std::string get_client_key(char* client_header)
 }
 
 std::string generate_handshake_header(char *client_header)
-{    
+{
     std::string client_key = get_client_key(client_header);
     std::string accept_key = generate_accept_key(client_key);
 
@@ -153,7 +153,7 @@ void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_
                                                 ? PAYLOAD_SIZE_16_BITS
                                                 : data_size;
     // -------------------------------
-    
+
     // Paylaod size
     // -------------------------------
     size_t big_endian_size = ntohs(data_size);

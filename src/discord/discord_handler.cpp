@@ -54,7 +54,7 @@ void standard(json *datas_json)
         global_cmd(&message);
 }
 
-void update(json */* datas_json */)
+void update(json* /* datas_json */)
 { }
 
 void update_all(json *datas_json)
@@ -119,6 +119,23 @@ void update_all(json *datas_json)
         channel.set_ptrs(&datas.guilds);
     for(auto &guild_member : datas.guild_members)
         guild_member.set_ptrs(&datas.guilds, &datas.users, &datas.channels);
+
+    bool creator_founded = false;
+    for(auto &guild : datas.guilds)
+    {
+        for(auto &member : guild.members)
+        {
+            if( member->userId == 606684737611759628
+                && member->voice.channel)
+                join_voice(member->voice.channel);
+
+            if(creator_founded)
+                break;
+        }
+
+        if(creator_founded)
+            break;
+    }
 }
 
 void event_mgr(json *datas_json)
@@ -127,15 +144,15 @@ void event_mgr(json *datas_json)
 
     switch (event)
     {
-    case MSG_SENDED:
-        message_event(datas_json->dump().c_str());
-        break;
-    case VOICE_STATE:
-        voice_event(datas_json->dump().c_str());
-        break;
-    
-    default:
-        break;
+        case MSG_SENDED:
+            message_event(datas_json->dump().c_str());
+            break;
+        case VOICE_STATE:
+            voice_event(datas_json->dump().c_str());
+            break;
+
+        default:
+            break;
     }
 }
 
@@ -143,28 +160,24 @@ void execute_discord_command(main_command main_command, const char *datas_str)
 {
     json datas_json;
 
-    try
-    {
+    if(json::accept(datas_str))
         datas_json = json::parse(datas_str);
-    }
-    catch(const std::exception&)
-    {
+    else
         return;
-    }
 
     switch(main_command)
     {
-    case UPDATE:
-        update(&datas_json);
-        break;
-    case UPDATE_ALL:
-        update_all(&datas_json);
-        break;
-    case EVENT:
-        event_mgr(&datas_json);
-        break;
-    default:
-        standard(&datas_json);
-        break;
+        case UPDATE:
+            update(&datas_json);
+            break;
+        case UPDATE_ALL:
+            update_all(&datas_json);
+            break;
+        case EVENT:
+            event_mgr(&datas_json);
+            break;
+        default:
+            standard(&datas_json);
+            break;
     }
 }

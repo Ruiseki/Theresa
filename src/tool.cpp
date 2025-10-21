@@ -29,7 +29,7 @@ std::string join(const char **argv, int argc, char c)
         joined += argv[i];
         joined += c;
     }
-    
+
     joined.erase(joined.end() - 1);
     return joined;
 }
@@ -58,7 +58,7 @@ int get_parameters(const char **argv, int argc, Cli_parameter **parametersv, int
             if(i < result) result = i;
             (*parametersc)++;
         }
-    
+
     *parametersv = new Cli_parameter[*parametersc];
     int parser = 0;
     std::vector<std::string> splited;

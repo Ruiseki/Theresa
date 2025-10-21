@@ -12,7 +12,7 @@ void init_save_folder()
 {
     std::string backup_path = DISCORD_BACKUP_DIR;
     DIR *dir = opendir(backup_path.c_str());
-    
+
     if(dir == nullptr)
     {
         if(mkdir(backup_path.c_str(), 755) == 0)
@@ -39,7 +39,7 @@ void init_save_folder()
                 std::ifstream backup_file(backup_path);
                 while(std::getline(backup_file, line))
                     file_content += line;
-                
+
                 // Discord::get_saves(file_content.c_str());
             }
         }

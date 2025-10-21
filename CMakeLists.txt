@@ -27,5 +27,5 @@ set(DISCORD_EXT
 
 include_directories(include deps)
 add_compile_options(-g -Wall -Wextra)
-add_executable(${PROJECT_NAME} ${CORE} ${DISCORD_EXT})
-target_link_libraries(${PROJECT_NAME} ssl crypto)
+add_executable(${PROJECT_NAME}d ${CORE} ${DISCORD_EXT})
+target_link_libraries(${PROJECT_NAME}d ssl crypto)

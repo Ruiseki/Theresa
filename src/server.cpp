@@ -164,7 +164,7 @@ void listener()
                 }
             }
         }
-        
+
         // Client sockets
         for(size_t i = 0; i < clients_size; i++)
         {
