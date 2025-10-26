@@ -21,10 +21,10 @@ std::vector<std::string> split(std::string str, char c)
     return split;
 }
 
-std::string join(const char **argv, int argc, char c)
+std::string join(const std::string argv[], const unsigned int argc, const char c)
 {
     std::string joined = "";
-    for(int i = 0; i < argc; i++)
+    for(unsigned int i = 0; i < argc; i++)
     {
         joined += argv[i];
         joined += c;
@@ -34,25 +34,14 @@ std::string join(const char **argv, int argc, char c)
     return joined;
 }
 
-int get_pchar_size(const char *p)
-{
-    int size = 0;
-    while(*p != '\0')
-    {
-        size++;
-        p++;
-    };
-    return size;
-}
-
 /**
  * @return first parameter index
  */
-int get_parameters(const char **argv, int argc, Cli_parameter **parametersv, int *parametersc)
+int get_parameters(std::string argv[], unsigned int argc, Cli_parameter **parametersv, int *parametersc)
 {
-    int result = argc;
+    unsigned int result = argc;
     *parametersc = 0;
-    for(int i = 0; i < argc; i++)
+    for(unsigned int i = 0; i < argc; i++)
         if(argv[i][0] == '-')
         {
             if(i < result) result = i;
@@ -62,10 +51,10 @@ int get_parameters(const char **argv, int argc, Cli_parameter **parametersv, int
     *parametersv = new Cli_parameter[*parametersc];
     int parser = 0;
     std::vector<std::string> splited;
-    for(int i = 0; i < argc; i++)
+    for(unsigned int i = 0; i < argc; i++)
         if(argv[i][0] == '-')
         {
-            std::string key(argv[i] + 1, get_pchar_size(argv[i]) - 1);
+            std::string key(argv[i].begin() + 1, argv[i].end());
 
             if(i + 1 != argc)
             {

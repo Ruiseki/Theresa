@@ -11,9 +11,8 @@ struct Cli_parameter
 };
 
 std::vector<std::string> split(std::string str, char c);
-std::string join(const char **argv, int argc, char c);
-int get_pchar_size(const char *p);
-int get_parameters(const char **argv, int argc, Cli_parameter **parametersv, int *parametersc);
+std::string join(const std::string argv[], const unsigned int argc, const char c);
+int get_parameters(std::string argv[], unsigned int argc, Cli_parameter **parametersv, int *parametersc);
 bool str_start_with(const char *input, const char *pattern, bool case_sensible);
 
 #endif // TOOL_HPP_INCLUDED

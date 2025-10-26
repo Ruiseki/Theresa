@@ -15,7 +15,7 @@ set(CORE
 	    ${CMAKE_CURRENT_SOURCE_DIR}/src/tool.cpp
 	    ${CMAKE_CURRENT_SOURCE_DIR}/src/web_handler.cpp
 	    ${CMAKE_CURRENT_SOURCE_DIR}/src/web_socket_mgr.cpp
-	    ${CMAKE_CURRENT_SOURCE_DIR}/src/tctp.cpp
+        # ${CMAKE_CURRENT_SOURCE_DIR}/src/tctp.cpp
     )
 set(DISCORD_EXT
 	    ${CMAKE_CURRENT_SOURCE_DIR}/src/discord/discord_audio.cpp

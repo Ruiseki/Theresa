@@ -10,9 +10,9 @@
 
 using namespace Discord;
 
-void audio_stream(const char *file_path)
+void audio_stream(const char* /* file_path */)
 {
-    std::ifstream file(file_path);
+    /* std::ifstream file(file_path);
 
     // expecting ID3v2 tags
     const int header_size = 10;
@@ -31,7 +31,7 @@ void audio_stream(const char *file_path)
 
         file.read((char*)test + 1, 3);
         test[0] = c;
-    }
+    } */
 }
 
 void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int /* argc */, Discord::Message *message)
@@ -42,13 +42,10 @@ void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int 
 
     std::vector<std::string> splited = split(message->content, ' ');
     splited.erase(splited.begin());
-    const char *splited_cchar[splited.size()];
-    for(size_t i = 0; i < splited.size(); i++)
-        splited_cchar[i] = splited[i].c_str();
 
-    int first_param_at = get_parameters(splited_cchar, splited.size(), &params, &params_size);
+    int first_param_at = get_parameters(splited.data(), splited.size(), &params, &params_size);
 
-    std::string query = join(splited_cchar, first_param_at, ' ');
+    std::string query = join(splited.data(), first_param_at, ' ');
 
     // get file(s) starting by query
     std::string audio_dir_path = AUDIO_DIR + "/" + std::to_string(message->authorId);
