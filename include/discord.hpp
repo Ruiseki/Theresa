@@ -32,6 +32,7 @@ namespace Discord
     #define GET_USERS           (Discord::main_command)9
     #define GET_GUILD           (Discord::main_command)10
     #define GET_GUILDS          (Discord::main_command)11
+    #define LOAD_DATA           (Discord::main_command)12
 
     #define GUILDTEXT           (Discord::channel_type)0
     #define DM                  (Discord::channel_type)1
@@ -227,6 +228,7 @@ namespace Discord
         discord_id id, guildId, channelId, authorId;
         Guild *guild = nullptr;
         User *author = nullptr;
+        GuildMember *member = nullptr;
         Channel *channel = nullptr;
         std::string content;
 
@@ -243,11 +245,12 @@ namespace Discord
             auto it = std::find(messages->begin(), messages->end(), id);
             if(it != messages->end()) messages->erase(it);
         }
-        void set_ptrs(std::vector<Guild> *guilds, std::vector<User> *users, std::vector<Channel> *channels)
+        void set_ptrs(std::vector<Guild> *guilds, std::vector<User> *users, std::vector<Channel> *channels, std::vector<GuildMember> *members)
         {
             guild = find_guild(guilds, guildId);
             author = find_user(users, authorId);
             channel = find_channel(channels, channelId);
+            member = find_guildMember(members, authorId, guildId);
         }
 
         bool operator==(const discord_id x) const
@@ -260,7 +263,12 @@ namespace Discord
 
     struct Track {
         TRACK_TYPE type;
-        std::string url, title, author;
+        std::string path, title, author;
+    };
+
+    struct TrackBuffer {
+        std::vector<unsigned char> buffer;
+        std::vector<Track>::iterator track;
     };
 
     struct DiscordServer {
@@ -270,7 +278,8 @@ namespace Discord
         std::vector<Message*> temp_messages;
         std::vector<User*> admins;
         std::vector<Track> queue;
-        std::vector<Track>::iterator current_track = queue.end(), next_track = queue.end();
+        std::vector<TrackBuffer> buffers;
+        std::vector<Track>::iterator current_track, next_track;
 
         AUDIO_ENGINE_STATE audio_engine_state;
         bool next_track_leave;

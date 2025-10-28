@@ -27,9 +27,12 @@ void Discord::delete_message(Message *message)
 command Discord::str_to_command(const char *command)
 {
     const char *command_splited = command + PREFIX_LENGTH;
-         if(strcmp(command_splited, "join") == 0) return JOIN_VOICE;
-    else if(strcmp(command_splited, "leave") == 0) return LEAVE_VOICE;
-    else return UNKNOWN;
+    if(strcmp(command_splited, "join") == 0)
+        return JOIN_VOICE;
+    else if(strcmp(command_splited, "leave") == 0)
+        return LEAVE_VOICE;
+    else
+        return UNKNOWN;
 }
 
 void Discord::send_to_js(const char *msg, size_t msg_size)
@@ -51,7 +54,7 @@ std::string Discord::build_embed_message(const char *title, const char *content,
             }
         },
     };
-    
+
     if(title != nullptr) msg["embeds"][0]["title"] = title;
     if(content != nullptr) msg["embeds"][0]["description"] = content;
 

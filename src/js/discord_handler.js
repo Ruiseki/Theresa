@@ -1,7 +1,22 @@
 import { BaseGuildTextChannel, Client, GatewayIntentBits, Guild, GuildMember, Message, User, VoiceState } from "discord.js";
 import { send_data, sleep } from "./websocket.js";
 import dotenv from 'dotenv';
-import { COMMAND_TYPE_DISCORD, DISCORD_COMMAND_JOIN_VOICE, DISCORD_COMMAND_LEAVE_VOICE, DISCORD_EVENT_MSG_SENDED, DISCORD_EVENT_VOICE_STATE, DISCORD_MAIN_COMMAND_DELETE_MSG, DISCORD_MAIN_COMMAND_EVENT, DISCORD_MAIN_COMMAND_GET_CHANNELS, DISCORD_MAIN_COMMAND_GET_GUILDS, DISCORD_MAIN_COMMAND_GET_USERS, DISCORD_MAIN_COMMAND_SEND_MSG, DISCORD_MAIN_COMMAND_STD, DISCORD_MAIN_COMMAND_UPDATE, DISCORD_MAIN_COMMAND_UPDATE_ALL } from "./main.js";
+import {
+    COMMAND_TYPE_DISCORD,
+    DISCORD_COMMAND_JOIN_VOICE,
+    DISCORD_COMMAND_LEAVE_VOICE,
+    DISCORD_EVENT_MSG_SENDED,
+    DISCORD_EVENT_VOICE_STATE,
+    DISCORD_MAIN_COMMAND_DELETE_MSG,
+    DISCORD_MAIN_COMMAND_EVENT,
+    DISCORD_MAIN_COMMAND_GET_CHANNELS,
+    DISCORD_MAIN_COMMAND_GET_GUILDS,
+    DISCORD_MAIN_COMMAND_GET_USERS,
+    DISCORD_MAIN_COMMAND_SEND_MSG,
+    DISCORD_MAIN_COMMAND_STD,
+    DISCORD_MAIN_COMMAND_UPDATE_ALL,
+    DISCORD_MAIN_COMMAND_LOAD_DATA
+} from "./main.js";
 import { join_voice, leave_voice } from "./discord_global.js";
 dotenv.config();
 
@@ -13,6 +28,7 @@ export var prefix = 't!';
 var discord_client_ready = false;
 
 export var servers = [];
+export var buffers = [];
 
 export async function init_discord()
 {
@@ -34,7 +50,7 @@ export async function init_discord()
 
     await client.login(process.env.key);
 
-    client.once('ready', () => {
+    client.once('clientReady', () => {
         console.log('Discord client is ready');
         discord_client_ready = true;
         client.guilds.cache.each(guild => {
@@ -124,70 +140,98 @@ function process_discord_voice_event(old_state, new_state)
  */
 export async function process_ws_message(data)
 {
-    if(data.main_command == DISCORD_MAIN_COMMAND_STD)
+    switch(data.main_command)
     {
-        switch(data.info.task)
+        case DISCORD_MAIN_COMMAND_STD:
+            switch(data.info.task)
+            {
+                case DISCORD_COMMAND_JOIN_VOICE:
+                    data.info.guild = get_guild(data.info.guild);
+                    data.info.channel = get_channel(data.info.guild, data.info.channel);
+                    join_voice(data.info.guild, data.info.channel);
+                    break;
+                case DISCORD_COMMAND_LEAVE_VOICE:
+                    data.info.guild = get_guild(data.info.guild);
+                    leave_voice(data.info.guild);
+                    break;
+            }
+            break;
+        case DISCORD_MAIN_COMMAND_SEND_MSG:
         {
-            case DISCORD_COMMAND_JOIN_VOICE:
-                data.info.guild = get_guild(data.info.guild);
-                data.info.channel = get_channel(data.info.guild, data.info.channel);
-                join_voice(data.info.guild, data.info.channel);
-                break;
-            case DISCORD_COMMAND_LEAVE_VOICE:
-                data.info.guild = get_guild(data.info.guild);
-                leave_voice(data.info.guild);
-                break;
+            let channel = get_channel(get_guild(data.info.guild), data.info.channel);
+            let msg = JSON.parse(data.info.message)
+            channel.send(msg).then(msg => {
+                send_data({
+                    event: DISCORD_EVENT_MSG_SENDED,
+                    message: msg,
+                    lifetime: data.info.lifetime
+                }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_EVENT);
+            });
+            break;
         }
-    }
-    else if(data.main_command == DISCORD_MAIN_COMMAND_SEND_MSG)
-    {
-        let channel = get_channel(get_guild(data.info.guild), data.info.channel);
-        let msg = JSON.parse(data.info.message)
-        channel.send(msg).then(msg => {
+        case DISCORD_MAIN_COMMAND_DELETE_MSG:
+        {
+            let guild = get_guild(data.info.guildId);
+            let channel = get_channel(guild, data.info.channelId);
+            let message = get_message(channel, data.info.id);
+            if(message?.deletable)
+                message.delete();
+            break;
+        }
+        case DISCORD_MAIN_COMMAND_GET_GUILDS:
             send_data({
-                event: DISCORD_EVENT_MSG_SENDED,
-                message: msg,
-                lifetime: data.info.lifetime
-            }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_EVENT);
-        });
-    }
-    else if(data.main_command == DISCORD_MAIN_COMMAND_DELETE_MSG)
-    {
-        let guild = get_guild(data.info.guildId);
-        let channel = get_channel(guild, data.info.channelId);
-        let message = get_message(channel, data.info.id);
-        if(message?.deletable)
-            message.delete();
-    }
-    else if(data.main_command == DISCORD_MAIN_COMMAND_GET_GUILDS)
-    {
-        send_data({
-            guilds: [...client.guilds.cache.values()]
-        }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_GUILDS);
-    }
-    else if(data.main_command == DISCORD_MAIN_COMMAND_GET_CHANNELS)
-    {
-        let guild = get_guild(data.info?.guildId);
-        let channels;
-        if(guild)
-            channels = get_channels(guild);
-        else
-            channels = get_all_channel();
+                guilds: [...client.guilds.cache.values()]
+            }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_GUILDS);
+        case DISCORD_MAIN_COMMAND_GET_CHANNELS:
+        {
+            let guild = get_guild(data.info?.guildId);
+            let channels;
+            if(guild)
+                channels = get_channels(guild);
+                else
+                channels = get_all_channel();
 
-        send_data({
-            channels
-        }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_CHANNELS);
-    }
-    else if(data.main_command == DISCORD_MAIN_COMMAND_GET_USERS)
-    {
-        send_data({
-            users: [...client.users.cache.values()]
-        }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_GUILDS);
-    }
+            send_data({
+                channels
+            }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_CHANNELS);
+            break;
+        }
+        case DISCORD_MAIN_COMMAND_GET_USERS:
+            send_data({
+                users: [...client.users.cache.values()]
+            }, COMMAND_TYPE_DISCORD, DISCORD_MAIN_COMMAND_GET_GUILDS);
+            break;
+        case DISCORD_MAIN_COMMAND_LOAD_DATA:
+        {
+            let id = data.info.id;
+            let index = buffers.findIndex(value => {
+                if(value.id == id)
+                    return value;
+            });
+            if(index == -1)
+            {
+                buffers.push({
+                    id: data.info.id,
+                    buffer: []
+                });
+                index = buffers.length - 1;
+            }
+
+            if(data.info.buffer.length == 0)
+                buffers.splice(index, 1);
+            else
+            {
+                for(let byte of data.info.buffer)
+                    buffers[index].buffer.push(byte);
+            }
+
+            break;
+        }
+    };
 }
 
 /**
- * 
+ *
  * @param {number} guildId 
  * @returns {Guild | null}
  */
@@ -197,7 +241,7 @@ function get_guild(guildId)
 }
 
 /**
- * 
+ *
  * @param {number} userId 
  * @returns {User | null}
  */
@@ -207,7 +251,7 @@ function get_user(userId)
 }
 
 /**
- * 
+ *
  * @return {Array<import("discord.js").Channel> | null}
  */
 function get_all_channel()
@@ -220,7 +264,7 @@ function get_all_channel()
 }
 
 /**
- * 
+ *
  * @param {Guild} guild 
  * @param {number} channelId 
  * @returns {Channel | null}
@@ -231,7 +275,7 @@ function get_channel(guild, channelId)
 }
 
 /**
- * 
+ *
  * @param {Guild} guild 
  * @returns {Array<import("discord.js").Channel> | null}
  */
@@ -241,7 +285,7 @@ function get_channels(guild)
 }
 
 /**
- * 
+ *
  * @param {BaseGuildTextChannel} channel 
  * @param {number} messageId 
  * @returns {Message | null}

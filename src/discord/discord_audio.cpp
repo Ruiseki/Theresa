@@ -1,41 +1,26 @@
-#include <cstdint>
+#include <chrono>
 #include <dirent.h>
+#include <filesystem>
+#include <fstream>
+#include <string>
 #include <sys/stat.h>
 #include <cstring>
-#include <fstream>
 #include <opus/opus.h>
+#include <nlohmann/json.hpp>
+#include <thread>
+#include <vector>
 
 #include "discord.hpp"
 #include "tool.hpp"
 
 using namespace Discord;
-
-void audio_stream(const char* /* file_path */)
-{
-    /* std::ifstream file(file_path);
-
-    // expecting ID3v2 tags
-    const int header_size = 10;
-    uint8_t header[header_size];
-    file.read((char*)header, header_size);
-
-    int32_t file_size = 0;
-    file_size = (header[6] << 21) | (header[7] << 14) | (header[8] << 7) | header[9];
-
-    file.seekg(10 + file_size + 1, std::ios::beg);
-    char c;
-    uint8_t test[4];
-    while(file.get(c))
-    {
-        if((unsigned char)c != 0xFF) continue;
-
-        file.read((char*)test + 1, 3);
-        test[0] = c;
-    } */
-}
+using nlohmann::json;
 
 void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int /* argc */, Discord::Message *message)
 {
+    if(!message->member->voice.channel)
+        return;
+
     // get parameters and query
     Cli_parameter *params;
     int params_size;
@@ -74,14 +59,40 @@ void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int 
 
     if(files.size() >= 1)
     {
-        audio_stream( ((std::string)(audio_dir_path + "/" + files[0])).c_str() );
+        const std::string file_path = (std::string)(audio_dir_path) + "/" + files[0];
+        std::ifstream file(file_path);
+        long file_size = std::filesystem::file_size(file_path);
+        std::vector<unsigned char> buffer(file_size);
+        file.read((char*)buffer.data(), file_size);
+
+        json data = {
+            {"main_command", LOAD_DATA},
+            {"info", {
+                {"id", 1},
+                {"buffer", json::array()}
+            }}
+        };
+        json &buffer_json = data["info"]["buffer"];
+        long bytes_sended = 0;
+        const int buffer_size = 1024;
+        std::string stringify;
+        while(bytes_sended < file_size)
+        {
+            int x = file_size - bytes_sended;
+            if(x > buffer_size)
+                x = buffer_size;
+
+            buffer_json = std::vector<unsigned char>(buffer.begin() + bytes_sended, buffer.begin() + bytes_sended + x);
+            stringify = data.dump();
+            send_to_js(stringify.c_str(), stringify.size());
+            bytes_sended += x;
+            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+        }
+
+        buffer_json.clear();
+        send_to_js(data.dump().c_str(), data.dump().size());
     }
 
     closedir(music_dir);
     delete [] params;
 }
-
-/*
-    To do :
-        - Les fichiers audio ont été filtrer, maintenant il faut faire le system de queue. Mais avant pourquoi pas tester d'envoyer l'audio au JS et de lire sur discord
-*/

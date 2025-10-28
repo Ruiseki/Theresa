@@ -42,6 +42,8 @@ export const DISCORD_MAIN_COMMAND_GET_USERS = 9;
 export const DISCORD_MAIN_COMMAND_GET_GUILD = 10;
 /** @constant {discord_main_command} */
 export const DISCORD_MAIN_COMMAND_GET_GUILDS = 11;
+/** @constant {discord_main_command} */
+export const DISCORD_MAIN_COMMAND_LOAD_DATA = 12;
 
 /** @typedef {number} discord_event */
 /** @constant {discord_event} */

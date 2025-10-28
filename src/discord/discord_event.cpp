@@ -52,13 +52,13 @@ void Discord::voice_event(const char *datas_str)
 void Discord::message_event(const char *datas_str)
 {
     json datas_json = json::parse(datas_str);
-    
+
     Message message;
     message.id = std::stoull( datas_json.at("message")["id"].get<std::string>() );
     message.authorId = std::stoull( datas_json.at("message")["authorId"].get<std::string>() );
     message.channelId = std::stoull( datas_json.at("message")["channelId"].get<std::string>() );
     message.guildId = std::stoull( datas_json.at("message")["guildId"].get<std::string>() );
-    message.set_ptrs(get_guilds(), get_users(), get_channels());
+    message.set_ptrs(get_guilds(), get_users(), get_channels(), get_guild_members());
     message.save(get_messages());
 
     int ms = datas_json.at("lifetime").is_null() ? -1 : (int)datas_json.at("lifetime");
@@ -66,7 +66,7 @@ void Discord::message_event(const char *datas_str)
     if(ms != 0)
     {
 
-        auto delete_after_ms = [&](Message message, int ms) -> void
+        auto delete_after_ms = [](Message message, int ms) -> void
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 

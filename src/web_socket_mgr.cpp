@@ -128,41 +128,43 @@ unsigned long long swap_endian_64(unsigned long long value)
     return result;
 }
 
-void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, bool masked, unsigned char **ws_frame, size_t *frame_size)
+void encode_ws_frame(OPCODE_T data_type, const unsigned char data[], size_t data_size, unsigned char *frame[], size_t &frame_size, bool masked)
 {
-    *frame_size = 2; // Size of the frame in bytes.
-    unsigned char *&frame = *ws_frame;
+    frame_size = 2; // Size of the frame in bytes.
 
-    if(data_size > 0xFFFF)      *frame_size += 8;
-    else if(data_size >= 0x7E)  *frame_size += 2;
-    if(masked) *frame_size += 4;
-    *frame_size += data_size;
-    frame = new unsigned char[*frame_size];
-    for(size_t i = 0; i < *frame_size; i++)
-        frame[i] = 0;
+    if(data_size > 0xffff)
+        frame_size += 8;
+    else if(data_size >= 0x7e)
+        frame_size += 2;
+
+    if(masked)
+        frame_size += 4;
+
+    frame_size += data_size;
+    *frame = new unsigned char[frame_size];
+    for(size_t i = 0; i < frame_size; i++)
+        (*frame)[i] = 0;
 
     // First 2 bytes
     // FIN, RSVx, opcode, MASKED, Payload len
     // -------------------------------
-    frame[WS_FRAME_POS_FIN]          += FIN_TERMINATE;
-    frame[WS_FRAME_POS_OPCODE]       += data_type;
-    frame[WS_FRAME_POS_MASKD]         += masked ? 0x80 : 0;
-    frame[WS_FRAME_POS_PAYLOADLEN]   += data_size > 0xFFFF
-                                            ? PAYLOAD_SIZE_64_BITS
-                                            : data_size >= 0x7E
-                                                ? PAYLOAD_SIZE_16_BITS
-                                                : data_size;
+    (*frame)[WS_FRAME_POS_FIN]          += FIN_TERMINATE;
+    (*frame)[WS_FRAME_POS_OPCODE]       += data_type;
+    (*frame)[WS_FRAME_POS_MASKD]        += masked ? 0x80 : 0;
+    (*frame)[WS_FRAME_POS_PAYLOADLEN]   += data_size > 0xffff ? PAYLOAD_SIZE_64_BITS
+                                            : data_size >= 0x7e ? PAYLOAD_SIZE_16_BITS
+                                            : data_size;
     // -------------------------------
 
     // Paylaod size
     // -------------------------------
     size_t big_endian_size = ntohs(data_size);
-    if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_16_BITS)
+    if(((*frame)[WS_FRAME_POS_PAYLOADLEN] & 0x7f) == PAYLOAD_SIZE_16_BITS)
         // 16 bits = 2 bytes
-        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 2);
-    else if((frame[WS_FRAME_POS_PAYLOADLEN] & 0x7F) == PAYLOAD_SIZE_64_BITS)
+        std::memcpy(&(*frame)[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 2);
+    else if(((*frame)[WS_FRAME_POS_PAYLOADLEN] & 0x7f) == PAYLOAD_SIZE_64_BITS)
         // 64 bits = 8 bytes
-        std::memcpy(&frame[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 8);
+        std::memcpy(&(*frame)[WS_FRAME_POS_PAYLOADLEN] + 1, &big_endian_size, 8);
     // -------------------------------
 
     // Masking and set the payload
@@ -170,27 +172,23 @@ void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_
     if(masked)
     {
         for(int i = 0; i < 4; i++)
-            frame[WS_FRAME_POS_MASKD + i] = std::rand() % 255;
+            (*frame)[WS_FRAME_POS_MASKD + i] = std::rand() % 255;
 
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers#exchanging_data_frames
         // Mask the datas
         for(size_t i = 0; i < data_size; i++)
-            frame[*frame_size - data_size + i] ^= frame[WS_FRAME_POS_MASKD + (i % 4)]; // meh
+            (*frame)[frame_size - data_size + i] ^= (*frame)[WS_FRAME_POS_MASKD + (i % 4)]; // meh
     }
     else
         for(size_t i = 0; i < data_size; i++)
-            frame[*frame_size - data_size + i] = data[i];
+            (*frame)[frame_size - data_size + i] = data[i];
     // -------------------------------
 }
 
-void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, unsigned char **ws_frame, size_t *frame_size)
-{ encode_ws_frame(data_type, data, data_size, false, ws_frame, frame_size); }
-
-void encode_ws_frame(std::string data, bool masked, unsigned char **ws_frame, size_t *frame_size)
-{ encode_ws_frame(OPCODE_TEXT, (unsigned char*)data.c_str(), data.size(), masked, ws_frame, frame_size); }
-
-void encode_ws_frame(std::string data, unsigned char **ws_frame, size_t *frame_size)
-{ encode_ws_frame(data, false, ws_frame, frame_size); }
+void encode_ws_frame(std::string data, unsigned char *frame[], size_t &frame_size, bool masked)
+{
+    encode_ws_frame(OPCODE_TEXT, (unsigned char*)data.c_str(), data.size(), frame, frame_size, masked);
+}
 
 void decode_ws_frame(unsigned char *ws_frame_buffer, DecodedWsFrame *result)
 {
@@ -282,7 +280,7 @@ void decode_ws_frame(unsigned char *ws_frame_buffer, DecodedWsFrame *result)
     }
     // -------------------------------
 
-    delete [] ws_frame;
+    delete[] ws_frame;
 }
 
 void decode_ws_frame(DecodedWsFrame *result)
@@ -296,11 +294,14 @@ void decode_ws_frame(DecodedWsFrame *result)
 
 int send_ws_frame(std::string message, int client_socket, bool masked)
 {
-    unsigned char *ws_frame;
+    unsigned char *ws_frame = nullptr;
     size_t frame_size;
-    encode_ws_frame(message, masked, &ws_frame, &frame_size);
-    return send(client_socket, ws_frame, frame_size, 0);
-}
 
-int send_ws_frame(std::string message, int client_socket)
-{ return send_ws_frame(message, client_socket, false); }
+    encode_ws_frame(message, &ws_frame, frame_size, masked);
+    int result = send(client_socket, ws_frame, frame_size, 0);
+
+    if(ws_frame)
+        delete[] ws_frame;
+
+    return result;
+}

@@ -2,7 +2,6 @@
 #define WEBSOCKET_HPP_INCLUDED
 
 #include <string>
-#include <vector>
 
 #define WS_BUFFER_SIZE 0x1000
 
@@ -49,14 +48,11 @@ struct DecodedWsFrame {
 
 std::string generate_handshake_header(char *client_header);
 
-void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, bool masked, unsigned char **ws_frame, size_t *frame_size);
-void encode_ws_frame(OPCODE_T data_type, const unsigned char *data, size_t data_size, unsigned char **ws_frame, size_t *frame_size);
-void encode_ws_frame(std::string data, bool masked, unsigned char **ws_frame, size_t *frame_size);
-void encode_ws_frame(std::string data, unsigned char **ws_frame, size_t *frame_size);
+void encode_ws_frame(OPCODE_T data_type, const unsigned char data[], size_t data_size, unsigned char *frame[], size_t &frame_size, bool masked = false);
+void encode_ws_frame(std::string data, unsigned char *frame[], size_t &frame_size, bool masked = false);
 
 void decode_ws_frame(unsigned char *data, DecodedWsFrame *result);
 void decode_ws_frame(DecodedWsFrame *result);
-int send_ws_frame(std::string message, int client_socket, bool masked);
-int send_ws_frame(std::string message, int client_socket);
+int send_ws_frame(std::string message, int client_socket, bool masked = false);
 
 #endif // WEBSOCKET_HPP_INCLUDED

@@ -43,7 +43,7 @@ void standard(json *datas_json)
     message.channelId = std::stoull(datas_json->at("info")["channelId"].get<std::string>());
     message.guildId = std::stoull(datas_json->at("info")["guildId"].get<std::string>());
     message.content = datas_json->at("info")["content"];
-    message.set_ptrs(&datas.guilds, &datas.users, &datas.channels);
+    message.set_ptrs(&datas.guilds, &datas.users, &datas.channels, &datas.guild_members);
     message.save(&datas.messages);
 
     delete_message(&message);
