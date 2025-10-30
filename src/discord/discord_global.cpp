@@ -45,7 +45,7 @@ void Discord::leave_voice(Guild *guild)
         {"main_command", STD},
         {"info", {
             {"task", LEAVE_VOICE},
-            {"guild", std::to_string(guild->id)},
+            {"guild", std::to_string(guild->id)}
         }}
     };
     send_to_js(order.dump().c_str(), order.dump().size());

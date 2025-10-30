@@ -1,13 +1,11 @@
-#include <chrono>
+#include <cstddef>
+#include <cstdio>
 #include <dirent.h>
-#include <filesystem>
-#include <fstream>
 #include <string>
 #include <sys/stat.h>
 #include <cstring>
 #include <opus/opus.h>
 #include <nlohmann/json.hpp>
-#include <thread>
 #include <vector>
 
 #include "discord.hpp"
@@ -59,40 +57,54 @@ void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int 
 
     if(files.size() >= 1)
     {
-        const std::string file_path = (std::string)(audio_dir_path) + "/" + files[0];
-        std::ifstream file(file_path);
-        long file_size = std::filesystem::file_size(file_path);
-        std::vector<unsigned char> buffer(file_size);
-        file.read((char*)buffer.data(), file_size);
-
         json data = {
             {"main_command", LOAD_DATA},
             {"info", {
-                {"id", 1},
+                {"guild", std::to_string(message->guildId)},
                 {"buffer", json::array()}
             }}
         };
         json &buffer_json = data["info"]["buffer"];
-        long bytes_sended = 0;
-        const int buffer_size = 1024;
         std::string stringify;
-        while(bytes_sended < file_size)
-        {
-            int x = file_size - bytes_sended;
-            if(x > buffer_size)
-                x = buffer_size;
 
-            buffer_json = std::vector<unsigned char>(buffer.begin() + bytes_sended, buffer.begin() + bytes_sended + x);
-            stringify = data.dump();
-            send_to_js(stringify.c_str(), stringify.size());
-            bytes_sended += x;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+        const std::string file_path = (std::string)(audio_dir_path) + "/" + files[0];
+        std::string ffmpeg_cmd = "ffmpeg -i \"" + file_path + "\" -f opus -ar 48000 -ac 2 -acodec libopus -loglevel quiet pipe:1";
+        FILE* pipe = popen(ffmpeg_cmd.c_str(), "r");
+        if(!pipe)
+            return;
+
+        const int buffer_size = 1024;
+        std::vector<unsigned char> converted_data;
+        unsigned char buffer[buffer_size];
+
+        while(!feof(pipe))
+        {
+            size_t bytes_read = fread(buffer, sizeof(unsigned char), buffer_size, pipe);
+            if(bytes_read > 0)
+            {
+                converted_data.insert(converted_data.end(), buffer, buffer + bytes_read);
+                buffer_json = std::vector<unsigned char>(buffer, buffer + bytes_read);
+                stringify = data.dump();
+                send_to_js(stringify.c_str(), stringify.size());
+            }
         }
 
-        buffer_json.clear();
-        send_to_js(data.dump().c_str(), data.dump().size());
+        pclose(pipe);
     }
 
     closedir(music_dir);
     delete [] params;
+}
+
+void Discord::play(Discord::Guild *guild, int buffer_id)
+{
+    json order = {
+        {"main_command", STD},
+        {"info", {
+            {"task", AUDIO_PLAY},
+            {"guild", std::to_string(guild->id)},
+            {"buffer_id", buffer_id}
+        }}
+    };
+    send_to_js(order.dump().c_str(), order.dump().size());
 }

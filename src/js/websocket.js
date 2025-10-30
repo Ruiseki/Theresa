@@ -1,4 +1,4 @@
-import { buffers, process_ws_message, wait_for_discord_client } from './discord_handler.js';
+import { process_ws_message, wait_for_discord_client } from './discord_handler.js';
 import { DISCORD_MAIN_COMMAND_STR, WEBSOCKET_PORT } from './main.js';
 import WebSocket from 'ws';
 
@@ -8,10 +8,9 @@ export var connected = false;
  * @type {WebSocket}
  */
 var ws;
-var connected = false;
 
 /**
- * 
+ *
  * @param {number} delay in ms
  * @returns
  */
@@ -59,15 +58,13 @@ async function connection_handler()
         {
             connected = true;
 
-            socket.on('message', (evt) => {
-                console.log(`<- text[${evt.length / 1000}ko]`);
-                process_ws_message(JSON.parse(evt));
+            socket.on('message', (data, isBinary) => {
+                process_ws_message(JSON.parse(data));
             });
 
             socket.on('close', async (evt) => {
                 console.log('Connection to the main server lost');
                 connected = false;
-                buffers.splice(0, buffers.length);
                 connection_handler();
             });
 

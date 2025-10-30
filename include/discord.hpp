@@ -55,6 +55,9 @@ namespace Discord
     // Global cmd
     #define JOIN_VOICE          (Discord::command)0x00000000
     #define LEAVE_VOICE         (Discord::command)0x00000001
+    #define AUDIO_PLAY          (Discord::command)0x00000002
+    #define AUDIO_PAUSE         (Discord::command)0x00000003
+    #define AUDIO_STOP          (Discord::command)0x00000004
     #define UNKNOWN             (Discord::command)0xffffffff
 
     enum AUDIO_ENGINE_STATE {
@@ -315,6 +318,7 @@ namespace Discord
     void send_message(Discord::Channel *channel, std::string message);
     void join_voice(Discord::Channel *channel);
     void leave_voice(Discord::Guild *guild);
+    void play(Discord::Guild *guild, int buffer_id);
 
     // audio
     void audio_cmd(const char *cmd_str, const char **argv, int argc, Discord::Message *msg);

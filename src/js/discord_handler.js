@@ -15,9 +15,12 @@ import {
     DISCORD_MAIN_COMMAND_SEND_MSG,
     DISCORD_MAIN_COMMAND_STD,
     DISCORD_MAIN_COMMAND_UPDATE_ALL,
-    DISCORD_MAIN_COMMAND_LOAD_DATA
+    DISCORD_MAIN_COMMAND_LOAD_DATA,
+    DISCORD_COMMAND_PLAY
 } from "./main.js";
 import { join_voice, leave_voice } from "./discord_global.js";
+import { createAudioPlayer, createAudioResource, StreamType } from "@discordjs/voice";
+import { Readable } from 'stream'
 dotenv.config();
 
 /**
@@ -28,7 +31,6 @@ export var prefix = 't!';
 var discord_client_ready = false;
 
 export var servers = [];
-export var buffers = [];
 
 export async function init_discord()
 {
@@ -56,7 +58,9 @@ export async function init_discord()
         client.guilds.cache.each(guild => {
             servers[guild.id] = {
                 voice: null,
-                audio_engine: null
+                audio_player: null,
+                audio_ressource: null,
+                audio_stream: null
             };
         })
     });
@@ -136,7 +140,7 @@ function process_discord_voice_event(old_state, new_state)
 }
 
 /**
- * @param {{main_command: import("./main.js").discord_main_command, info: object}} data 
+ * @param {{main_command: import("./main.js").discord_main_command, info: object}} data
  */
 export async function process_ws_message(data)
 {
@@ -154,6 +158,30 @@ export async function process_ws_message(data)
                     data.info.guild = get_guild(data.info.guild);
                     leave_voice(data.info.guild);
                     break;
+                case DISCORD_COMMAND_PLAY:
+                {
+                    let buffer_object = buffers.find(value => {
+                        if(value.id == data.info.buffer_id)
+                            return value;
+                    });
+                    data.info.guild = get_guild(data.info.guild);
+                    let server = servers[data.info.guild.id];
+                    server.audio_player = createAudioPlayer();
+                    server.audio_ressource = null;
+
+                    server.audio_player.on("stateChange", (old_state, new_state) => {
+                        if(new_state.status == "idle")
+                            buffer_object.buffer = [];
+                    });
+
+                    server.voice.subscribe(server.audio_player);
+                    server.audio_ressource = createAudioResource(
+                        Readable.from(buffer_object.buffer)
+                    );
+                    server.audio_player.play(audio_ressource);
+
+                    break;
+                }
             }
             break;
         case DISCORD_MAIN_COMMAND_SEND_MSG:
@@ -203,27 +231,33 @@ export async function process_ws_message(data)
             break;
         case DISCORD_MAIN_COMMAND_LOAD_DATA:
         {
-            let id = data.info.id;
-            let index = buffers.findIndex(value => {
-                if(value.id == id)
-                    return value;
-            });
-            if(index == -1)
+            data.info.guild = get_guild(data.info.guild);
+            let server = servers[data.info.guild.id];
+
+            if(!server.audio_stream)
+                server.audio_stream = new Readable({ read() {} });
+
+            if(!server.audio_player)
             {
-                buffers.push({
-                    id: data.info.id,
-                    buffer: []
+                server.audio_player = createAudioPlayer();
+                server.voice.subscribe(server.audio_player);
+
+                server.audio_player.on('stateChange', (old_state, newState) => {
+                    if(newState.status == 'idle')
+                    {
+                        server.audio_ressource = null;
+                        server.audio_stream = null;
+                    }
                 });
-                index = buffers.length - 1;
             }
 
-            if(data.info.buffer.length == 0)
-                buffers.splice(index, 1);
-            else
+            if(!server.audio_ressource)
             {
-                for(let byte of data.info.buffer)
-                    buffers[index].buffer.push(byte);
+                server.audio_ressource = createAudioResource(server.audio_stream);
+                server.audio_player.play(server.audio_ressource);
             }
+
+            server.audio_stream.push(Buffer.from(data.info.buffer));
 
             break;
         }

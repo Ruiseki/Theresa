@@ -1,7 +1,6 @@
 #include <nlohmann/json.hpp>
 
 #include "discord.hpp"
-#include "web_socket_mgr.hpp"
 
 using json = nlohmann::json;
 using namespace Discord;

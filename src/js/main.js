@@ -57,6 +57,8 @@ export const DISCORD_COMMAND_JOIN_VOICE = 0x00000000;
 /** @constant {discord_command} */
 export const DISCORD_COMMAND_LEAVE_VOICE = 0x00000001;
 /** @constant {discord_command} */
+export const DISCORD_COMMAND_PLAY = 0x00000002;
+/** @constant {discord_command} */
 export const DISCORD_COMMAND_UNKNOWN = 0xffffffff;
 
 export const DISCORD_MAIN_COMMAND_STR = [
