@@ -16,7 +16,10 @@ import {
     DISCORD_MAIN_COMMAND_STD,
     DISCORD_MAIN_COMMAND_UPDATE_ALL,
     DISCORD_MAIN_COMMAND_LOAD_DATA,
-    DISCORD_COMMAND_PLAY
+    DISCORD_COMMAND_PLAY,
+    DISCORD_COMMAND_PAUSE,
+    DISCORD_COMMAND_RESUME,
+    DISCORD_COMMAND_STOP
 } from "./main.js";
 import { join_voice, leave_voice } from "./discord_global.js";
 import { createAudioPlayer, createAudioResource, StreamType } from "@discordjs/voice";
@@ -182,6 +185,19 @@ export async function process_ws_message(data)
 
                     break;
                 }
+                case DISCORD_COMMAND_PAUSE:
+                    data.info.guild = get_guild(data.info.guild);
+                    servers[data.info.guild.id].audio_player.pause();
+                    break;
+                case DISCORD_COMMAND_RESUME:
+                    data.info.guild = get_guild(data.info.guild);
+                    servers[data.info.guild.id].audio_player.unpause();
+                    break;
+                case DISCORD_COMMAND_STOP:
+                    data.info.guild = get_guild(data.info.guild);
+                    // il faudrais clean le stream avant de fermer, ça cause un rebuffering qui casse tous
+                    servers[data.info.guild.id].audio_player.stop();
+                    break;
             }
             break;
         case DISCORD_MAIN_COMMAND_SEND_MSG:
@@ -243,6 +259,7 @@ export async function process_ws_message(data)
                 server.voice.subscribe(server.audio_player);
 
                 server.audio_player.on('stateChange', (old_state, newState) => {
+                    console.log(newState.status);
                     if(newState.status == 'idle')
                     {
                         server.audio_ressource = null;

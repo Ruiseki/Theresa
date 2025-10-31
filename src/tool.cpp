@@ -1,4 +1,5 @@
 #include <cstring>
+#include <vector>
 
 #include "tool.hpp"
 
@@ -37,37 +38,38 @@ std::string join(const std::string argv[], const unsigned int argc, const char c
 /**
  * @return first parameter index
  */
-int get_parameters(std::string argv[], unsigned int argc, Cli_parameter **parametersv, int *parametersc)
+std::vector<Cli_parameter> get_parameters(std::string argv[], unsigned int argc)
 {
-    unsigned int result = argc;
-    *parametersc = 0;
-    for(unsigned int i = 0; i < argc; i++)
-        if(argv[i][0] == '-')
-        {
-            if(i < result) result = i;
-            (*parametersc)++;
-        }
-
-    *parametersv = new Cli_parameter[*parametersc];
-    int parser = 0;
+    std::vector<Cli_parameter> parameters;
     std::vector<std::string> splited;
+    Cli_parameter current_parameter;
+
     for(unsigned int i = 0; i < argc; i++)
         if(argv[i][0] == '-')
         {
-            std::string key(argv[i].begin() + 1, argv[i].end());
-
-            if(i + 1 != argc)
+            if(current_parameter != Cli_parameter())
             {
-                if(argv[i + 1][0] != '-')
-                    (*parametersv)[parser] = {key, argv[i + 1]};
-                else
-                    (*parametersv)[parser] = {key, ""};
+                parameters.push_back(current_parameter);
+                current_parameter = Cli_parameter();
             }
-            else
-                (*parametersv)[parser] = {key, ""};
-            parser++;
+
+            current_parameter.pos_in_query = i;
+            current_parameter.key.assign(argv[i].begin() + 1, argv[i].end());
+            if(current_parameter.key == "-")
+            {
+                current_parameter.value = "-";
+                parameters.push_back(current_parameter);
+                return parameters;
+            }
         }
-    return result;
+        else if(current_parameter != Cli_parameter())
+        {
+            current_parameter.value += (current_parameter.value == "" ? "" : " ") + argv[i];
+        }
+
+    if(current_parameter != Cli_parameter())
+        parameters.push_back(current_parameter);
+    return parameters;
 }
 
 bool str_start_with(const char *input, const char *pattern, bool case_sensible)

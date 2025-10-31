@@ -59,6 +59,12 @@ export const DISCORD_COMMAND_LEAVE_VOICE = 0x00000001;
 /** @constant {discord_command} */
 export const DISCORD_COMMAND_PLAY = 0x00000002;
 /** @constant {discord_command} */
+export const DISCORD_COMMAND_PAUSE = 0x00000003;
+/** @constant {discord_command} */
+export const DISCORD_COMMAND_RESUME = 0x00000004;
+/** @constant {discord_command} */
+export const DISCORD_COMMAND_STOP = 0x00000005;
+/** @constant {discord_command} */
 export const DISCORD_COMMAND_UNKNOWN = 0xffffffff;
 
 export const DISCORD_MAIN_COMMAND_STR = [

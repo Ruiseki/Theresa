@@ -20,15 +20,43 @@ void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int 
         return;
 
     // get parameters and query
-    Cli_parameter *params;
-    int params_size;
-
     std::vector<std::string> splited = split(message->content, ' ');
     splited.erase(splited.begin());
 
-    int first_param_at = get_parameters(splited.data(), splited.size(), &params, &params_size);
+    std::vector<Cli_parameter> params = get_parameters(splited.data(), splited.size());
 
-    std::string query = join(splited.data(), first_param_at, ' ');
+    for(auto param : params)
+    {
+        if(param.key == "s")
+        {
+            json order = {
+                {"main_command", STD},
+                {"info", {
+                    {"guild", std::to_string(message->guildId)},
+                    {"task", nullptr}
+                }}
+            };
+            json &task = order["info"]["task"];
+
+            if(param.value == "pause")
+                task = AUDIO_PAUSE;
+            else if(param.value == "resume")
+                task = AUDIO_RESUME;
+            // end the track
+            else if(param.value == "stop")
+                task = AUDIO_STOP;
+            // end the track and delete the queue
+            else if(param.value == "quit")
+                task = AUDIO_STOP;
+
+            std::string stringify = order.dump();
+            send_to_js(stringify.c_str(), stringify.size());
+        }
+    }
+
+    std::string query = join(splited.data(), params.size() > 0 ? params[0].pos_in_query : splited.size(), ' ');
+    if(query == "")
+        return;
 
     // get file(s) starting by query
     std::string audio_dir_path = AUDIO_DIR + "/" + std::to_string(message->authorId);
@@ -93,18 +121,4 @@ void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int 
     }
 
     closedir(music_dir);
-    delete [] params;
-}
-
-void Discord::play(Discord::Guild *guild, int buffer_id)
-{
-    json order = {
-        {"main_command", STD},
-        {"info", {
-            {"task", AUDIO_PLAY},
-            {"guild", std::to_string(guild->id)},
-            {"buffer_id", buffer_id}
-        }}
-    };
-    send_to_js(order.dump().c_str(), order.dump().size());
 }

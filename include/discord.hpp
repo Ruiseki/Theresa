@@ -57,24 +57,20 @@ namespace Discord
     #define LEAVE_VOICE         (Discord::command)0x00000001
     #define AUDIO_PLAY          (Discord::command)0x00000002
     #define AUDIO_PAUSE         (Discord::command)0x00000003
-    #define AUDIO_STOP          (Discord::command)0x00000004
+    #define AUDIO_RESUME        (Discord::command)0x00000004
+    #define AUDIO_STOP          (Discord::command)0x00000005
     #define UNKNOWN             (Discord::command)0xffffffff
 
-    enum AUDIO_ENGINE_STATE {
+    enum AUDIO_PLAYER_STATE {
         IDLE,
-        PAUSE,
+        PAUSED,
         PLAYING
     };
 
     enum QUEUE_STATE {
+        NORMAL,
         TRACK_LOOP,
-        LOOP,
-        ALL_LOOP
-    };
-
-    enum TRACK_TYPE {
-        YOUTUBE,
-        LOCAL
+        LOOP
     };
 
     struct User;
@@ -265,7 +261,6 @@ namespace Discord
     };
 
     struct Track {
-        TRACK_TYPE type;
         std::string path, title, author;
     };
 
@@ -276,7 +271,9 @@ namespace Discord
 
     struct DiscordServer {
         Guild *guild = nullptr;
-        Channel *last_text_channel = nullptr, *last_voice_channel = nullptr, *last_queue_channel = nullptr;
+        Channel *last_text_channel = nullptr,
+                *last_voice_channel = nullptr,
+                *last_queue_channel = nullptr;
 
         std::vector<Message*> temp_messages;
         std::vector<User*> admins;
@@ -284,7 +281,7 @@ namespace Discord
         std::vector<TrackBuffer> buffers;
         std::vector<Track>::iterator current_track, next_track;
 
-        AUDIO_ENGINE_STATE audio_engine_state;
+        AUDIO_PLAYER_STATE audio_engine_state;
         bool next_track_leave;
     };
 
@@ -318,7 +315,6 @@ namespace Discord
     void send_message(Discord::Channel *channel, std::string message);
     void join_voice(Discord::Channel *channel);
     void leave_voice(Discord::Guild *guild);
-    void play(Discord::Guild *guild, int buffer_id);
 
     // audio
     void audio_cmd(const char *cmd_str, const char **argv, int argc, Discord::Message *msg);
