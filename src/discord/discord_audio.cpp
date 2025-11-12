@@ -83,8 +83,14 @@ void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int 
         }
     }
 
-    if(files.size() >= 1)
+    if(files.size() == 1)
     {
+        auto file_name_splited = split(files[0], '.');
+        file_name_splited.pop_back();
+        auto file_name_no_ext = join(file_name_splited.data(), file_name_splited.size(), '.');
+        std::string message_content = "**" + file_name_no_ext + "**  :notes:\n*[artist WIP]*\n\n*Position : **[queue position WIP]***\n*requested by " + message->author->globalName + "*";
+        send_message(message->channel, build_embed_message(message_content.c_str()), 30000);
+
         json data = {
             {"main_command", LOAD_DATA},
             {"info", {
@@ -119,6 +125,15 @@ void Discord::audio_cmd(const char* /* command */, const char** /* argv */, int 
 
         pclose(pipe);
     }
+    else if(files.size() > 1)
+    {
+        std::string message_content = "**⚠ Warning** : other similar file\n\n";
+        for(auto element : files)
+            message_content += element + "\n";
+        send_message(message->channel, build_embed_message(message_content.c_str()), 10000);
+    }
+    else
+        send_message(message->channel, build_embed_message("No match"), 3000);
 
     closedir(music_dir);
 }

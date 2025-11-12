@@ -46,7 +46,7 @@ void Discord::send_to_js(const char *msg, size_t msg_size)
         }
 }
 
-std::string Discord::build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size)
+std::string Discord::build_embed_message(const char *content, const char *title, const char *url, unsigned char *buffer, size_t buffer_size)
 {
     json msg = {
         {"embeds", {
@@ -68,11 +68,6 @@ std::string Discord::build_embed_message(const char *title, const char *content,
     }
 
     return (char*)msg.dump().c_str();
-}
-
-std::string Discord::build_embed_message(const char *content)
-{
-    return build_embed_message(nullptr, content, nullptr, nullptr, -1);
 }
 
 User* Discord::find_user(std::vector<User> *array, discord_id id)
@@ -127,4 +122,29 @@ void Discord::get_members_in_voice_channel(Channel *channel, GuildMember ***memb
     *members = new GuildMember*[*members_size];
     for(int i = 0; i < *members_size; i++)
         (*members)[i] = member_in_voice_channel[i];
+}
+
+void send_error_msg(CMD_ERROR error_id, Channel &channel, const char *error_detail)
+{
+    std::string content;
+    switch(error_id)
+    {
+        case CMD_ERROR::INVALID_SYNTAXE:
+            content += "**⚠ Invalid syntaxe ⚠**\n";
+            break;
+        case CMD_ERROR::INVALID_ARG:
+            content += "**⚠ Invalid argument ⚠**\n";
+            break;
+        case CMD_ERROR::MISSING_ARG:
+            content += "**⚠ Missing argument ⚠**\n";
+            break;
+        case CMD_ERROR::INCOMPLETE_CMD:
+            content += "**⚠ Incomplete command ⚠**\n";
+            break;
+        case CMD_ERROR::CMD_FAILED:
+            content += "**⚠ Command has failed ⚠**\n";
+            break;
+    }
+    content += error_detail;
+    send_message(&channel, content);
 }

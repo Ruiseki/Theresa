@@ -61,6 +61,14 @@ namespace Discord
     #define AUDIO_STOP          (Discord::command)0x00000005
     #define UNKNOWN             (Discord::command)0xffffffff
 
+    enum CMD_ERROR {
+        INVALID_SYNTAXE,
+        INVALID_ARG,
+        MISSING_ARG,
+        INCOMPLETE_CMD,
+        CMD_FAILED
+    };
+
     enum AUDIO_PLAYER_STATE {
         IDLE,
         PAUSED,
@@ -294,8 +302,8 @@ namespace Discord
     void get_members_in_voice_channel(Channel *channel, GuildMember ***members, int *members_size);
     Discord::command str_to_command(const char *command);
     void send_to_js(const char *msg, size_t msg_size);
-    std::string build_embed_message(const char *title, const char *content, const char *url, unsigned char *buffer, size_t buffer_size);
-    std::string build_embed_message(const char *content);
+    std::string build_embed_message(const char *content, const char *title = nullptr, const char *url = nullptr, unsigned char *buffer = nullptr, size_t buffer_size = -1);
+    void send_error_msg(CMD_ERROR error_id, Channel &channel, const char *error_detail);
     std::vector<Discord::User> *get_users();
     std::vector<Discord::Guild> *get_guilds();
     std::vector<Discord::Channel> *get_channels();

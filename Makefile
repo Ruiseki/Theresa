@@ -1,52 +1,19 @@
-# Compiler
-CXX ?= g++
-CFLAGS += -g
-CFLAGS += -Wall
-CFLAGS += -Wextra
-CFLAGS += -fdiagnostics-color=always
-
 BUILD_DIR = build
-DEPS_DIR = deps
-BIN_DIR := $(BUILD_DIR)/bin
+CORES = $(shell nproc)
 
-SRC_DIR = src
-SRC_DISCORD_DIR = $(SRC_DIR)/discord
-SOURCE_FILES := $(wildcard $(SRC_DIR)/*.cpp)
-SOURCE_DISCORD_FILES := $(wildcard $(SRC_DISCORD_DIR)/*.cpp)
+all: init
+	@cmake --build $(BUILD_DIR) -j$(CORES)
 
-OBJ_DIR := $(BUILD_DIR)/obj
-OBJ_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCE_FILES))
-OBJ_FILES += $(patsubst $(SRC_DISCORD_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCE_DISCORD_FILES))
-
-INCLUDE_PATH = -Iinclude
-INCLUDE_PATH += -Ideps
-
-THERESAD_BIN = $(BIN_DIR)/theresad
-
-all: $(BUILD_DIR) bin
-
-bin: $(THERESAD_BIN)
+init: $(BUILD_DIR)
+	@cmake -S . -B $(BUILD_DIR) -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+	@ln -sf $(BUILD_DIR)/compile_commands.json .
 
 clean:
+	@cmake --build build/ --target clean
+
+clean_all:
 	@rm -rf $(BUILD_DIR)
-
-$(THERESAD_BIN): $(OBJ_FILES) | $(BIN_DIR)
-	@echo "[building daemon] theresad"
-	@$(CXX) -o $@ $(OBJ_FILES) -lssl -lcrypto
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	@echo "[compiling core file] $<"
-	@$(CXX) -o $@ -c $(CFLAGS) $(INCLUDE_PATH) $<
-
-$(OBJ_DIR)/%.o: $(SRC_DISCORD_DIR)/%.cpp | $(OBJ_DIR)
-	@echo "[compiling extension : discord] $<"
-	@$(CXX) -o $@ -c $(CFLAGS) $(INCLUDE_PATH) $<
-
-$(BIN_DIR):
-	@mkdir $(BIN_DIR)
-
-$(OBJ_DIR):
-	@mkdir $(OBJ_DIR)
+	@rm compile_commands.json
 
 $(BUILD_DIR):
 	@mkdir $(BUILD_DIR)
