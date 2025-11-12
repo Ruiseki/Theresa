@@ -1,6 +1,7 @@
 .vscode
 .env
 .cache
+compile_commands.json
 build
 storage
 node_modules
